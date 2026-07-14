@@ -96,7 +96,7 @@ export function MembersTable({
                     {tier ? (
                       <Badge tone="primary">{tier.name}</Badge>
                     ) : (
-                      <span className="text-xs text-faint">—</span>
+                      <span className="text-xs text-faint">-</span>
                     )}
                   </TD>
                   <TD>
@@ -108,7 +108,7 @@ export function MembersTable({
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-xs text-faint">—</span>
+                        <span className="text-xs text-faint">-</span>
                       )}
                       {member.segments.length > 3 && (
                         <Badge tone="neutral">

@@ -18,11 +18,18 @@ import type {
   Tier,
 } from "./types";
 
-const BASE_URL = (process.env.API_BASE_URL ?? "http://localhost:8000").replace(
+const BASE_URL = (process.env.API_BASE_URL ?? "http://127.0.0.1:8000").replace(
   /\/+$/,
   "",
 );
 const TOKEN = process.env.API_TOKEN ?? "";
+
+/** Max attempts (initial + retries). 3 = up to 2 retries on transient failure. */
+const MAX_ATTEMPTS = 3;
+/** Base delay for exponential backoff (ms). */
+const RETRY_BASE_MS = 150;
+/** Only retry on these statuses (server hiccups, gateway issues, our own 0). */
+const RETRY_STATUSES = new Set([0, 500, 502, 503, 504]);
 
 export class ApiError extends Error {
   status: number;
@@ -35,7 +42,7 @@ export class ApiError extends Error {
 
 interface RequestOptions {
   method?: string;
-  /** JSON body — serialized and sent with the right Content-Type. */
+  /** JSON body - serialized and sent with the right Content-Type. */
   json?: unknown;
   /** Extra query params (undefined/null values are dropped). */
   query?: Record<string, string | number | boolean | undefined | null>;
@@ -53,49 +60,77 @@ function buildUrl(path: string, query?: RequestOptions["query"]): string {
   return url.toString();
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** True if the status looks like a transient hiccup worth retrying. */
+function isRetryable(status: number): boolean {
+  return RETRY_STATUSES.has(status);
+}
+
 export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
   const { method = "GET", json, query } = options;
+  const url = buildUrl(path, query);
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    Authorization: `Bearer ${TOKEN}`,
+    ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
+  };
+  const body = json !== undefined ? JSON.stringify(json) : undefined;
 
-  let res: Response;
-  try {
-    res = await fetch(buildUrl(path, query), {
-      method,
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${TOKEN}`,
-        ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
-      },
-      body: json !== undefined ? JSON.stringify(json) : undefined,
-      // This is an admin console: always read fresh data from the API.
-      cache: "no-store",
-    });
-  } catch {
-    throw new ApiError(
-      0,
-      `Cannot reach the API at ${BASE_URL}. Make sure the server is running.`,
-    );
-  }
+  let lastError: ApiError | null = null;
 
-  if (res.status === 204) return undefined as T;
-
-  const text = await res.text();
-  let data: unknown = undefined;
-  if (text) {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let res: Response;
     try {
-      data = JSON.parse(text);
+      res = await fetch(url, {
+        method,
+        headers,
+        body,
+        // This is an admin console: always read fresh data from the API.
+        cache: "no-store",
+      });
     } catch {
-      data = text;
+      lastError = new ApiError(
+        0,
+        `Cannot reach the API at ${BASE_URL}. Make sure the server is running.`,
+      );
+      if (attempt < MAX_ATTEMPTS && isRetryable(0)) {
+        await sleep(RETRY_BASE_MS * 2 ** (attempt - 1));
+        continue;
+      }
+      throw lastError;
     }
+
+    if (res.status === 204) return undefined as T;
+
+    const text = await res.text();
+    let data: unknown = undefined;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = text;
+      }
+    }
+
+    if (res.ok) return data as T;
+
+    const err = new ApiError(res.status, extractError(data, res.status));
+    if (attempt < MAX_ATTEMPTS && isRetryable(res.status)) {
+      lastError = err;
+      await sleep(RETRY_BASE_MS * 2 ** (attempt - 1));
+      continue;
+    }
+    throw err;
   }
 
-  if (!res.ok) {
-    throw new ApiError(res.status, extractError(data, res.status));
-  }
-
-  return data as T;
+  /* istanbul ignore next: unreachable, loop always returns or throws */
+  throw lastError ?? new ApiError(0, "Request failed after retries.");
 }
 
 /** FastAPI returns `{ detail: string }` or `{ detail: [{ msg, loc }] }`. */
@@ -115,7 +150,7 @@ function extractError(data: unknown, status: number): string {
       if (msgs.length) return msgs.join(", ");
     }
   }
-  if (status === 401) return "Unauthorized — check the API_TOKEN configuration.";
+  if (status === 401) return "Unauthorized - check the API_TOKEN configuration.";
   return `Request failed (${status}).`;
 }
 

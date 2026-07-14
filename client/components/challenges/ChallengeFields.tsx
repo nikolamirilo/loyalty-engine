@@ -60,7 +60,7 @@ export function ChallengeFields({
           />
         </Field>
       </div>
-      <Field label="Prize reward" htmlFor="challenge-reward" help="Optional — assigned on completion">
+      <Field label="Prize reward" htmlFor="challenge-reward" help="Optional - assigned on completion">
         <Select
           id="challenge-reward"
           name="reward_id"

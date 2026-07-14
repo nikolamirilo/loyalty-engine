@@ -12,7 +12,7 @@ import {
 
 type Tone = "neutral" | "primary" | "success" | "warning" | "danger";
 
-// Status colors always ship with an icon + label — never color alone.
+// Status colors always ship with an icon + label - never color alone.
 const CHALLENGE: Record<
   ChallengeStatus,
   { tone: Tone; label: string; Icon: (p: { className?: string }) => React.ReactElement }

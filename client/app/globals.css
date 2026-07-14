@@ -9,20 +9,20 @@
  */
 
 :root {
-  --background: #f9f9f7; /* page plane */
-  --surface: #fcfcfb; /* cards */
-  --surface-2: #f2f1ec; /* subtle raised / hover */
-  --foreground: #0b0b0b; /* primary ink */
-  --muted: #52514e; /* secondary ink */
-  --faint: #898781; /* muted labels */
-  --line: #e6e5df; /* hairline borders */
-  --ring: #2a78d6; /* focus ring */
+  --background: #f8fafc; /* page plane - slate-50 */
+  --surface: #ffffff; /* cards */
+  --surface-2: #f1f5f9; /* subtle raised / hover - slate-100 */
+  --foreground: #0f172a; /* primary ink - slate-900 */
+  --muted: #475569; /* secondary ink - slate-600 */
+  --faint: #64748b; /* muted labels - slate-500 */
+  --line: #e2e8f0; /* hairline borders - slate-200 */
+  --ring: #5b4bd6; /* focus ring - indigo-violet */
 
-  --primary: #256abf;
-  --primary-hover: #1c5cab;
+  --primary: #5b4bd6;
+  --primary-hover: #4c3fbf;
   --primary-fg: #ffffff;
-  --primary-subtle: #e9f1fc;
-  --primary-subtle-fg: #1c5cab;
+  --primary-subtle: #efecfd;
+  --primary-subtle-fg: #4338ca;
 
   --success: #0ca30c;
   --success-fg: #056b05;
@@ -39,27 +39,27 @@
   /* Categorical accents (stat tiles / icon chips) */
   --accent-blue: #2a78d6;
   --accent-aqua: #1baf7a;
-  --accent-violet: #4a3aa7;
+  --accent-violet: #5b4bd6;
   --accent-orange: #eb6834;
   --accent-yellow: #eda100;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0d0d0d;
-    --surface: #1a1a19;
-    --surface-2: #242423;
-    --foreground: #ffffff;
-    --muted: #c3c2b7;
-    --faint: #898781;
-    --line: #2c2c2a;
-    --ring: #3987e5;
+    --background: #0b1020; /* deep slate page */
+    --surface: #131a2c; /* cards */
+    --surface-2: #1c2438; /* subtle raised / hover */
+    --foreground: #f1f5f9; /* primary ink - slate-100 */
+    --muted: #b6c2d6; /* secondary ink */
+    --faint: #8493ab; /* muted labels */
+    --line: #263048; /* hairline borders */
+    --ring: #8b7ef0; /* focus ring - indigo-violet */
 
-    --primary: #3987e5;
-    --primary-hover: #5598e7;
-    --primary-fg: #0b1220;
-    --primary-subtle: #17263c;
-    --primary-subtle-fg: #9cc3f2;
+    --primary: #8b7ef0;
+    --primary-hover: #a99ef4;
+    --primary-fg: #0b1020;
+    --primary-subtle: #23204a;
+    --primary-subtle-fg: #c3bafa;
 
     --success: #0ca30c;
     --success-fg: #46c246;
@@ -75,7 +75,7 @@
 
     --accent-blue: #3987e5;
     --accent-aqua: #199e70;
-    --accent-violet: #9085e9;
+    --accent-violet: #8b7ef0;
     --accent-orange: #d95926;
     --accent-yellow: #c98500;
   }

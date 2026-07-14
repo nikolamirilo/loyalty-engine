@@ -1,6 +1,6 @@
 "use client";
 
-import { cloneElement, useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import { idleState, type ActionState } from "@/lib/action-state";
 import { Button } from "./Button";
@@ -34,11 +34,17 @@ export function FormDialog({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const triggerEl = cloneElement(trigger, { onClick: () => setOpen(true) });
 
   return (
     <>
-      {triggerEl}
+      {/* Wrap rather than cloneElement: the trigger is built in a Server
+          Component and passed across the client boundary, and cloning an
+          element whose subtree contains components (e.g. an icon) resolves
+          those nested types to `undefined` during dev SSR. A display:contents
+          wrapper adds no box and lets the click bubble up to open the dialog. */}
+      <span className="contents" onClick={() => setOpen(true)}>
+        {trigger}
+      </span>
       <Dialog
         open={open}
         onClose={() => setOpen(false)}

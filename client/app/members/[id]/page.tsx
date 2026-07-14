@@ -228,7 +228,7 @@ export default async function MemberPage({
                         {signedNumber(t.points)}
                       </TD>
                       <TD className="max-w-xs truncate text-muted">
-                        {t.description ?? "—"}
+                        {t.description ?? "-"}
                       </TD>
                       <TD className="text-right whitespace-nowrap text-muted">
                         {formatDateTime(t.created_at)}
@@ -324,10 +324,10 @@ export default async function MemberPage({
             <CardHeader title="Details" />
             <dl className="divide-y divide-line text-sm">
               <DetailRow label="Email" value={member.email} />
-              <DetailRow label="Phone" value={member.phone ?? "—"} />
+              <DetailRow label="Phone" value={member.phone ?? "-"} />
               <DetailRow
                 label="Segments"
-                value={member.segments.length ? member.segments.join(", ") : "—"}
+                value={member.segments.length ? member.segments.join(", ") : "-"}
               />
               <DetailRow label="Member ID" value={member.id} mono />
             </dl>

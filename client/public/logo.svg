@@ -1,48 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
   <defs>
     <linearGradient id="logo-bg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#3987e5" />
-      <stop offset="1" stop-color="#1c5cab" />
+      <stop offset="0" stop-color="#6d5ef0" />
+      <stop offset="1" stop-color="#4c3fbf" />
+    </linearGradient>
+    <linearGradient id="logo-hl" x1="0" y1="0" x2="0" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.20" />
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0" />
     </linearGradient>
   </defs>
 
-  <rect width="40" height="40" rx="10" fill="url(#logo-bg)" />
+  <!-- Tile: indigo-violet plane, soft top highlight, hairline inner edge -->
+  <rect width="40" height="40" rx="11" fill="url(#logo-bg)" />
+  <rect width="40" height="40" rx="11" fill="url(#logo-hl)" />
+  <rect x="0.7" y="0.7" width="38.6" height="38.6" rx="10.3" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.2" />
 
-  <!-- Gift box: the reward being redeemed -->
-  <rect
-    x="9.5"
-    y="17.5"
-    width="21"
-    height="13"
-    rx="1.5"
-    stroke="#ffffff"
-    stroke-width="2.4"
-    stroke-linejoin="round"
-  />
+  <!-- Box body (two-tone: tinted fill, crisp edge) -->
+  <rect x="9" y="18" width="22" height="13" rx="2.5" fill="#ffffff" fill-opacity="0.18" stroke="#ffffff" stroke-width="2" stroke-linejoin="round" />
 
-  <!-- Lid -->
-  <path
-    d="M8 14.5c0-1.1.9-2 2-2h20c1.1 0 2 .9 2 2v2c0 .55-.45 1-1 1H9c-.55 0-1-.45-1-1v-2Z"
-    stroke="#ffffff"
-    stroke-width="2.4"
-    stroke-linejoin="round"
-  />
+  <!-- Ribbon down the front -->
+  <rect x="17.4" y="19" width="5.2" height="12" fill="#ffffff" fill-opacity="0.34" />
 
-  <!-- Ribbon -->
-  <path
-    d="M20 12.5v18M13.5 30.5v-18M26.5 30.5v-18"
-    stroke="#ffffff"
-    stroke-width="2.4"
-    stroke-linecap="round"
-  />
+  <!-- Lid (solid) -->
+  <rect x="6.5" y="12.8" width="27" height="6.4" rx="2.4" fill="#ffffff" />
 
   <!-- Bow -->
-  <path
-    d="M20 12.5c-1.2-2.6-3.4-4.2-5.2-3.6-1.7.6-2 2.8-.6 4.2 1 1 2.9 1.1 5.8-.6Z"
-    fill="#ffffff"
-  />
-  <path
-    d="M20 12.5c1.2-2.6 3.4-4.2 5.2-3.6 1.7.6 2 2.8.6 4.2-1 1-2.9 1.1-5.8-.6Z"
-    fill="#ffffff"
-  />
+  <path d="M20 12.6C18.7 9.4 15.3 8.5 13.8 10.4C12.7 11.8 13.6 12.8 20 12.6Z" fill="#ffffff" />
+  <path d="M20 12.6C21.3 9.4 24.7 8.5 26.2 10.4C27.3 11.8 26.4 12.8 20 12.6Z" fill="#ffffff" />
+  <circle cx="20" cy="12.3" r="1.7" fill="#ffffff" />
 </svg>

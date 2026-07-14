@@ -144,7 +144,7 @@ export default async function DashboardPage() {
                         {tier ? (
                           <Badge tone="primary">{tier.name}</Badge>
                         ) : (
-                          <span className="text-xs text-faint">—</span>
+                          <span className="text-xs text-faint">-</span>
                         )}
                       </TD>
                       <TD className="text-right font-semibold tabular-nums whitespace-nowrap">

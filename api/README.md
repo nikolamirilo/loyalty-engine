@@ -4,16 +4,16 @@ A simple loyalty API built with **FastAPI** and **Supabase** (Postgres) via
 SQLAlchemy. All API routes are protected by a bearer token.
 
 > Tables are created automatically on first run via SQLAlchemy `create_all`.
-> `DATABASE_URL` is required — the app will not start without it.
+> `DATABASE_URL` is required - the app will not start without it.
 
 ## Features
 
-- **Members** — full name, email, phone, segments (array of strings) and a points balance.
-- **Points** — earn, burn (spend) and admin adjustments, with a full transaction history.
-- **Rewards** — a catalog of redeemable rewards with optional stock limits.
-- **Redemptions** — members redeem rewards by spending points.
-- **Tiers** — optional point thresholds that apply an earn-rate multiplier.
-- **Bearer token auth** — every API route requires `Authorization: Bearer <token>`.
+- **Members** - full name, email, phone, segments (array of strings) and a points balance.
+- **Points** - earn, burn (spend) and admin adjustments, with a full transaction history.
+- **Rewards** - a catalog of redeemable rewards with optional stock limits.
+- **Redemptions** - members redeem rewards by spending points.
+- **Tiers** - optional point thresholds that apply an earn-rate multiplier.
+- **Bearer token auth** - every API route requires `Authorization: Bearer <token>`.
 
 ## Project layout
 
@@ -51,14 +51,14 @@ cp .env.example .env        # then set DATABASE_URL + API_TOKEN (see below)
 ### Connecting to Supabase
 
 1. In the Supabase dashboard, go to **Project Settings → Database → Connection string**.
-2. Copy the **Connection pooling** URI (Transaction mode, port `6543`) — recommended for apps.
+2. Copy the **Connection pooling** URI (Transaction mode, port `6543`) - recommended for apps.
 3. Replace `[YOUR-PASSWORD]` with your database password and paste it into `.env` as `DATABASE_URL`.
 
 ```
 DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
 ```
 
-SSL is enabled automatically. Tables are created on first run — no SQL migration step needed.
+SSL is enabled automatically. Tables are created on first run - no SQL migration step needed.
 
 ## Running
 
@@ -67,7 +67,7 @@ uvicorn main:app --reload
 ```
 
 - API base URL: `http://localhost:8000`
-- Interactive docs (Swagger UI): `http://localhost:8000/docs` — click **Authorize**
+- Interactive docs (Swagger UI): `http://localhost:8000/docs` - click **Authorize**
   and paste your token to try endpoints from the browser.
 - Tables are created automatically in your Supabase database on first run.
 
@@ -91,8 +91,8 @@ invalid token receive `401`/`403`.
 | `POST` / `GET` | `/members` | Create / list members |
 | `GET` / `PATCH` / `DELETE` | `/members/{id}` | Get / update / delete a member |
 | `GET` | `/members/{id}/balance` | Current points balance |
-| `POST` | `/members/{id}/points/earn` | Earn points — `{"points": 100}` |
-| `POST` | `/members/{id}/points/burn` | Burn (spend) points — `{"points": 30}` |
+| `POST` | `/members/{id}/points/earn` | Earn points - `{"points": 100}` |
+| `POST` | `/members/{id}/points/burn` | Burn (spend) points - `{"points": 30}` |
 | `POST` | `/members/{id}/points/adjust` | Admin adjustment (+/-) |
 | `GET` | `/members/{id}/transactions` | Points transaction history |
 | `POST` / `GET` | `/rewards` | Create / list rewards |

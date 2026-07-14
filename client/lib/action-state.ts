@@ -3,5 +3,5 @@
 
 export type ActionState = { ok: boolean; error?: string; message?: string };
 
-/** Initial state for `useActionState` — neither success nor error yet. */
+/** Initial state for `useActionState` - neither success nor error yet. */
 export const idleState: ActionState = { ok: false };

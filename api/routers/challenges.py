@@ -98,7 +98,7 @@ def _complete(db: Session, assignment: ChallengeAssignment) -> None:
     assignment.completed_at = _now()
     assignment.current_value = max(assignment.current_value, challenge.target_value)
 
-    # Points reward — fixed grant (no tier multiplier; that is for activity points).
+    # Points reward - fixed grant (no tier multiplier; that is for activity points).
     if challenge.reward_points > 0:
         db.add(
             PointsTransaction(
@@ -111,7 +111,7 @@ def _complete(db: Session, assignment: ChallengeAssignment) -> None:
         member.total_points += challenge.reward_points
         _apply_tier(db, member)
 
-    # Prize reward — mirror assign_prize in routers/redemptions.py.
+    # Prize reward - mirror assign_prize in routers/redemptions.py.
     if challenge.reward_id is not None:
         reward = db.query(Reward).filter(Reward.id == challenge.reward_id).with_for_update().first()
         available = reward and reward.is_active and not (reward.stock is not None and reward.stock <= 0)
@@ -247,7 +247,7 @@ def add_progress(member_id: UUID, challenge_id: UUID, body: ProgressRequest, db:
 
 @router.post("/members/{member_id}/challenges/{challenge_id}/complete", response_model=ChallengeAssignmentOut)
 def complete_challenge(member_id: UUID, challenge_id: UUID, db: Session = Depends(get_db)):
-    """Admin force-complete — grants rewards regardless of progress or deadline."""
+    """Admin force-complete - grants rewards regardless of progress or deadline."""
     assignment = _get_assignment_or_404(db, member_id, challenge_id, lock=True)
     if assignment.status == ChallengeStatus.completed:
         raise HTTPException(400, "Challenge is already completed")
@@ -276,7 +276,7 @@ def assign_challenge_to_segment(challenge_id: UUID, body: SegmentAssignRequest, 
     if _is_expired(challenge):
         raise HTTPException(400, "Challenge has expired")
 
-    # Members already holding this challenge — skip them.
+    # Members already holding this challenge - skip them.
     already = {
         member_id
         for (member_id,) in db.query(ChallengeAssignment.member_id)

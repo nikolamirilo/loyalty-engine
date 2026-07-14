@@ -1,6 +1,6 @@
 "use client";
 
-import { cloneElement, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type { ActionState } from "@/lib/action-state";
@@ -39,8 +39,6 @@ export function ConfirmButton({
   const toast = useToast();
   const router = useRouter();
 
-  const triggerEl = cloneElement(trigger, { onClick: () => setOpen(true) });
-
   const onConfirm = () => {
     setError(null);
     startTransition(async () => {
@@ -57,7 +55,12 @@ export function ConfirmButton({
 
   return (
     <>
-      {triggerEl}
+      {/* Wrap rather than cloneElement - see FormDialog for why: cloning a
+          trigger built in a Server Component drops nested component types
+          (icons) to `undefined` during dev SSR. */}
+      <span className="contents" onClick={() => setOpen(true)}>
+        {trigger}
+      </span>
       <Dialog
         open={open}
         onClose={() => setOpen(false)}

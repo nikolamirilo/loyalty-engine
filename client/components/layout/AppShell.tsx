@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import Image from "next/image";
+
 import { cn } from "@/lib/format";
-import { Logo } from "@/components/ui/Logo";
 import {
   DashboardIcon,
   GiftIcon,
@@ -32,7 +33,18 @@ function isActive(pathname: string, href: string, exact?: boolean): boolean {
 function Brand() {
   return (
     <Link href="/" className="flex items-center gap-2.5">
-      <Logo className="h-9 w-9 shrink-0 shadow-sm" />
+      {/* `unoptimized` skips the Image Optimizer, which rejects SVGs by
+          default (returns HTTP 400) - that broken response is what flooded the
+          dev console and, together with a briefly-missing `alt`, triggered the
+          Fast Refresh full-reload loop. SVGs need no optimization anyway. */}
+      <Image
+        className="h-9 w-9 shrink-0 shadow-sm"
+        src="/logo.svg"
+        alt="Loyalty Engine"
+        width={36}
+        height={36}
+        unoptimized
+      />
       <span className="text-[15px] font-semibold tracking-tight text-foreground">
         Loyalty Engine
       </span>

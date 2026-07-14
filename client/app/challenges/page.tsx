@@ -52,7 +52,7 @@ export default async function ChallengesPage() {
           <EmptyState
             icon={<TargetIcon />}
             title="No challenges yet"
-            description="Create a challenge to give members a goal — completing it grants points and/or a prize."
+            description="Create a challenge to give members a goal - completing it grants points and/or a prize."
             action={<NewChallengeButton rewards={rewards} />}
           />
         </Card>
