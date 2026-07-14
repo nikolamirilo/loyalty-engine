@@ -72,7 +72,7 @@ export function Dialog({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-1.5 -mt-1 flex h-8 w-8 items-center justify-center rounded-lg text-lg text-faint transition-colors hover:bg-surface-2 hover:text-foreground"
+            className="-mr-1.5 -mt-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-lg text-faint transition-colors hover:bg-surface-2 hover:text-foreground"
           >
             <XIcon />
           </button>

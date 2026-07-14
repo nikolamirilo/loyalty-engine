@@ -30,9 +30,9 @@ function parseNumber(fd: FormData, key: string): number | null {
 }
 
 function parseSegments(fd: FormData): string[] {
-  return str(fd, "segments")
-    .split(",")
-    .map((s) => s.trim())
+  return fd
+    .getAll("segments")
+    .map((s) => (typeof s === "string" ? s.trim() : ""))
     .filter(Boolean);
 }
 

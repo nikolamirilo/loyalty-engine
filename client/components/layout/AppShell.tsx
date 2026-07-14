@@ -5,12 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/format";
+import { Logo } from "@/components/ui/Logo";
 import {
   DashboardIcon,
   GiftIcon,
   LayersIcon,
   MenuIcon,
-  SparklesIcon,
   TargetIcon,
   UsersIcon,
   XIcon,
@@ -32,9 +32,7 @@ function isActive(pathname: string, href: string, exact?: boolean): boolean {
 function Brand() {
   return (
     <Link href="/" className="flex items-center gap-2.5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-lg text-primary-fg shadow-sm">
-        <SparklesIcon />
-      </span>
+      <Logo className="h-9 w-9 shrink-0 shadow-sm" />
       <span className="text-[15px] font-semibold tracking-tight text-foreground">
         Loyalty Engine
       </span>
@@ -95,7 +93,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Open navigation"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-muted hover:bg-surface-2 hover:text-foreground"
+          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-xl text-muted hover:bg-surface-2 hover:text-foreground"
         >
           <MenuIcon />
         </button>
@@ -116,7 +114,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close navigation"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-muted hover:bg-surface-2 hover:text-foreground"
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-xl text-muted hover:bg-surface-2 hover:text-foreground"
               >
                 <XIcon />
               </button>

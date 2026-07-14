@@ -106,7 +106,7 @@ function ToastCard({
         type="button"
         onClick={onClose}
         aria-label="Dismiss"
-        className="-mr-1 -mt-0.5 shrink-0 rounded p-1 text-faint transition-colors hover:text-foreground"
+        className="-mr-1 -mt-0.5 shrink-0 cursor-pointer rounded p-1 text-faint transition-colors hover:text-foreground"
       >
         <XIcon className="text-sm" />
       </button>

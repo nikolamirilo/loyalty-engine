@@ -1,5 +1,6 @@
 import type { Member } from "@/lib/types";
 import { Field, Input } from "@/components/ui/Field";
+import { TagsInput } from "@/components/ui/TagsInput";
 
 /** Shared form fields for creating and editing a member. */
 export function MemberFields({ member }: { member?: Member }) {
@@ -36,13 +37,13 @@ export function MemberFields({ member }: { member?: Member }) {
       <Field
         label="Segments"
         htmlFor="member-segments"
-        help="Comma-separated, e.g. vip, early-adopter"
+        help="Press Enter or comma to add a segment"
       >
-        <Input
+        <TagsInput
           id="member-segments"
           name="segments"
+          defaultValue={member?.segments ?? []}
           placeholder="vip, newsletter"
-          defaultValue={member?.segments.join(", ") ?? ""}
         />
       </Field>
     </>
