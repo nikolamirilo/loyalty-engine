@@ -1,26 +1,176 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Design tokens. Values come from the validated data-viz reference palette
+ * (chart chrome/ink, status colors, and categorical accents). Light values live
+ * on :root; the dark set overrides the same variables under prefers-color-scheme.
+ * `@theme inline` maps them to Tailwind color utilities (bg-surface, text-muted,
+ * border-line, bg-primary, …) so utilities adapt to the color scheme in one place.
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  --background: #f9f9f7; /* page plane */
+  --surface: #fcfcfb; /* cards */
+  --surface-2: #f2f1ec; /* subtle raised / hover */
+  --foreground: #0b0b0b; /* primary ink */
+  --muted: #52514e; /* secondary ink */
+  --faint: #898781; /* muted labels */
+  --line: #e6e5df; /* hairline borders */
+  --ring: #2a78d6; /* focus ring */
+
+  --primary: #256abf;
+  --primary-hover: #1c5cab;
+  --primary-fg: #ffffff;
+  --primary-subtle: #e9f1fc;
+  --primary-subtle-fg: #1c5cab;
+
+  --success: #0ca30c;
+  --success-fg: #056b05;
+  --success-subtle: #e5f4e5;
+
+  --warning: #fab219;
+  --warning-fg: #8a5300;
+  --warning-subtle: #fbf0d6;
+
+  --danger: #d03b3b;
+  --danger-fg: #b0241d;
+  --danger-subtle: #fbe7e7;
+
+  /* Categorical accents (stat tiles / icon chips) */
+  --accent-blue: #2a78d6;
+  --accent-aqua: #1baf7a;
+  --accent-violet: #4a3aa7;
+  --accent-orange: #eb6834;
+  --accent-yellow: #eda100;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #242423;
+    --foreground: #ffffff;
+    --muted: #c3c2b7;
+    --faint: #898781;
+    --line: #2c2c2a;
+    --ring: #3987e5;
+
+    --primary: #3987e5;
+    --primary-hover: #5598e7;
+    --primary-fg: #0b1220;
+    --primary-subtle: #17263c;
+    --primary-subtle-fg: #9cc3f2;
+
+    --success: #0ca30c;
+    --success-fg: #46c246;
+    --success-subtle: #12341a;
+
+    --warning: #fab219;
+    --warning-fg: #f0b429;
+    --warning-subtle: #3a2e0f;
+
+    --danger: #e66767;
+    --danger-fg: #f08a8a;
+    --danger-subtle: #3a1c1c;
+
+    --accent-blue: #3987e5;
+    --accent-aqua: #199e70;
+    --accent-violet: #9085e9;
+    --accent-orange: #d95926;
+    --accent-yellow: #c98500;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-ring: var(--ring);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-subtle-fg: var(--primary-subtle-fg);
+
+  --color-success: var(--success);
+  --color-success-fg: var(--success-fg);
+  --color-success-subtle: var(--success-subtle);
+
+  --color-warning: var(--warning);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning-subtle: var(--warning-subtle);
+
+  --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-subtle: var(--danger-subtle);
+
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-aqua: var(--accent-aqua);
+  --color-accent-violet: var(--accent-violet);
+  --color-accent-orange: var(--accent-orange);
+  --color-accent-yellow: var(--accent-yellow);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  color-scheme: light dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Consistent, accessible focus ring across interactive elements. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Thin, unobtrusive scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.15s ease-out;
+}
+
+.animate-dialog-in {
+  animation: dialog-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
 }

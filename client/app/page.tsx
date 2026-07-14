@@ -1,65 +1,203 @@
-import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+import { getChallenges, getMembers, getRewards, getTiers } from "@/lib/api";
+import {
+  compactNumber,
+  formatNumber,
+  memberTier,
+  tierForBalance,
+} from "@/lib/format";
+import { Avatar } from "@/components/ui/Avatar";
+import { Badge } from "@/components/ui/Badge";
+import { Card, CardHeader } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { ProgressMeter } from "@/components/ui/ProgressMeter";
+import { StatTile } from "@/components/ui/StatTile";
+import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
+import {
+  ChevronRightIcon,
+  CoinsIcon,
+  GiftIcon,
+  LayersIcon,
+  TargetIcon,
+  UsersIcon,
+} from "@/components/ui/icons";
+
+export default async function DashboardPage() {
+  const [members, tiers, rewards, challenges] = await Promise.all([
+    getMembers(),
+    getTiers(),
+    getRewards(),
+    getChallenges(),
+  ]);
+
+  const pointsInCirculation = members.reduce((sum, m) => sum + m.pointsBalance, 0);
+  const activeRewards = rewards.filter((r) => r.is_active).length;
+  const activeChallenges = challenges.filter((c) => c.is_active).length;
+
+  // Members per tier (highest tier first), plus an untiered bucket.
+  const perTier = tiers.map((tier) => ({
+    id: tier.id,
+    name: tier.name,
+    count: members.filter((m) => tierForBalance(tiers, m.pointsBalance)?.id === tier.id)
+      .length,
+  }));
+  const untiered = members.filter(
+    (m) => tierForBalance(tiers, m.pointsBalance) === null,
+  ).length;
+  const distribution = [...perTier].reverse();
+  if (untiered > 0 || tiers.length === 0) {
+    distribution.push({ id: "none", name: "No tier", count: untiered });
+  }
+
+  const recentMembers = members.slice(0, 6);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="space-y-6">
+      <PageHeader
+        title="Dashboard"
+        description="Overview of your loyalty program."
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatTile
+          label="Members"
+          value={members.length}
+          icon={<UsersIcon />}
+          accent="blue"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+        <StatTile
+          label="Points in circulation"
+          value={pointsInCirculation}
+          icon={<CoinsIcon />}
+          accent="aqua"
+        />
+        <StatTile
+          label="Active rewards"
+          value={activeRewards}
+          sub={`${rewards.length} total`}
+          icon={<GiftIcon />}
+          accent="orange"
+        />
+        <StatTile
+          label="Active challenges"
+          value={activeChallenges}
+          sub={`${challenges.length} total`}
+          icon={<TargetIcon />}
+          accent="violet"
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Recent members */}
+        <Card className="overflow-hidden lg:col-span-2">
+          <CardHeader
+            title="Members"
+            description="Most recent in the program"
+            action={
+              <Link
+                href="/members"
+                className="inline-flex items-center gap-0.5 text-sm font-medium text-primary hover:underline"
+              >
+                View all <ChevronRightIcon className="text-base" />
+              </Link>
+            }
+          />
+          {recentMembers.length === 0 ? (
+            <EmptyState
+              icon={<UsersIcon />}
+              title="No members yet"
+              description="Add your first member from the Members page."
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+          ) : (
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Member</TH>
+                  <TH>Tier</TH>
+                  <TH className="text-right">Balance</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {recentMembers.map((member) => {
+                  const tier = memberTier(tiers, member);
+                  return (
+                    <TR key={member.id} className="group hover:bg-surface-2/60">
+                      <TD>
+                        <Link
+                          href={`/members/${member.id}`}
+                          className="flex items-center gap-3"
+                        >
+                          <Avatar name={member.name} />
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium text-foreground group-hover:text-primary">
+                              {member.name}
+                            </span>
+                            <span className="block truncate text-xs text-muted">
+                              {member.email}
+                            </span>
+                          </span>
+                        </Link>
+                      </TD>
+                      <TD>
+                        {tier ? (
+                          <Badge tone="primary">{tier.name}</Badge>
+                        ) : (
+                          <span className="text-xs text-faint">—</span>
+                        )}
+                      </TD>
+                      <TD className="text-right font-semibold tabular-nums whitespace-nowrap">
+                        {formatNumber(member.pointsBalance)}
+                        <span className="ml-1 text-xs font-normal text-faint">
+                          pts
+                        </span>
+                      </TD>
+                    </TR>
+                  );
+                })}
+              </TBody>
+            </Table>
+          )}
+        </Card>
+
+        {/* Tier distribution */}
+        <Card>
+          <CardHeader
+            title="Tier distribution"
+            description="Members by current tier"
+          />
+          <div className="space-y-4 p-5">
+            {members.length === 0 || distribution.length === 0 ? (
+              <EmptyState
+                icon={<LayersIcon />}
+                title="Nothing to show"
+                description="Add members and tiers to see the breakdown."
+                className="py-8"
+              />
+            ) : (
+              distribution.map((row) => (
+                <div key={row.id}>
+                  <div className="mb-1.5 flex items-center justify-between text-sm">
+                    <span className="font-medium text-foreground">
+                      {row.name}
+                    </span>
+                    <span className="text-muted tabular-nums">
+                      {row.count}
+                      <span className="ml-1 text-xs text-faint">
+                        {members.length > 0
+                          ? `(${Math.round((row.count / members.length) * 100)}%)`
+                          : ""}
+                      </span>
+                    </span>
+                  </div>
+                  <ProgressMeter value={row.count} max={members.length} />
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
