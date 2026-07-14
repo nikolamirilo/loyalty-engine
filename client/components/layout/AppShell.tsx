@@ -7,10 +7,12 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 
 import { cn } from "@/lib/format";
+import { logout } from "@/lib/auth/actions";
 import {
   DashboardIcon,
   GiftIcon,
   LayersIcon,
+  LogOutIcon,
   MenuIcon,
   TargetIcon,
   UsersIcon,
@@ -49,6 +51,21 @@ function Brand() {
         Loyalty Engine
       </span>
     </Link>
+  );
+}
+
+function SignOut() {
+  return (
+    <form action={logout} className="border-t border-line p-3">
+      <button
+        type="submit"
+        className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-foreground"
+      >
+        <LogOutIcon className="text-lg" />
+        Sign out
+      </button>
+      <p className="px-3 pt-2 text-xs text-faint">Admin console · v1.0</p>
+    </form>
   );
 }
 
@@ -94,9 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 overflow-y-auto p-3">
           <NavList />
         </nav>
-        <div className="border-t border-line px-5 py-4 text-xs text-faint">
-          Admin console · v1.0
-        </div>
+        <SignOut />
       </aside>
 
       {/* Mobile header */}
@@ -134,6 +149,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <nav className="flex-1 overflow-y-auto p-3">
               <NavList onNavigate={() => setOpen(false)} />
             </nav>
+            <SignOut />
           </div>
         </div>
       )}

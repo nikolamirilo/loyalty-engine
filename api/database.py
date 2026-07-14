@@ -16,6 +16,26 @@ if not DATABASE_URL:
         "to the environment or a .env file (see .env.example)."
     )
 
+
+def _normalize_database_url(url: str) -> str:
+    """Force the psycopg (v3) driver regardless of the incoming scheme.
+
+    We ship `psycopg` (v3), but SQLAlchemy maps the bare `postgresql://` scheme
+    that Supabase/Heroku hand out to psycopg2, which is not installed. Left
+    as-is that raises `ModuleNotFoundError: No module named 'psycopg2'` the
+    moment the engine is created, crashing the app on cold start (this is what
+    caused the Vercel FUNCTION_INVOCATION_FAILED). Rewriting the scheme here
+    means the app works whether the env var uses `postgres://`,
+    `postgresql://`, `postgresql+psycopg2://`, or `postgresql+psycopg://`.
+    """
+    for prefix in ("postgresql+psycopg2://", "postgresql://", "postgres://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
+DATABASE_URL = _normalize_database_url(DATABASE_URL)
+
 # Serverless (Vercel) tuning:
 #  - NullPool: no persistent connections. Each request opens one and closes it
 #    so we never leak connections between short-lived function invocations.
