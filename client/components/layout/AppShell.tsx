@@ -8,6 +8,7 @@ import Image from "next/image";
 
 import { cn } from "@/lib/format";
 import { logout } from "@/lib/auth/actions";
+import { preloadRoute } from "@/lib/swr/preload";
 import {
   DashboardIcon,
   GiftIcon,
@@ -20,11 +21,11 @@ import {
 } from "@/components/ui/icons";
 
 const NAV = [
-  { href: "/", label: "Dashboard", Icon: DashboardIcon, exact: true },
-  { href: "/members", label: "Members", Icon: UsersIcon },
-  { href: "/rewards", label: "Rewards", Icon: GiftIcon },
-  { href: "/challenges", label: "Challenges", Icon: TargetIcon },
-  { href: "/tiers", label: "Tiers", Icon: LayersIcon },
+  { href: "/", label: "Dashboard", Icon: DashboardIcon, exact: true, preload: preloadRoute.dashboard },
+  { href: "/members", label: "Members", Icon: UsersIcon, preload: preloadRoute.members },
+  { href: "/rewards", label: "Rewards", Icon: GiftIcon, preload: preloadRoute.rewards },
+  { href: "/challenges", label: "Challenges", Icon: TargetIcon, preload: preloadRoute.challenges },
+  { href: "/tiers", label: "Tiers", Icon: LayersIcon, preload: preloadRoute.tiers },
 ];
 
 function isActive(pathname: string, href: string, exact?: boolean): boolean {
@@ -73,13 +74,15 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <ul className="space-y-1">
-      {NAV.map(({ href, label, Icon, exact }) => {
+      {NAV.map(({ href, label, Icon, exact, preload }) => {
         const active = isActive(pathname, href, exact);
         return (
           <li key={href}>
             <Link
               href={href}
               onClick={onNavigate}
+              onMouseEnter={preload}
+              onFocus={preload}
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",

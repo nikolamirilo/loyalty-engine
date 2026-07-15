@@ -23,6 +23,7 @@ export function ConfirmButton({
   danger = true,
   redirectTo,
   successMessage,
+  onSuccess,
 }: {
   trigger: React.ReactElement<{ onClick?: () => void }>;
   title: string;
@@ -32,6 +33,8 @@ export function ConfirmButton({
   danger?: boolean;
   redirectTo?: string;
   successMessage?: string;
+  /** Called after the action succeeds — e.g. to revalidate SWR caches. */
+  onSuccess?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +48,7 @@ export function ConfirmButton({
       const res = await action();
       if (res.ok) {
         toast.success(successMessage ?? res.message ?? "Done.");
+        onSuccess?.();
         setOpen(false);
         if (redirectTo) router.push(redirectTo);
       } else {

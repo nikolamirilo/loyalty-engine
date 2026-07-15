@@ -17,12 +17,7 @@ import type {
   Reward,
   Tier,
 } from "./types";
-
-const BASE_URL = (process.env.API_BASE_URL ?? "http://127.0.0.1:8000").replace(
-  /\/+$/,
-  "",
-);
-const TOKEN = process.env.API_TOKEN ?? "";
+import { UPSTREAM_BASE_URL as BASE_URL, UPSTREAM_TOKEN as TOKEN } from "@/lib/server/upstream";
 
 /** Max attempts (initial + retries). 3 = up to 2 retries on transient failure. */
 const MAX_ATTEMPTS = 3;

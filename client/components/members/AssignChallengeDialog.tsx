@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { assignChallengeToMember } from "@/lib/actions";
+import { useRevalidate } from "@/lib/swr/revalidate";
 import { formatNumber } from "@/lib/format";
 import type { Challenge } from "@/lib/types";
 import { ActionButton } from "@/components/ui/ActionButton";
@@ -21,6 +22,7 @@ export function AssignChallengeDialog({
   assignedIds: string[];
 }) {
   const [open, setOpen] = useState(false);
+  const revalidate = useRevalidate();
   const available = challenges.filter(
     (c) => c.is_active && !assignedIds.includes(c.id),
   );
@@ -65,6 +67,7 @@ export function AssignChallengeDialog({
                     challenge.id,
                   )}
                   successMessage="Challenge assigned."
+                  onDone={() => revalidate.members()}
                 >
                   Assign
                 </ActionButton>

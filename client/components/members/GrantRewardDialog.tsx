@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { assignPrize, redeemReward } from "@/lib/actions";
+import { useRevalidate } from "@/lib/swr/revalidate";
 import { formatNumber } from "@/lib/format";
 import type { Reward } from "@/lib/types";
 import { ActionButton } from "@/components/ui/ActionButton";
@@ -21,6 +22,11 @@ export function GrantRewardDialog({
   balance: number;
 }) {
   const [open, setOpen] = useState(false);
+  const revalidate = useRevalidate();
+  const onMutated = () => {
+    revalidate.members();
+    revalidate.rewards();
+  };
   const available = rewards.filter(
     (r) => r.is_active && !(r.stock != null && r.stock <= 0),
   );
@@ -63,6 +69,7 @@ export function GrantRewardDialog({
                     variant="secondary"
                     action={assignPrize.bind(null, memberId, reward.id)}
                     successMessage="Prize assigned."
+                    onDone={onMutated}
                   >
                     Assign free
                   </ActionButton>
@@ -70,6 +77,7 @@ export function GrantRewardDialog({
                     size="sm"
                     action={redeemReward.bind(null, memberId, reward.id)}
                     successMessage="Reward redeemed."
+                    onDone={onMutated}
                     disabled={!affordable}
                     title={
                       affordable

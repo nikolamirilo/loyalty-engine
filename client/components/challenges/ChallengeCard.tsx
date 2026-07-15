@@ -1,8 +1,11 @@
+"use client";
+
 import {
   assignChallengeToSegment,
   deleteChallenge,
   updateChallenge,
 } from "@/lib/actions";
+import { useRevalidate } from "@/lib/swr/revalidate";
 import { formatDate, formatNumber } from "@/lib/format";
 import type { Challenge, Reward } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
@@ -30,6 +33,7 @@ export function ChallengeCard({
   challenge: Challenge;
   rewards: Reward[];
 }) {
+  const revalidate = useRevalidate();
   const prize = challenge.reward_id
     ? rewards.find((r) => r.id === challenge.reward_id)
     : null;
@@ -90,6 +94,7 @@ export function ChallengeCard({
             title="Edit challenge"
             action={updateChallenge}
             submitLabel="Save changes"
+            onSuccess={() => revalidate.challenges()}
           >
             <input type="hidden" name="id" value={challenge.id} />
             <ChallengeFields challenge={challenge} rewards={rewards} />
@@ -110,6 +115,7 @@ export function ChallengeCard({
             confirmLabel="Delete challenge"
             action={deleteChallenge.bind(null, challenge.id)}
             successMessage="Challenge deleted."
+            onSuccess={() => revalidate.challenges()}
           />
         </div>
       </div>
@@ -118,6 +124,7 @@ export function ChallengeCard({
 }
 
 function AssignSegmentButton({ challenge }: { challenge: Challenge }) {
+  const revalidate = useRevalidate();
   return (
     <FormDialog
       trigger={
@@ -129,6 +136,10 @@ function AssignSegmentButton({ challenge }: { challenge: Challenge }) {
       description={`Assign "${challenge.name}" to every member in a segment.`}
       action={assignChallengeToSegment}
       submitLabel="Assign"
+      onSuccess={() => {
+        revalidate.challenges();
+        revalidate.members();
+      }}
     >
       <input type="hidden" name="challenge_id" value={challenge.id} />
       <Field

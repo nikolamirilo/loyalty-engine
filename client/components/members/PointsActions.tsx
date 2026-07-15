@@ -1,10 +1,12 @@
 import { adjustPoints, burnPoints, earnPoints } from "@/lib/actions";
+import { useRevalidate } from "@/lib/swr/revalidate";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { ArrowDownIcon, ArrowUpIcon, SparklesIcon } from "@/components/ui/icons";
 
 export function PointsActions({ memberId }: { memberId: string }) {
+  const revalidate = useRevalidate();
   return (
     <div className="flex flex-wrap gap-2">
       <FormDialog
@@ -17,6 +19,7 @@ export function PointsActions({ memberId }: { memberId: string }) {
         description="Awards points; the member's tier multiplier is applied automatically."
         action={earnPoints}
         submitLabel="Add points"
+        onSuccess={() => revalidate.members()}
       >
         <input type="hidden" name="member_id" value={memberId} />
         <Field label="Points" htmlFor="earn-points" hint="before multiplier">
@@ -43,6 +46,7 @@ export function PointsActions({ memberId }: { memberId: string }) {
         description="Deducts points from the member's balance."
         action={burnPoints}
         submitLabel="Burn points"
+        onSuccess={() => revalidate.members()}
       >
         <input type="hidden" name="member_id" value={memberId} />
         <Field label="Points" htmlFor="burn-points">
@@ -69,6 +73,7 @@ export function PointsActions({ memberId }: { memberId: string }) {
         description="Manual adjustment, positive or negative, with an optional note."
         action={adjustPoints}
         submitLabel="Apply adjustment"
+        onSuccess={() => revalidate.members()}
       >
         <input type="hidden" name="member_id" value={memberId} />
         <Field label="Amount" htmlFor="adjust-points" help="Use a negative value to subtract">

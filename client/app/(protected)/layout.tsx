@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { isAuthenticated } from "@/lib/auth/session";
+import { Providers } from "./providers";
 
 export const dynamic = "force-dynamic";
 
@@ -14,5 +15,9 @@ export default async function ProtectedLayout({
   // keeps the console protected even if the proxy matcher ever changes.
   if (!(await isAuthenticated())) redirect("/login");
 
-  return <AppShell>{children}</AppShell>;
+  return (
+    <Providers>
+      <AppShell>{children}</AppShell>
+    </Providers>
+  );
 }

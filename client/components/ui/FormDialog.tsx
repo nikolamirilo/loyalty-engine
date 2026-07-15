@@ -23,6 +23,7 @@ export function FormDialog({
   action,
   submitLabel = "Save",
   size = "md",
+  onSuccess,
   children,
 }: {
   trigger: React.ReactElement<{ onClick?: () => void }>;
@@ -31,6 +32,8 @@ export function FormDialog({
   action: FormAction;
   submitLabel?: string;
   size?: "sm" | "md" | "lg";
+  /** Called after the action succeeds — e.g. to revalidate SWR caches. */
+  onSuccess?: () => void;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -56,6 +59,7 @@ export function FormDialog({
           action={action}
           submitLabel={submitLabel}
           onDone={() => setOpen(false)}
+          onSuccess={onSuccess}
         >
           {children}
         </FormBody>
@@ -68,11 +72,13 @@ function FormBody({
   action,
   submitLabel,
   onDone,
+  onSuccess,
   children,
 }: {
   action: FormAction;
   submitLabel: string;
   onDone: () => void;
+  onSuccess?: () => void;
   children: React.ReactNode;
 }) {
   const [state, formAction] = useActionState(action, idleState);
@@ -81,6 +87,7 @@ function FormBody({
   useEffect(() => {
     if (state.ok) {
       toast.success(state.message ?? "Saved.");
+      onSuccess?.();
       onDone();
     }
     // Only react to a change in the action's result.

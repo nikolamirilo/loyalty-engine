@@ -1,4 +1,7 @@
+"use client";
+
 import { deleteReward, setRewardActive, updateReward } from "@/lib/actions";
+import { useRevalidate } from "@/lib/swr/revalidate";
 import { formatNumber } from "@/lib/format";
 import type { Reward } from "@/lib/types";
 import { ActionButton } from "@/components/ui/ActionButton";
@@ -11,6 +14,7 @@ import { BanIcon, CheckIcon, PencilIcon, TrashIcon } from "@/components/ui/icons
 import { RewardFields } from "./RewardFields";
 
 function EditRewardButton({ reward }: { reward: Reward }) {
+  const revalidate = useRevalidate();
   return (
     <FormDialog
       trigger={
@@ -21,6 +25,7 @@ function EditRewardButton({ reward }: { reward: Reward }) {
       title="Edit reward"
       action={updateReward}
       submitLabel="Save changes"
+      onSuccess={() => revalidate.rewards()}
     >
       <input type="hidden" name="id" value={reward.id} />
       <RewardFields reward={reward} />
@@ -29,6 +34,7 @@ function EditRewardButton({ reward }: { reward: Reward }) {
 }
 
 export function RewardRow({ reward }: { reward: Reward }) {
+  const revalidate = useRevalidate();
   const outOfStock = reward.stock != null && reward.stock <= 0;
   return (
     <TR className="hover:bg-surface-2/60">
@@ -63,6 +69,7 @@ export function RewardRow({ reward }: { reward: Reward }) {
             size="sm"
             action={setRewardActive.bind(null, reward.id, !reward.is_active)}
             successMessage={reward.is_active ? "Reward deactivated." : "Reward activated."}
+            onDone={() => revalidate.rewards()}
           >
             {reward.is_active ? (
               <>
@@ -91,6 +98,7 @@ export function RewardRow({ reward }: { reward: Reward }) {
             confirmLabel="Delete reward"
             action={deleteReward.bind(null, reward.id)}
             successMessage="Reward deleted."
+            onSuccess={() => revalidate.rewards()}
           />
         </div>
       </TD>

@@ -42,6 +42,15 @@ export interface Balance {
   pointsBalance: number;
 }
 
+/** Dashboard aggregates from `GET /members/stats`. `by_tier` maps a tier id to
+ * its member count; `untiered` counts members below the lowest tier. */
+export interface MemberStats {
+  count: number;
+  points_in_circulation: number;
+  by_tier: Record<string, number>;
+  untiered: number;
+}
+
 export interface Reward {
   id: UUID;
   name: string;

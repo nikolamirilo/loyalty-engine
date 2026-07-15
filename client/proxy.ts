@@ -29,9 +29,10 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Run on all routes except Next internals and static/public assets (so the
-  // login page's logo and styles load without being redirected).
+  // Run on all routes except Next internals, static/public assets, and /api/*.
+  // The data proxy (/api/le/*) does its own cookie check and returns 401 JSON,
+  // so it must not be caught by this HTML login redirect.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.svg$|.*\\.png$|.*\\.ico$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg$|.*\\.png$|.*\\.ico$).*)",
   ],
 };

@@ -1,6 +1,9 @@
+"use client";
+
 import { createTier, deleteTier } from "@/lib/actions";
-import { getMembers, getTiers } from "@/lib/api";
-import { formatNumber, tierForBalance } from "@/lib/format";
+import { useMemberStats, useTiers } from "@/lib/swr/hooks";
+import { useRevalidate } from "@/lib/swr/revalidate";
+import { formatNumber } from "@/lib/format";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -9,9 +12,20 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Field, Input } from "@/components/ui/Field";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { CardGridSkeleton } from "@/components/ui/Skeletons";
 import { LayersIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 
+/** A tier change alters the member distribution too, so refresh both. */
+function useTierRevalidate() {
+  const revalidate = useRevalidate();
+  return () => {
+    revalidate.tiers();
+    revalidate.members();
+  };
+}
+
 function NewTierButton() {
+  const onChange = useTierRevalidate();
   return (
     <FormDialog
       trigger={
@@ -23,6 +37,7 @@ function NewTierButton() {
       description="Members reaching the point threshold earn at this multiplier."
       action={createTier}
       submitLabel="Create tier"
+      onSuccess={onChange}
     >
       <Field label="Name" htmlFor="tier-name">
         <Input id="tier-name" name="name" placeholder="e.g. Gold" required />
@@ -55,14 +70,12 @@ function NewTierButton() {
   );
 }
 
-export default async function TiersPage() {
-  const [tiers, members] = await Promise.all([getTiers(), getMembers()]);
+export default function TiersPage() {
+  const { data: tiers } = useTiers();
+  const { data: stats } = useMemberStats();
+  const onChange = useTierRevalidate();
 
-  const counts = new Map<string, number>();
-  for (const member of members) {
-    const tier = tierForBalance(tiers, member.pointsBalance);
-    if (tier) counts.set(tier.id, (counts.get(tier.id) ?? 0) + 1);
-  }
+  const countFor = (tierId: string) => stats?.by_tier[tierId] ?? 0;
 
   return (
     <div className="space-y-6">
@@ -72,7 +85,11 @@ export default async function TiersPage() {
         actions={<NewTierButton />}
       />
 
-      {tiers.length === 0 ? (
+      {tiers === undefined ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <CardGridSkeleton count={3} />
+        </div>
+      ) : tiers.length === 0 ? (
         <Card>
           <EmptyState
             icon={<LayersIcon />}
@@ -83,61 +100,62 @@ export default async function TiersPage() {
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {tiers.map((tier) => (
-            <Card key={tier.id} className="flex flex-col p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-yellow/15 text-xl text-accent-yellow">
-                    <LayersIcon />
-                  </span>
-                  <div>
-                    <p className="font-semibold text-foreground">{tier.name}</p>
-                    <p className="text-xs text-faint">
-                      {counts.get(tier.id) ?? 0} member
-                      {(counts.get(tier.id) ?? 0) === 1 ? "" : "s"}
+          {tiers.map((tier) => {
+            const count = countFor(tier.id);
+            return (
+              <Card key={tier.id} className="flex flex-col p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-yellow/15 text-xl text-accent-yellow">
+                      <LayersIcon />
+                    </span>
+                    <div>
+                      <p className="font-semibold text-foreground">{tier.name}</p>
+                      <p className="text-xs text-faint">
+                        {stats ? `${count} member${count === 1 ? "" : "s"}` : "…"}
+                      </p>
+                    </div>
+                  </div>
+                  <ConfirmButton
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete ${tier.name}`}
+                        className="text-danger"
+                      >
+                        <TrashIcon />
+                      </Button>
+                    }
+                    title={`Delete "${tier.name}"?`}
+                    description="Members in this tier will fall back to the next-lowest tier. This cannot be undone."
+                    confirmLabel="Delete tier"
+                    action={deleteTier.bind(null, tier.id)}
+                    successMessage="Tier deleted."
+                    onSuccess={onChange}
+                  />
+                </div>
+                <div className="mt-5 grid grid-cols-2 gap-3">
+                  <div className="rounded-lg bg-surface-2 px-3 py-2.5">
+                    <p className="text-xs text-muted">From</p>
+                    <p className="mt-0.5 font-semibold text-foreground tabular-nums">
+                      {formatNumber(tier.min_points)}
+                      <span className="ml-1 text-xs font-normal text-faint">pts</span>
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-surface-2 px-3 py-2.5">
+                    <p className="text-xs text-muted">Earn rate</p>
+                    <p className="mt-0.5 font-semibold text-foreground tabular-nums">
+                      {tier.multiplier}×
                     </p>
                   </div>
                 </div>
-                <ConfirmButton
-                  trigger={
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Delete ${tier.name}`}
-                      className="text-danger"
-                    >
-                      <TrashIcon />
-                    </Button>
-                  }
-                  title={`Delete "${tier.name}"?`}
-                  description="Members in this tier will fall back to the next-lowest tier. This cannot be undone."
-                  confirmLabel="Delete tier"
-                  action={deleteTier.bind(null, tier.id)}
-                  successMessage="Tier deleted."
-                />
-              </div>
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-lg bg-surface-2 px-3 py-2.5">
-                  <p className="text-xs text-muted">From</p>
-                  <p className="mt-0.5 font-semibold text-foreground tabular-nums">
-                    {formatNumber(tier.min_points)}
-                    <span className="ml-1 text-xs font-normal text-faint">
-                      pts
-                    </span>
-                  </p>
+                <div className="mt-3">
+                  <Badge tone="primary">×{tier.multiplier} points on earn</Badge>
                 </div>
-                <div className="rounded-lg bg-surface-2 px-3 py-2.5">
-                  <p className="text-xs text-muted">Earn rate</p>
-                  <p className="mt-0.5 font-semibold text-foreground tabular-nums">
-                    {tier.multiplier}×
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3">
-                <Badge tone="primary">×{tier.multiplier} points on earn</Badge>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

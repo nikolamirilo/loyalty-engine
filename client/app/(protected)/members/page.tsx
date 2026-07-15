@@ -1,14 +1,17 @@
+"use client";
+
 import { createMember } from "@/lib/actions";
-import { getMembers, getTiers } from "@/lib/api";
+import { useMembersCount } from "@/lib/swr/hooks";
+import { useRevalidate } from "@/lib/swr/revalidate";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { MemberFields } from "@/components/members/MemberFields";
-import { MembersTable } from "@/components/members/MembersTable";
+import { MembersView } from "@/components/members/MembersView";
 import { PlusIcon } from "@/components/ui/icons";
 
 function NewMemberButton() {
+  const revalidate = useRevalidate();
   return (
     <FormDialog
       trigger={
@@ -20,25 +23,31 @@ function NewMemberButton() {
       description="Add a member to the loyalty program."
       action={createMember}
       submitLabel="Create member"
+      onSuccess={() => revalidate.members()}
     >
       <MemberFields />
     </FormDialog>
   );
 }
 
-export default async function MembersPage() {
-  const [members, tiers] = await Promise.all([getMembers(), getTiers()]);
+export default function MembersPage() {
+  // Total (unfiltered) count for the header; deduped with MembersView's own
+  // count query when there's no active search.
+  const { data: countData } = useMembersCount();
+  const total = countData?.count;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Members"
-        description={`${members.length} member${members.length === 1 ? "" : "s"} in the program.`}
+        description={
+          total != null
+            ? `${total} member${total === 1 ? "" : "s"} in the program.`
+            : "Loyalty program members."
+        }
         actions={<NewMemberButton />}
       />
-      <Card className="overflow-hidden p-0">
-        <MembersTable members={members} tiers={tiers} />
-      </Card>
+      <MembersView />
     </div>
   );
 }

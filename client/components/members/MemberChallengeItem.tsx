@@ -1,8 +1,11 @@
+"use client";
+
 import {
   addChallengeProgress,
   completeChallenge,
   unassignChallenge,
 } from "@/lib/actions";
+import { useRevalidate } from "@/lib/swr/revalidate";
 import { formatNumber } from "@/lib/format";
 import type { ChallengeAssignment } from "@/lib/types";
 import { ActionButton } from "@/components/ui/ActionButton";
@@ -21,6 +24,7 @@ export function MemberChallengeItem({
   assignment: ChallengeAssignment;
   memberId: string;
 }) {
+  const revalidate = useRevalidate();
   const challenge = assignment.challenge;
   const status = assignment.status;
   const isClosed = status === "completed" || status === "cancelled";
@@ -73,6 +77,7 @@ export function MemberChallengeItem({
             description={`Record progress toward "${challenge.name}".`}
             action={addChallengeProgress}
             submitLabel="Add progress"
+            onSuccess={() => revalidate.members()}
           >
             <input type="hidden" name="member_id" value={memberId} />
             <input type="hidden" name="challenge_id" value={challenge.id} />
@@ -99,6 +104,7 @@ export function MemberChallengeItem({
             variant="secondary"
             action={completeChallenge.bind(null, memberId, challenge.id)}
             successMessage="Challenge completed."
+            onDone={() => revalidate.members()}
           >
             <CheckIcon /> Complete
           </ActionButton>
@@ -119,6 +125,7 @@ export function MemberChallengeItem({
           confirmLabel="Remove"
           action={unassignChallenge.bind(null, memberId, challenge.id)}
           successMessage="Challenge removed."
+          onSuccess={() => revalidate.members()}
         />
       </div>
     </div>
