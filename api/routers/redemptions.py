@@ -2,7 +2,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
 from models import Member, PointsTransaction, Redemption, RedemptionSource, Reward, Tier, TransactionType
@@ -98,7 +98,13 @@ def list_member_prizes(
 ):
     if not db.get(Member, member_id):
         raise HTTPException(404, "Member not found")
-    q = db.query(Redemption).filter(Redemption.member_id == member_id)
+    # joinedload the reward so serializing RedemptionOut.reward doesn't lazy-load
+    # one query per row (N+1).
+    q = (
+        db.query(Redemption)
+        .options(joinedload(Redemption.reward))
+        .filter(Redemption.member_id == member_id)
+    )
     if source is not None:
         q = q.filter(Redemption.source == source)
     return q.order_by(Redemption.created_at.desc()).offset(skip).limit(limit).all()
@@ -113,8 +119,11 @@ def list_member_redemptions(
 ):
     if not db.get(Member, member_id):
         raise HTTPException(404, "Member not found")
+    # joinedload the reward so serializing RedemptionOut.reward doesn't lazy-load
+    # one query per row (N+1).
     return (
         db.query(Redemption)
+        .options(joinedload(Redemption.reward))
         .filter(Redemption.member_id == member_id)
         .order_by(Redemption.created_at.desc())
         .offset(skip)

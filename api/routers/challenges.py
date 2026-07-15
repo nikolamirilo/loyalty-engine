@@ -5,7 +5,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
 from models import (
@@ -214,7 +214,13 @@ def list_member_challenges(
 ):
     if not db.get(Member, member_id):
         raise HTTPException(404, "Member not found")
-    q = db.query(ChallengeAssignment).filter(ChallengeAssignment.member_id == member_id)
+    # joinedload the challenge so serializing ChallengeAssignmentOut.challenge
+    # doesn't lazy-load one query per row (N+1).
+    q = (
+        db.query(ChallengeAssignment)
+        .options(joinedload(ChallengeAssignment.challenge))
+        .filter(ChallengeAssignment.member_id == member_id)
+    )
     if status is not None:
         q = q.filter(ChallengeAssignment.status == status)
     return q.order_by(ChallengeAssignment.assigned_at.desc()).offset(skip).limit(limit).all()
