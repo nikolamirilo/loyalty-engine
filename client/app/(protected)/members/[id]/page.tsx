@@ -52,23 +52,33 @@ export default async function MemberPage({
 }) {
   const { id } = await params;
 
+  // Fire every request up front so they run concurrently. Previously `member`
+  // was awaited before the rest, turning them into a second network round-trip
+  // (a waterfall); now all seven requests go out in a single wave.
+  const memberPromise = getMember(id);
+  const detailsPromise = Promise.all([
+    getTiers(),
+    getTransactions(id),
+    getRedemptions(id),
+    getMemberChallenges(id),
+    getRewards(true),
+    getChallenges(true),
+  ]);
+  // If the member 404s we bail below; keep the in-flight details from surfacing
+  // as an unhandled rejection on that path (the await further down still throws
+  // for a real member whose details genuinely failed to load).
+  detailsPromise.catch(() => {});
+
   let member;
   try {
-    member = await getMember(id);
+    member = await memberPromise;
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound();
     throw e;
   }
 
   const [tiers, transactions, redemptions, memberChallenges, rewards, challenges] =
-    await Promise.all([
-      getTiers(),
-      getTransactions(id),
-      getRedemptions(id),
-      getMemberChallenges(id),
-      getRewards(true),
-      getChallenges(true),
-    ]);
+    await detailsPromise;
 
   const tier = memberTier(tiers, member);
   const totalEarned = transactions
