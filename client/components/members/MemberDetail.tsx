@@ -33,12 +33,14 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { StatTile } from "@/components/ui/StatTile";
 import { TransactionBadge } from "@/components/ui/StatusBadge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
+import { useToast } from "@/components/ui/Toast";
 import { MemberChallengeItem } from "@/components/members/MemberChallengeItem";
 import { MemberFields } from "@/components/members/MemberFields";
 import { PointsActions } from "@/components/members/PointsActions";
 import {
   ChevronRightIcon,
   CoinsIcon,
+  CopyIcon,
   GiftIcon,
   LayersIcon,
   PencilIcon,
@@ -74,6 +76,16 @@ const AssignChallengeDialog = dynamic(
 export function MemberDetail({ id }: { id: string }) {
   const revalidate = useRevalidate();
   const onMutated = () => revalidate.members();
+  const toast = useToast();
+
+  const copyId = async (memberId: string) => {
+    try {
+      await navigator.clipboard.writeText(memberId);
+      toast.success("Member ID copied.");
+    } catch {
+      toast.error("Couldn't copy member ID.");
+    }
+  };
 
   const { data: member, error: memberError } = useMember(id);
   const { data: tiers } = useTiers();
@@ -151,6 +163,13 @@ export function MemberDetail({ id }: { id: string }) {
               </div>
             </div>
             <div className="flex shrink-0 gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => copyId(member.id)}
+              >
+                <CopyIcon /> Copy ID
+              </Button>
               <FormDialog
                 trigger={
                   <Button variant="secondary" size="sm">
@@ -472,6 +491,7 @@ function ProfileSkeleton() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Skeleton className="h-8 w-24 rounded-lg" />
           <Skeleton className="h-8 w-20 rounded-lg" />
           <Skeleton className="h-8 w-20 rounded-lg" />
         </div>
