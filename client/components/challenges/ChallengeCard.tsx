@@ -15,10 +15,12 @@ import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { Field, Input } from "@/components/ui/Field";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { ActiveBadge } from "@/components/ui/StatusBadge";
+import { useToast } from "@/components/ui/Toast";
 import {
   AwardIcon,
   ClockIcon,
   CoinsIcon,
+  CopyIcon,
   PencilIcon,
   TargetIcon,
   TrashIcon,
@@ -34,9 +36,19 @@ export function ChallengeCard({
   rewards: Reward[];
 }) {
   const revalidate = useRevalidate();
+  const toast = useToast();
   const prize = challenge.reward_id
     ? rewards.find((r) => r.id === challenge.reward_id)
     : null;
+
+  const copyId = async () => {
+    try {
+      await navigator.clipboard.writeText(challenge.id);
+      toast.success("Challenge ID copied.");
+    } catch {
+      toast.error("Couldn't copy challenge ID.");
+    }
+  };
 
   return (
     <Card className="flex flex-col p-5">
@@ -81,6 +93,14 @@ export function ChallengeCard({
       <div className="mt-5 flex items-center gap-1 border-t border-line pt-4">
         <AssignSegmentButton challenge={challenge} />
         <div className="ml-auto flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`Copy ID for ${challenge.name}`}
+            onClick={copyId}
+          >
+            <CopyIcon />
+          </Button>
           <FormDialog
             trigger={
               <Button
