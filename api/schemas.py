@@ -170,6 +170,30 @@ class ChallengeAssignmentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ChallengeProgressOut(BaseModel):
+    """Challenge info + one member's progress on it, combined."""
+
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    target_value: int
+    reward_points: int
+    reward_id: Optional[UUID] = None
+    is_active: bool
+    starts_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+
+    is_assigned: bool
+    assignment_id: Optional[UUID] = None
+    current_value: int = 0
+    progress_percent: int = 0
+    remaining: int
+    is_expired: bool
+    effective_status: Optional[ChallengeStatus] = None
+    assigned_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+
 class ProgressRequest(BaseModel):
     amount: int = Field(gt=0, default=1)
     description: Optional[str] = None

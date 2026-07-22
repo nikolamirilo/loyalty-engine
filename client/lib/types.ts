@@ -96,6 +96,27 @@ export interface ChallengeAssignment {
   challenge: Challenge;
 }
 
+export interface ChallengeProgress {
+  id: UUID;
+  name: string;
+  description: string | null;
+  target_value: number;
+  reward_points: number;
+  reward_id: UUID | null;
+  is_active: boolean;
+  starts_at: string | null;
+  expires_at: string | null;
+  is_assigned: boolean;
+  assignment_id: UUID | null;
+  current_value: number;
+  progress_percent: number;
+  remaining: number;
+  is_expired: boolean;
+  effective_status: ChallengeStatus | null;
+  assigned_at: string | null;
+  completed_at: string | null;
+}
+
 export interface SegmentAssignResult {
   challenge_id: UUID;
   segment: string;

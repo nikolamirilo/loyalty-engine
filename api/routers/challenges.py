@@ -5,6 +5,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
@@ -17,13 +18,14 @@ from models import (
     Redemption,
     RedemptionSource,
     Reward,
-    Tier,
     TransactionType,
 )
+from routers.tiers import apply_tier
 from schemas import (
     ChallengeAssignmentOut,
     ChallengeCreate,
     ChallengeOut,
+    ChallengeProgressOut,
     ChallengeUpdate,
     ProgressRequest,
     SegmentAssignRequest,
@@ -72,16 +74,6 @@ def _get_assignment_or_404(db: Session, member_id: UUID, challenge_id: UUID, loc
     return assignment
 
 
-def _apply_tier(db: Session, member: Member) -> None:
-    tier = (
-        db.query(Tier)
-        .filter(Tier.min_points <= member.total_points)
-        .order_by(Tier.min_points.desc())
-        .first()
-    )
-    member.tier_id = tier.id if tier else None
-
-
 def _complete(db: Session, assignment: ChallengeAssignment) -> None:
     """Mark an assignment completed and grant its challenge's rewards.
 
@@ -92,7 +84,13 @@ def _complete(db: Session, assignment: ChallengeAssignment) -> None:
     commits.
     """
     challenge = assignment.challenge
-    member = assignment.member
+    # Lock the member row: this branch mutates total_points, and the
+    # assignment's own row lock (see callers) doesn't cover the related
+    # member row. Without this, a concurrent points earn/burn/adjust/redeem
+    # (or another challenge completing for the same member) can race and
+    # silently lose one of the two updates.
+    member = db.query(Member).filter(Member.id == assignment.member_id).with_for_update().first()
+    assert member is not None, "assignment.member_id must reference an existing member"
 
     assignment.status = ChallengeStatus.completed
     assignment.completed_at = _now()
@@ -109,13 +107,12 @@ def _complete(db: Session, assignment: ChallengeAssignment) -> None:
             )
         )
         member.total_points += challenge.reward_points
-        _apply_tier(db, member)
+        apply_tier(db, member)
 
     # Prize reward - mirror assign_prize in routers/redemptions.py.
     if challenge.reward_id is not None:
         reward = db.query(Reward).filter(Reward.id == challenge.reward_id).with_for_update().first()
-        available = reward and reward.is_active and not (reward.stock is not None and reward.stock <= 0)
-        if available:
+        if reward is not None and reward.is_active and not (reward.stock is not None and reward.stock <= 0):
             if reward.stock is not None:
                 reward.stock -= 1
             db.add(
@@ -145,7 +142,7 @@ def create_challenge(body: ChallengeCreate, db: Session = Depends(get_db)):
 def list_challenges(active_only: bool = False, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     q = db.query(Challenge)
     if active_only:
-        q = q.filter(Challenge.is_active == True)
+        q = q.filter(Challenge.is_active)
     return q.order_by(Challenge.created_at.desc()).offset(skip).limit(limit).all()
 
 
@@ -199,7 +196,13 @@ def assign_challenge(member_id: UUID, challenge_id: UUID, db: Session = Depends(
 
     assignment = ChallengeAssignment(member_id=member_id, challenge_id=challenge_id)
     db.add(assignment)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Concurrent request won the race between the existence check above
+        # and this insert; the uq_challenge_member constraint caught it.
+        db.rollback()
+        raise HTTPException(400, "Challenge already assigned to this member")
     db.refresh(assignment)
     return assignment
 
@@ -224,6 +227,57 @@ def list_member_challenges(
     if status is not None:
         q = q.filter(ChallengeAssignment.status == status)
     return q.order_by(ChallengeAssignment.assigned_at.desc()).offset(skip).limit(limit).all()
+
+
+@router.get("/members/{member_id}/challenges/{challenge_id}", response_model=ChallengeProgressOut)
+def get_member_challenge_progress(member_id: UUID, challenge_id: UUID, db: Session = Depends(get_db)):
+    """Challenge info + this member's progress on it, combined into one response.
+
+    Works whether or not the member has been assigned the challenge yet
+    (`is_assigned` covers that). `is_expired`/`effective_status` are recomputed
+    from `expires_at` rather than trusted from the assignment's stored `status`,
+    since that field is only updated lazily by the write paths (assign/progress)
+    and can lag past the actual deadline.
+    """
+    if not db.get(Member, member_id):
+        raise HTTPException(404, "Member not found")
+    challenge = _get_challenge_or_404(db, challenge_id)
+
+    assignment = (
+        db.query(ChallengeAssignment)
+        .filter(
+            ChallengeAssignment.member_id == member_id,
+            ChallengeAssignment.challenge_id == challenge_id,
+        )
+        .first()
+    )
+
+    expired = _is_expired(challenge)
+    current_value = assignment.current_value if assignment else 0
+    effective_status = assignment.status if assignment else None
+    if assignment and expired and effective_status not in (ChallengeStatus.completed, ChallengeStatus.cancelled):
+        effective_status = ChallengeStatus.expired
+
+    return ChallengeProgressOut(
+        id=challenge.id,
+        name=challenge.name,
+        description=challenge.description,
+        target_value=challenge.target_value,
+        reward_points=challenge.reward_points,
+        reward_id=challenge.reward_id,
+        is_active=challenge.is_active,
+        starts_at=challenge.starts_at,
+        expires_at=challenge.expires_at,
+        is_assigned=assignment is not None,
+        assignment_id=assignment.id if assignment else None,
+        current_value=current_value,
+        progress_percent=min(100, round(current_value / challenge.target_value * 100)),
+        remaining=max(challenge.target_value - current_value, 0),
+        is_expired=expired,
+        effective_status=effective_status,
+        assigned_at=assignment.assigned_at if assignment else None,
+        completed_at=assignment.completed_at if assignment else None,
+    )
 
 
 @router.post("/members/{member_id}/challenges/{challenge_id}/progress", response_model=ChallengeAssignmentOut)

@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Member, PointsTransaction, Tier, TransactionType
+from models import Member, PointsTransaction, TransactionType
+from routers.tiers import apply_tier
 from schemas import (
     AdjustPointsRequest,
     BalanceOut,
@@ -28,16 +29,6 @@ def _get_member_or_404(db: Session, member_id: UUID, lock: bool = False) -> Memb
     return member
 
 
-def _apply_tier(db: Session, member: Member) -> None:
-    tier = (
-        db.query(Tier)
-        .filter(Tier.min_points <= member.total_points)
-        .order_by(Tier.min_points.desc())
-        .first()
-    )
-    member.tier_id = tier.id if tier else None
-
-
 def _record(db: Session, member: Member, points: int, tx_type: TransactionType, description: str | None) -> PointsTransaction:
     tx = PointsTransaction(
         member_id=member.id,
@@ -47,7 +38,7 @@ def _record(db: Session, member: Member, points: int, tx_type: TransactionType, 
     )
     db.add(tx)
     member.total_points += points
-    _apply_tier(db, member)
+    apply_tier(db, member)
     return tx
 
 

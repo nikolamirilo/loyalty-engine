@@ -7,19 +7,10 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Member, Tier
+from routers.tiers import apply_tier
 from schemas import MemberCreate, MemberUpdate, MemberOut
 
 router = APIRouter(prefix="/members", tags=["Members"])
-
-
-def _assign_tier(db: Session, member: Member) -> None:
-    tier = (
-        db.query(Tier)
-        .filter(Tier.min_points <= member.total_points)
-        .order_by(Tier.min_points.desc())
-        .first()
-    )
-    member.tier_id = tier.id if tier else None
 
 
 @router.post("", response_model=MemberOut, status_code=201)
@@ -29,7 +20,7 @@ def create_member(body: MemberCreate, db: Session = Depends(get_db)):
     member = Member(**body.model_dump())
     db.add(member)
     db.flush()
-    _assign_tier(db, member)
+    apply_tier(db, member)
     db.commit()
     db.refresh(member)
     return member

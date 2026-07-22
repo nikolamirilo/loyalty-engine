@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
-from models import Member, PointsTransaction, Redemption, RedemptionSource, Reward, Tier, TransactionType
+from models import Member, PointsTransaction, Redemption, RedemptionSource, Reward, TransactionType
+from routers.tiers import apply_tier
 from schemas import RedemptionOut
 
 router = APIRouter(tags=["Redemptions"])
@@ -31,13 +32,7 @@ def redeem_reward(member_id: UUID, reward_id: UUID, db: Session = Depends(get_db
     if reward.stock is not None:
         reward.stock -= 1
 
-    tier = (
-        db.query(Tier)
-        .filter(Tier.min_points <= member.total_points)
-        .order_by(Tier.min_points.desc())
-        .first()
-    )
-    member.tier_id = tier.id if tier else None
+    apply_tier(db, member)
 
     tx = PointsTransaction(
         member_id=member.id,

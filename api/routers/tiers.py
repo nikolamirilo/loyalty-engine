@@ -4,10 +4,21 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Tier
+from models import Member, Tier
 from schemas import TierCreate, TierOut
 
 router = APIRouter(prefix="/tiers", tags=["Tiers"])
+
+
+def apply_tier(db: Session, member: Member) -> None:
+    """Assign `member` to the highest tier whose min_points they meet."""
+    tier = (
+        db.query(Tier)
+        .filter(Tier.min_points <= member.total_points)
+        .order_by(Tier.min_points.desc())
+        .first()
+    )
+    member.tier_id = tier.id if tier else None
 
 
 @router.post("", response_model=TierOut, status_code=201)

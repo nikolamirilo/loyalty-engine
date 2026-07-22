@@ -7,11 +7,12 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 load_dotenv()
 
-API_TOKEN = os.getenv("API_TOKEN")
-if not API_TOKEN:
+_api_token = os.getenv("API_TOKEN")
+if not _api_token:
     raise RuntimeError(
         "API_TOKEN is not set. Add a secret bearer token to the environment or a .env file."
     )
+API_TOKEN: str = _api_token
 
 bearer_scheme = HTTPBearer(auto_error=True)
 

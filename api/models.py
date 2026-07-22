@@ -1,10 +1,10 @@
 import enum
 import uuid
 from datetime import datetime, timezone
+from typing import List, Optional
 
 from sqlalchemy import (
     Boolean,
-    Column,
     DateTime,
     Enum,
     Float,
@@ -16,7 +16,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
 
@@ -43,103 +43,103 @@ class ChallengeStatus(str, enum.Enum):
 class Tier(Base):
     __tablename__ = "tiers"
 
-    id = Column(Uuid, primary_key=True, default=uuid.uuid4)
-    name = Column(String, unique=True, nullable=False)
-    min_points = Column(Integer, nullable=False, default=0)
-    multiplier = Column(Float, nullable=False, default=1.0)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    min_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    multiplier: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
 
-    members = relationship("Member", back_populates="tier", passive_deletes=True)
+    members: Mapped[List["Member"]] = relationship("Member", back_populates="tier", passive_deletes=True)
 
 
 class Member(Base):
     __tablename__ = "members"
 
-    id = Column(Uuid, primary_key=True, default=uuid.uuid4)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    phone = Column(String, nullable=True)
-    segments = Column(JSON, nullable=False, default=list)
-    total_points = Column(Integer, nullable=False, default=0)
-    tier_id = Column(Uuid, ForeignKey("tiers.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    segments: Mapped[List[str]] = mapped_column(JSON, nullable=False, default=list)
+    total_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    tier_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("tiers.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    tier = relationship("Tier", back_populates="members")
-    transactions = relationship("PointsTransaction", back_populates="member", order_by="PointsTransaction.created_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
-    redemptions = relationship("Redemption", back_populates="member", order_by="Redemption.created_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
-    challenge_assignments = relationship("ChallengeAssignment", back_populates="member", order_by="ChallengeAssignment.assigned_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
+    tier: Mapped[Optional["Tier"]] = relationship("Tier", back_populates="members")
+    transactions: Mapped[List["PointsTransaction"]] = relationship("PointsTransaction", back_populates="member", order_by="PointsTransaction.created_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
+    redemptions: Mapped[List["Redemption"]] = relationship("Redemption", back_populates="member", order_by="Redemption.created_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
+    challenge_assignments: Mapped[List["ChallengeAssignment"]] = relationship("ChallengeAssignment", back_populates="member", order_by="ChallengeAssignment.assigned_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
 
 
 class PointsTransaction(Base):
     __tablename__ = "points_transactions"
 
-    id = Column(Uuid, primary_key=True, default=uuid.uuid4)
-    member_id = Column(Uuid, ForeignKey("members.id", ondelete="CASCADE"), nullable=False)
-    points = Column(Integer, nullable=False)
-    type = Column(Enum(TransactionType), nullable=False)
-    description = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    member_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("members.id", ondelete="CASCADE"), nullable=False)
+    points: Mapped[int] = mapped_column(Integer, nullable=False)
+    type: Mapped[TransactionType] = mapped_column(Enum(TransactionType), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    member = relationship("Member", back_populates="transactions")
+    member: Mapped["Member"] = relationship("Member", back_populates="transactions")
 
 
 class Reward(Base):
     __tablename__ = "rewards"
 
-    id = Column(Uuid, primary_key=True, default=uuid.uuid4)
-    name = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    points_cost = Column(Integer, nullable=False)
-    stock = Column(Integer, nullable=True)  # None = unlimited
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    points_cost: Mapped[int] = mapped_column(Integer, nullable=False)
+    stock: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # None = unlimited
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    redemptions = relationship("Redemption", back_populates="reward")
+    redemptions: Mapped[List["Redemption"]] = relationship("Redemption", back_populates="reward")
 
 
 class Redemption(Base):
     __tablename__ = "redemptions"
 
-    id = Column(Uuid, primary_key=True, default=uuid.uuid4)
-    member_id = Column(Uuid, ForeignKey("members.id", ondelete="CASCADE"), nullable=False)
-    reward_id = Column(Uuid, ForeignKey("rewards.id"), nullable=False)
-    points_spent = Column(Integer, nullable=False)
-    source = Column(Enum(RedemptionSource), nullable=False, default=RedemptionSource.redeemed)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    member_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("members.id", ondelete="CASCADE"), nullable=False)
+    reward_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("rewards.id"), nullable=False)
+    points_spent: Mapped[int] = mapped_column(Integer, nullable=False)
+    source: Mapped[RedemptionSource] = mapped_column(Enum(RedemptionSource), nullable=False, default=RedemptionSource.redeemed)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    member = relationship("Member", back_populates="redemptions")
-    reward = relationship("Reward", back_populates="redemptions")
+    member: Mapped["Member"] = relationship("Member", back_populates="redemptions")
+    reward: Mapped["Reward"] = relationship("Reward", back_populates="redemptions")
 
 
 class Challenge(Base):
     __tablename__ = "challenges"
 
-    id = Column(Uuid, primary_key=True, default=uuid.uuid4)
-    name = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    target_value = Column(Integer, nullable=False, default=1)   # progress needed to complete
-    reward_points = Column(Integer, nullable=False, default=0)  # points granted on completion
-    reward_id = Column(Uuid, ForeignKey("rewards.id", ondelete="SET NULL"), nullable=True)  # optional prize
-    is_active = Column(Boolean, default=True)
-    starts_at = Column(DateTime, nullable=True)
-    expires_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    target_value: Mapped[int] = mapped_column(Integer, nullable=False, default=1)   # progress needed to complete
+    reward_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # points granted on completion
+    reward_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("rewards.id", ondelete="SET NULL"), nullable=True)  # optional prize
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    starts_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    reward = relationship("Reward")
-    assignments = relationship("ChallengeAssignment", back_populates="challenge", cascade="all, delete-orphan", passive_deletes=True)
+    reward: Mapped[Optional["Reward"]] = relationship("Reward")
+    assignments: Mapped[List["ChallengeAssignment"]] = relationship("ChallengeAssignment", back_populates="challenge", cascade="all, delete-orphan", passive_deletes=True)
 
 
 class ChallengeAssignment(Base):
     __tablename__ = "challenge_assignments"
 
-    id = Column(Uuid, primary_key=True, default=uuid.uuid4)
-    challenge_id = Column(Uuid, ForeignKey("challenges.id", ondelete="CASCADE"), nullable=False)
-    member_id = Column(Uuid, ForeignKey("members.id", ondelete="CASCADE"), nullable=False, index=True)
-    status = Column(Enum(ChallengeStatus), nullable=False, default=ChallengeStatus.assigned)
-    current_value = Column(Integer, nullable=False, default=0)
-    assigned_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    completed_at = Column(DateTime, nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    challenge_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("challenges.id", ondelete="CASCADE"), nullable=False)
+    member_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("members.id", ondelete="CASCADE"), nullable=False, index=True)
+    status: Mapped[ChallengeStatus] = mapped_column(Enum(ChallengeStatus), nullable=False, default=ChallengeStatus.assigned)
+    current_value: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     __table_args__ = (UniqueConstraint("challenge_id", "member_id", name="uq_challenge_member"),)
 
-    challenge = relationship("Challenge", back_populates="assignments")
-    member = relationship("Member", back_populates="challenge_assignments")
+    challenge: Mapped["Challenge"] = relationship("Challenge", back_populates="assignments")
+    member: Mapped["Member"] = relationship("Member", back_populates="challenge_assignments")

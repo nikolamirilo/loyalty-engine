@@ -9,6 +9,7 @@ import type {
   Balance,
   Challenge,
   ChallengeAssignment,
+  ChallengeProgress,
   ChallengeStatus,
   Member,
   PointsTransaction,
@@ -193,5 +194,8 @@ export const getChallenges = (activeOnly = false) =>
 
 export const getChallenge = (id: string) =>
   apiRequest<Challenge>(`/challenges/${id}`);
+
+export const getChallengeProgress = (memberId: string, challengeId: string) =>
+  apiRequest<ChallengeProgress>(`/members/${memberId}/challenges/${challengeId}`);
 
 export const getTiers = () => apiRequest<Tier[]>("/tiers");

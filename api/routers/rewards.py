@@ -23,7 +23,7 @@ def create_reward(body: RewardCreate, db: Session = Depends(get_db)):
 def list_rewards(active_only: bool = False, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     q = db.query(Reward)
     if active_only:
-        q = q.filter(Reward.is_active == True)
+        q = q.filter(Reward.is_active)
     return q.offset(skip).limit(limit).all()
 
 
