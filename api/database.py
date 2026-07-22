@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.pool import NullPool
 
 load_dotenv()
 
@@ -16,25 +17,27 @@ if not DATABASE_URL:
     )
 
 
-# Connection-pool tuning for a long-lived server (uvicorn):
-#  - A pool of warm connections is reused across requests. Opening a fresh TLS
-#    connection to the remote Supabase pooler costs hundreds of ms, so reusing
-#    connections is the single biggest latency win for the console. (The old
-#    NullPool opened + closed a connection on *every* request.)
-#  - pool_size / max_overflow: keep a handful hot, allow a few extra under burst
-#    (each page issues several parallel API calls).
-#  - pool_pre_ping: cheap liveness check before handing out a pooled connection,
-#    in case the pooler (Supavisor) closed an idle socket between requests.
-#  - pool_recycle: proactively drop connections older than this so we never hand
-#    out one the pooler is about to close.
+# Serverless (Vercel) connection handling:
+#  - NullPool: do NOT keep a client-side pool of warm connections. Every
+#    function instance would otherwise hold its own pool open, and with many
+#    concurrent short-lived invocations those connections pile up against the
+#    Supabase pooler until it rejects new ones with:
+#        FATAL: (EMAXCONNSESSION) max clients reached in session mode
+#    (a persistent pool_size/max_overflow pool is what caused that outage).
+#    With NullPool each request opens exactly one connection and closes it, so
+#    connections are never leaked between invocations.
+#  - pool_pre_ping: sanity-check a connection before using it in case the
+#    pooler (Supavisor) closed an idle socket between requests.
 #  - sslmode=require: Supabase requires TLS; only skip if the URL already sets it.
+#
+# NOTE: point DATABASE_URL at the Supabase *transaction* pooler (port 6543),
+# not the session pooler (port 5432). Transaction mode is the mode designed for
+# many short-lived serverless connections; see api/README.md.
 connect_args = {} if "sslmode=" in DATABASE_URL else {"sslmode": "require"}
 engine = create_engine(
     DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
+    poolclass=NullPool,
     pool_pre_ping=True,
-    pool_recycle=1800,
     connect_args=connect_args,
 )
 

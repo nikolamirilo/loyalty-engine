@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -6,10 +7,19 @@ from auth import verify_token
 from database import Base, engine
 from routers import challenges, members, points, rewards, redemptions, tiers
 
+logger = logging.getLogger("uvicorn.error")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    # Create tables on startup. Don't let a transient DB error here crash the
+    # whole (serverless) app on cold start — the tables are usually already
+    # present, and letting the app boot means /health and later requests can
+    # still succeed once the database is reachable again.
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception:  # noqa: BLE001 - startup must be resilient
+        logger.exception("Skipping create_all: database was unreachable at startup")
     yield
 
 
