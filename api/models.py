@@ -126,6 +126,18 @@ class Challenge(Base):
 
     reward: Mapped[Optional["Reward"]] = relationship("Reward")
     assignments: Mapped[List["ChallengeAssignment"]] = relationship("ChallengeAssignment", back_populates="challenge", cascade="all, delete-orphan", passive_deletes=True)
+    segment_assignments: Mapped[List["ChallengeSegmentAssignment"]] = relationship(
+        "ChallengeSegmentAssignment",
+        back_populates="challenge",
+        order_by="ChallengeSegmentAssignment.assigned_at",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    @property
+    def segments(self) -> List[str]:
+        """Segment names this challenge has been bulk-assigned to (in assign order)."""
+        return [sa.segment for sa in self.segment_assignments]
 
 
 class ChallengeAssignment(Base):
@@ -143,3 +155,25 @@ class ChallengeAssignment(Base):
 
     challenge: Mapped["Challenge"] = relationship("Challenge", back_populates="assignments")
     member: Mapped["Member"] = relationship("Member", back_populates="challenge_assignments")
+
+
+class ChallengeSegmentAssignment(Base):
+    """A segment a challenge has been bulk-assigned to.
+
+    Individual member assignments live in ``challenge_assignments``; this table
+    additionally remembers which *segments* were targeted by
+    ``POST /challenges/{id}/assign-segment`` so the console can show, per
+    challenge, which segments it was pushed to. Segment membership changes over
+    time, so this can't be reliably derived from the members' current segments.
+    """
+
+    __tablename__ = "challenge_segment_assignments"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    challenge_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("challenges.id", ondelete="CASCADE"), nullable=False, index=True)
+    segment: Mapped[str] = mapped_column(String, nullable=False)
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (UniqueConstraint("challenge_id", "segment", name="uq_challenge_segment"),)
+
+    challenge: Mapped["Challenge"] = relationship("Challenge", back_populates="segment_assignments")

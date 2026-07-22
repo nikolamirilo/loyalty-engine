@@ -6,12 +6,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from database import get_db
 from models import (
     Challenge,
     ChallengeAssignment,
+    ChallengeSegmentAssignment,
     ChallengeStatus,
     Member,
     PointsTransaction,
@@ -140,7 +141,9 @@ def create_challenge(body: ChallengeCreate, db: Session = Depends(get_db)):
 
 @router.get("/challenges", response_model=list[ChallengeOut])
 def list_challenges(active_only: bool = False, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    q = db.query(Challenge)
+    # selectinload the segment assignments so serializing ChallengeOut.segments
+    # doesn't lazy-load one query per challenge (N+1).
+    q = db.query(Challenge).options(selectinload(Challenge.segment_assignments))
     if active_only:
         q = q.filter(Challenge.is_active)
     return q.order_by(Challenge.created_at.desc()).offset(skip).limit(limit).all()
@@ -218,10 +221,15 @@ def list_member_challenges(
     if not db.get(Member, member_id):
         raise HTTPException(404, "Member not found")
     # joinedload the challenge so serializing ChallengeAssignmentOut.challenge
-    # doesn't lazy-load one query per row (N+1).
+    # doesn't lazy-load one query per row (N+1); selectinload its segments so
+    # the nested ChallengeOut.segments doesn't add another query per row.
     q = (
         db.query(ChallengeAssignment)
-        .options(joinedload(ChallengeAssignment.challenge))
+        .options(
+            joinedload(ChallengeAssignment.challenge).selectinload(
+                Challenge.segment_assignments
+            )
+        )
         .filter(ChallengeAssignment.member_id == member_id)
     )
     if status is not None:
@@ -355,6 +363,21 @@ def assign_challenge_to_segment(challenge_id: UUID, body: SegmentAssignRequest, 
             continue
         db.add(ChallengeAssignment(member_id=member.id, challenge_id=challenge_id))
         assigned += 1
+
+    # Remember the segment this challenge was pushed to (only when it actually
+    # matched members, so typos / empty segments don't get recorded). Idempotent
+    # thanks to the uq_challenge_segment constraint + this pre-check.
+    if assigned + skipped > 0:
+        already_recorded = (
+            db.query(ChallengeSegmentAssignment.id)
+            .filter(
+                ChallengeSegmentAssignment.challenge_id == challenge_id,
+                ChallengeSegmentAssignment.segment == body.segment,
+            )
+            .first()
+        )
+        if not already_recorded:
+            db.add(ChallengeSegmentAssignment(challenge_id=challenge_id, segment=body.segment))
 
     db.commit()
     return SegmentAssignResult(
