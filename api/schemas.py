@@ -153,6 +153,7 @@ class ChallengeUpdate(BaseModel):
 class ChallengeOut(ChallengeBase):
     id: UUID
     created_at: datetime
+    segments: List[str] = Field(default_factory=list)  # segments this challenge was bulk-assigned to
 
     model_config = {"from_attributes": True}
 

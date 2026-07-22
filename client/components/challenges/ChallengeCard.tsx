@@ -22,6 +22,7 @@ import {
   CoinsIcon,
   CopyIcon,
   PencilIcon,
+  TagIcon,
   TargetIcon,
   TrashIcon,
   UsersIcon,
@@ -87,6 +88,23 @@ export function ChallengeCard({
           <Badge tone="neutral">
             <ClockIcon className="text-[13px]" /> Expires {formatDate(challenge.expires_at)}
           </Badge>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
+          <TagIcon className="text-[13px]" /> Assigned segments
+        </p>
+        {challenge.segments.length ? (
+          <div className="flex flex-wrap gap-1.5">
+            {challenge.segments.map((segment) => (
+              <Badge key={segment} tone="primary">
+                {segment}
+              </Badge>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[13px] text-muted">Not assigned to any segment yet.</p>
         )}
       </div>
 

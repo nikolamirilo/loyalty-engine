@@ -83,6 +83,8 @@ export interface Challenge {
   starts_at: string | null;
   expires_at: string | null;
   created_at: string;
+  /** Segments this challenge has been bulk-assigned to (via "Assign to segment"). */
+  segments: string[];
 }
 
 export interface ChallengeAssignment {
