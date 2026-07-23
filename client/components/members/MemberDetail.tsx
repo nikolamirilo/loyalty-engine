@@ -155,8 +155,8 @@ export function MemberDetail({ id }: { id: string }) {
                     <Badge tone="neutral">No tier</Badge>
                   )}
                   {member.segments.map((s) => (
-                    <Badge key={s} tone="neutral">
-                      <TagIcon className="text-[13px]" /> {s}
+                    <Badge key={s.id} tone="neutral">
+                      <TagIcon className="text-[13px]" /> {s.name}
                     </Badge>
                   ))}
                 </div>
@@ -413,7 +413,11 @@ export function MemberDetail({ id }: { id: string }) {
                 <DetailRow label="Phone" value={member.phone ?? "-"} />
                 <DetailRow
                   label="Segments"
-                  value={member.segments.length ? member.segments.join(", ") : "-"}
+                  value={
+                    member.segments.length
+                      ? member.segments.map((s) => s.name).join(", ")
+                      : "-"
+                  }
                 />
                 <DetailRow label="Member ID" value={member.id} mono />
               </dl>

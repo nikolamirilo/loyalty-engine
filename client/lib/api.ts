@@ -16,6 +16,7 @@ import type {
   Redemption,
   RedemptionSource,
   Reward,
+  Segment,
   Tier,
 } from "./types";
 import { UPSTREAM_BASE_URL as BASE_URL, UPSTREAM_TOKEN as TOKEN } from "@/lib/server/upstream";
@@ -199,3 +200,7 @@ export const getChallengeProgress = (memberId: string, challengeId: string) =>
   apiRequest<ChallengeProgress>(`/members/${memberId}/challenges/${challengeId}`);
 
 export const getTiers = () => apiRequest<Tier[]>("/tiers");
+
+export const getSegments = () => apiRequest<Segment[]>("/segments");
+
+export const getSegment = (id: string) => apiRequest<Segment>(`/segments/${id}`);

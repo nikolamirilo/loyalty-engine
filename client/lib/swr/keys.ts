@@ -39,4 +39,5 @@ export const keys = {
     `/rewards${qs({ limit: 1000, active_only: activeOnly })}`,
   challenges: (activeOnly = false) =>
     `/challenges${qs({ limit: 1000, active_only: activeOnly })}`,
+  segments: () => `/segments`,
 } as const;

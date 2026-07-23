@@ -37,7 +37,7 @@ async function errorMessage(res: Response): Promise<string> {
       }
     }
   } catch {
-    /* non-JSON error body — fall through to the generic message */
+    /* non-JSON error body - fall through to the generic message */
   }
   return `Request failed (${res.status}).`;
 }

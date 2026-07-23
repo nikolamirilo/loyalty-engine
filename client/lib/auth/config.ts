@@ -4,7 +4,7 @@
  * Reads the admin credentials and the session-signing secret from the
  * environment and fails fast if any are missing, mirroring how the API's
  * `API_TOKEN` is handled. Only import this from server-side modules (Server
- * Actions, Server Components, the proxy) — it must never reach the browser.
+ * Actions, Server Components, the proxy) - it must never reach the browser.
  */
 
 function required(name: string): string {

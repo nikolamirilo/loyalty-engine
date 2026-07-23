@@ -34,6 +34,13 @@ export function PointsActions({ memberId }: { memberId: string }) {
             autoFocus
           />
         </Field>
+        <Field label="Reason" htmlFor="earn-desc" hint="optional">
+          <Input
+            id="earn-desc"
+            name="description"
+            placeholder="e.g. Birthday bonus"
+          />
+        </Field>
       </FormDialog>
 
       <FormDialog
@@ -59,6 +66,13 @@ export function PointsActions({ memberId }: { memberId: string }) {
             placeholder="30"
             required
             autoFocus
+          />
+        </Field>
+        <Field label="Reason" htmlFor="burn-desc" hint="optional">
+          <Input
+            id="burn-desc"
+            name="description"
+            placeholder="e.g. Redeemed via support"
           />
         </Field>
       </FormDialog>

@@ -29,9 +29,9 @@ function parseNumber(fd: FormData, key: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function parseSegments(fd: FormData): string[] {
+function parseSegmentIds(fd: FormData): string[] {
   return fd
-    .getAll("segments")
+    .getAll("segment_ids")
     .map((s) => (typeof s === "string" ? s.trim() : ""))
     .filter(Boolean);
 }
@@ -63,7 +63,7 @@ export async function createMember(
         name,
         email,
         phone: optionalStr(fd, "phone"),
-        segments: parseSegments(fd),
+        segment_ids: parseSegmentIds(fd),
       },
     });
     revalidatePath("/");
@@ -91,7 +91,7 @@ export async function updateMember(
         name,
         email,
         phone: optionalStr(fd, "phone"),
-        segments: parseSegments(fd),
+        segment_ids: parseSegmentIds(fd),
       },
     });
     revalidateMember(id);
@@ -125,7 +125,7 @@ export async function earnPoints(
   try {
     await apiRequest(`/members/${id}/points/earn`, {
       method: "POST",
-      json: { points },
+      json: { points, description: optionalStr(fd, "description") },
     });
     revalidateMember(id);
     return { ok: true, message: "Points earned." };
@@ -145,7 +145,7 @@ export async function burnPoints(
   try {
     await apiRequest(`/members/${id}/points/burn`, {
       method: "POST",
-      json: { points },
+      json: { points, description: optionalStr(fd, "description") },
     });
     revalidateMember(id);
     return { ok: true, message: "Points burned." };
@@ -361,12 +361,12 @@ export async function assignChallengeToSegment(
   fd: FormData,
 ): Promise<ActionState> {
   const id = str(fd, "challenge_id");
-  const segment = str(fd, "segment");
-  if (!segment) return { ok: false, error: "Enter a segment name." };
+  const segmentId = str(fd, "segment_id");
+  if (!segmentId) return { ok: false, error: "Choose a segment." };
   try {
     const result = await apiRequest<{ assigned: number; skipped: number }>(
       `/challenges/${id}/assign-segment`,
-      { method: "POST", json: { segment } },
+      { method: "POST", json: { segment_id: segmentId } },
     );
     revalidatePath("/");
     revalidatePath("/challenges");
@@ -481,6 +481,61 @@ export async function deleteTier(id: string): Promise<ActionState> {
     revalidatePath("/");
     revalidatePath("/tiers");
     return { ok: true, message: "Tier deleted." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// ── Segments ─────────────────────────────────────────────────────────────────
+
+function segmentBody(fd: FormData) {
+  return {
+    name: str(fd, "name"),
+    description: optionalStr(fd, "description"),
+    color: optionalStr(fd, "color"),
+  };
+}
+
+export async function createSegment(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const body = segmentBody(fd);
+  if (!body.name) return { ok: false, error: "Name is required." };
+  try {
+    await apiRequest("/segments", { method: "POST", json: body });
+    revalidatePath("/");
+    revalidatePath("/segments");
+    return { ok: true, message: "Segment created." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function updateSegment(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const id = str(fd, "id");
+  const body = segmentBody(fd);
+  if (!id) return { ok: false, error: "Missing segment id." };
+  if (!body.name) return { ok: false, error: "Name is required." };
+  try {
+    await apiRequest(`/segments/${id}`, { method: "PATCH", json: body });
+    revalidatePath("/");
+    revalidatePath("/segments");
+    return { ok: true, message: "Segment updated." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteSegment(id: string): Promise<ActionState> {
+  try {
+    await apiRequest(`/segments/${id}`, { method: "DELETE" });
+    revalidatePath("/");
+    revalidatePath("/segments");
+    return { ok: true, message: "Segment deleted." };
   } catch (e) {
     return fail(e);
   }

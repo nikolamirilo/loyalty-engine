@@ -1,9 +1,14 @@
+"use client";
+
+import { useSegments } from "@/lib/swr/hooks";
 import type { Member } from "@/lib/types";
-import { Field, Input } from "@/components/ui/Field";
-import { TagsInput } from "@/components/ui/TagsInput";
+import { Checkbox, Field, Input } from "@/components/ui/Field";
 
 /** Shared form fields for creating and editing a member. */
 export function MemberFields({ member }: { member?: Member }) {
+  const { data: segments } = useSegments();
+  const selectedIds = member?.segments.map((s) => s.id) ?? [];
+
   return (
     <>
       <Field label="Name" htmlFor="member-name">
@@ -34,17 +39,26 @@ export function MemberFields({ member }: { member?: Member }) {
           defaultValue={member?.phone ?? ""}
         />
       </Field>
-      <Field
-        label="Segments"
-        htmlFor="member-segments"
-        help="Press Enter or comma to add a segment"
-      >
-        <TagsInput
-          id="member-segments"
-          name="segments"
-          defaultValue={member?.segments ?? []}
-          placeholder="vip, newsletter"
-        />
+      <Field label="Segments" hint="optional">
+        {segments === undefined ? (
+          <p className="text-xs text-faint">Loading segments…</p>
+        ) : segments.length === 0 ? (
+          <p className="text-xs text-faint">
+            No segments yet — create one on the Segments page first.
+          </p>
+        ) : (
+          <div className="flex max-h-40 flex-wrap gap-x-4 gap-y-2 overflow-y-auto rounded-lg border border-line p-3">
+            {segments.map((segment) => (
+              <Checkbox
+                key={segment.id}
+                name="segment_ids"
+                value={segment.id}
+                label={segment.name}
+                defaultChecked={selectedIds.includes(segment.id)}
+              />
+            ))}
+          </div>
+        )}
       </Field>
     </>
   );

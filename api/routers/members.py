@@ -3,23 +3,38 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from database import get_db
-from models import Member, Tier
+from models import Member, MemberSegment, Segment, Tier
 from routers.tiers import apply_tier
 from schemas import MemberCreate, MemberUpdate, MemberOut
 
 router = APIRouter(prefix="/members", tags=["Members"])
+
+_SEGMENTS_OPT = selectinload(Member.segment_assignments).selectinload(MemberSegment.segment)
+
+
+def _sync_member_segments(db: Session, member: Member, segment_ids: list[UUID]) -> None:
+    """Replace `member`'s segment memberships with exactly `segment_ids`."""
+    unique_ids = set(segment_ids)
+    if unique_ids:
+        found = {s.id for s in db.query(Segment.id).filter(Segment.id.in_(unique_ids)).all()}
+        missing = unique_ids - found
+        if missing:
+            raise HTTPException(404, f"Segment(s) not found: {', '.join(str(i) for i in missing)}")
+    member.segment_assignments = [MemberSegment(segment_id=sid) for sid in unique_ids]
 
 
 @router.post("", response_model=MemberOut, status_code=201)
 def create_member(body: MemberCreate, db: Session = Depends(get_db)):
     if db.query(Member).filter(Member.email == body.email).first():
         raise HTTPException(400, "Email already registered")
-    member = Member(**body.model_dump())
+    data = body.model_dump(exclude={"segment_ids"})
+    member = Member(**data)
     db.add(member)
     db.flush()
+    _sync_member_segments(db, member, body.segment_ids)
     apply_tier(db, member)
     db.commit()
     db.refresh(member)
@@ -46,6 +61,7 @@ def list_members(
     # Stable ordering is required for correct offset/limit pagination.
     return (
         _members_query(db, q)
+        .options(_SEGMENTS_OPT)
         .order_by(Member.created_at.desc())
         .offset(skip)
         .limit(limit)
@@ -103,7 +119,9 @@ def member_stats(db: Session = Depends(get_db)):
 
 @router.get("/{member_id}", response_model=MemberOut)
 def get_member(member_id: UUID, db: Session = Depends(get_db)):
-    member = db.get(Member, member_id)
+    member = (
+        db.query(Member).options(_SEGMENTS_OPT).filter(Member.id == member_id).first()
+    )
     if not member:
         raise HTTPException(404, "Member not found")
     return member
@@ -114,8 +132,11 @@ def update_member(member_id: UUID, body: MemberUpdate, db: Session = Depends(get
     member = db.get(Member, member_id)
     if not member:
         raise HTTPException(404, "Member not found")
-    for field, value in body.model_dump(exclude_none=True).items():
+    data = body.model_dump(exclude_none=True, exclude={"segment_ids"})
+    for field, value in data.items():
         setattr(member, field, value)
+    if body.segment_ids is not None:
+        _sync_member_segments(db, member, body.segment_ids)
     db.commit()
     db.refresh(member)
     return member

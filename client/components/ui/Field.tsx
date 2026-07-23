@@ -71,7 +71,7 @@ export function Textarea({
   ...props
 }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <textarea className={cn(CONTROL, "min-h-[76px] resize-y", className)} {...props} />
+    <textarea className={cn(CONTROL, "min-h-19 resize-y", className)} {...props} />
   );
 }
 

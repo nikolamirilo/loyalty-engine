@@ -9,7 +9,7 @@ import { verifyToken } from "@/lib/auth/token";
  *   - unauthenticated + not on /login  -> redirect to /login
  *   - authenticated     + on /login    -> redirect to /
  *
- * Only reads the signed session cookie — no shared state, per Next.js proxy
+ * Only reads the signed session cookie - no shared state, per Next.js proxy
  * guidance. Failed-login lockout is handled in the login Server Action.
  */
 export function proxy(request: NextRequest) {

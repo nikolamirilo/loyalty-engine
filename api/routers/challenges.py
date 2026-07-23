@@ -15,10 +15,12 @@ from models import (
     ChallengeSegmentAssignment,
     ChallengeStatus,
     Member,
+    MemberSegment,
     PointsTransaction,
     Redemption,
     RedemptionSource,
     Reward,
+    Segment,
     TransactionType,
 )
 from routers.tiers import apply_tier
@@ -141,9 +143,11 @@ def create_challenge(body: ChallengeCreate, db: Session = Depends(get_db)):
 
 @router.get("/challenges", response_model=list[ChallengeOut])
 def list_challenges(active_only: bool = False, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    # selectinload the segment assignments so serializing ChallengeOut.segments
-    # doesn't lazy-load one query per challenge (N+1).
-    q = db.query(Challenge).options(selectinload(Challenge.segment_assignments))
+    # selectinload the segment assignments (+ each one's segment) so serializing
+    # ChallengeOut.segments doesn't lazy-load one query per challenge (N+1).
+    q = db.query(Challenge).options(
+        selectinload(Challenge.segment_assignments).selectinload(ChallengeSegmentAssignment.segment)
+    )
     if active_only:
         q = q.filter(Challenge.is_active)
     return q.order_by(Challenge.created_at.desc()).offset(skip).limit(limit).all()
@@ -221,14 +225,15 @@ def list_member_challenges(
     if not db.get(Member, member_id):
         raise HTTPException(404, "Member not found")
     # joinedload the challenge so serializing ChallengeAssignmentOut.challenge
-    # doesn't lazy-load one query per row (N+1); selectinload its segments so
-    # the nested ChallengeOut.segments doesn't add another query per row.
+    # doesn't lazy-load one query per row (N+1); selectinload its segments (+
+    # each one's segment) so the nested ChallengeOut.segments doesn't add
+    # another query per row.
     q = (
         db.query(ChallengeAssignment)
         .options(
-            joinedload(ChallengeAssignment.challenge).selectinload(
-                Challenge.segment_assignments
-            )
+            joinedload(ChallengeAssignment.challenge)
+            .selectinload(Challenge.segment_assignments)
+            .selectinload(ChallengeSegmentAssignment.segment)
         )
         .filter(ChallengeAssignment.member_id == member_id)
     )
@@ -343,6 +348,8 @@ def assign_challenge_to_segment(challenge_id: UUID, body: SegmentAssignRequest, 
         raise HTTPException(400, "Challenge is not active")
     if _is_expired(challenge):
         raise HTTPException(400, "Challenge has expired")
+    if not db.get(Segment, body.segment_id):
+        raise HTTPException(404, "Segment not found")
 
     # Members already holding this challenge - skip them.
     already = {
@@ -352,37 +359,41 @@ def assign_challenge_to_segment(challenge_id: UUID, body: SegmentAssignRequest, 
         .all()
     }
 
-    # segments is a JSON (not JSONB) column, so filter candidates in Python.
+    member_ids = {
+        member_id
+        for (member_id,) in db.query(MemberSegment.member_id)
+        .filter(MemberSegment.segment_id == body.segment_id)
+        .all()
+    }
+
     assigned = 0
     skipped = 0
-    for member in db.query(Member).all():
-        if body.segment not in (member.segments or []):
-            continue
-        if member.id in already:
+    for member_id in member_ids:
+        if member_id in already:
             skipped += 1
             continue
-        db.add(ChallengeAssignment(member_id=member.id, challenge_id=challenge_id))
+        db.add(ChallengeAssignment(member_id=member_id, challenge_id=challenge_id))
         assigned += 1
 
     # Remember the segment this challenge was pushed to (only when it actually
-    # matched members, so typos / empty segments don't get recorded). Idempotent
+    # matched members, so an empty segment doesn't get recorded). Idempotent
     # thanks to the uq_challenge_segment constraint + this pre-check.
     if assigned + skipped > 0:
         already_recorded = (
             db.query(ChallengeSegmentAssignment.id)
             .filter(
                 ChallengeSegmentAssignment.challenge_id == challenge_id,
-                ChallengeSegmentAssignment.segment == body.segment,
+                ChallengeSegmentAssignment.segment_id == body.segment_id,
             )
             .first()
         )
         if not already_recorded:
-            db.add(ChallengeSegmentAssignment(challenge_id=challenge_id, segment=body.segment))
+            db.add(ChallengeSegmentAssignment(challenge_id=challenge_id, segment_id=body.segment_id))
 
     db.commit()
     return SegmentAssignResult(
         challenge_id=challenge_id,
-        segment=body.segment,
+        segment_id=body.segment_id,
         assigned=assigned,
         skipped=skipped,
     )

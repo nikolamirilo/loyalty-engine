@@ -57,7 +57,7 @@ export async function login(
   if (usernameOk && passwordOk) {
     clearAttempts(ip);
     await createSession();
-    redirect("/"); // throws NEXT_REDIRECT — keep outside any try/catch
+    redirect("/"); // throws NEXT_REDIRECT - keep outside any try/catch
   }
 
   const result = registerFailure(ip);

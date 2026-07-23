@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI
 
 from auth import verify_token
 from database import Base, engine
-from routers import challenges, members, points, rewards, redemptions, tiers
+from routers import challenges, members, points, rewards, redemptions, segments, tiers
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -34,6 +34,7 @@ app.include_router(rewards.router, dependencies=protected)
 app.include_router(redemptions.router, dependencies=protected)
 app.include_router(challenges.router, dependencies=protected)
 app.include_router(tiers.router, dependencies=protected)
+app.include_router(segments.router, dependencies=protected)
 
 
 @app.get("/health", tags=["Health"])

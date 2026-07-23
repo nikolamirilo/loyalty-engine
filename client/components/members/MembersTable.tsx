@@ -13,7 +13,7 @@ import { ChevronRightIcon } from "@/components/ui/icons";
 /**
  * Presentational members table. The parent (MembersView) supplies the already
  * paginated + searched page of members plus the tiers, and owns the search box
- * and pager — this component just renders rows.
+ * and pager - this component just renders rows.
  */
 export function MembersTable({
   members,
@@ -67,8 +67,8 @@ export function MembersTable({
                 <div className="flex flex-wrap gap-1">
                   {member.segments.length ? (
                     member.segments.slice(0, 3).map((s) => (
-                      <Badge key={s} tone="neutral">
-                        {s}
+                      <Badge key={s.id} tone="neutral">
+                        {s.name}
                       </Badge>
                     ))
                   ) : (

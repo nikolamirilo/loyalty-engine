@@ -25,20 +25,53 @@ class TierOut(TierBase):
     model_config = {"from_attributes": True}
 
 
+# ── Segment ───────────────────────────────────────────────────────────────────
+
+class SegmentBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    color: Optional[str] = None
+
+
+class SegmentCreate(SegmentBase):
+    pass
+
+
+class SegmentUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    color: Optional[str] = None
+
+
+class SegmentSummary(SegmentBase):
+    """Minimal segment shape embedded in a member."""
+
+    id: UUID
+
+    model_config = {"from_attributes": True}
+
+
+class SegmentOut(SegmentSummary):
+    created_at: datetime
+    member_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
 # ── Member ────────────────────────────────────────────────────────────────────
 
 class MemberCreate(BaseModel):
     name: str
     email: EmailStr
     phone: Optional[str] = None
-    segments: List[str] = Field(default_factory=list)
+    segment_ids: List[UUID] = Field(default_factory=list)
 
 
 class MemberUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
-    segments: Optional[List[str]] = None
+    segment_ids: Optional[List[UUID]] = None
 
 
 class MemberOut(BaseModel):
@@ -46,7 +79,7 @@ class MemberOut(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
-    segments: List[str] = Field(default_factory=list)
+    segments: List[SegmentSummary] = Field(default_factory=list)
     pointsBalance: int = Field(validation_alias="total_points", serialization_alias="pointsBalance")
 
     model_config = {"from_attributes": True, "populate_by_name": True}
@@ -56,10 +89,12 @@ class MemberOut(BaseModel):
 
 class EarnPointsRequest(BaseModel):
     points: int = Field(gt=0)
+    description: Optional[str] = None
 
 
 class SpendPointsRequest(BaseModel):
     points: int = Field(gt=0)
+    description: Optional[str] = None
 
 
 class AdjustPointsRequest(BaseModel):
@@ -201,11 +236,11 @@ class ProgressRequest(BaseModel):
 
 
 class SegmentAssignRequest(BaseModel):
-    segment: str
+    segment_id: UUID
 
 
 class SegmentAssignResult(BaseModel):
     challenge_id: UUID
-    segment: str
+    segment_id: UUID
     assigned: int
     skipped: int

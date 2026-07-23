@@ -53,7 +53,7 @@ def earn_points(member_id: UUID, body: EarnPointsRequest, db: Session = Depends(
     member = _get_member_or_404(db, member_id, lock=True)
     multiplier = member.tier.multiplier if member.tier else 1.0
     awarded = round(body.points * multiplier)
-    tx = _record(db, member, awarded, TransactionType.earn, None)
+    tx = _record(db, member, awarded, TransactionType.earn, body.description)
     db.commit()
     db.refresh(tx)
     return tx
@@ -64,7 +64,7 @@ def burn_points(member_id: UUID, body: SpendPointsRequest, db: Session = Depends
     member = _get_member_or_404(db, member_id, lock=True)
     if member.total_points < body.points:
         raise HTTPException(400, f"Insufficient points: has {member.total_points}, needs {body.points}")
-    tx = _record(db, member, -body.points, TransactionType.spend, None)
+    tx = _record(db, member, -body.points, TransactionType.spend, body.description)
     db.commit()
     db.refresh(tx)
     return tx

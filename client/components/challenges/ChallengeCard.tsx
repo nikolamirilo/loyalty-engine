@@ -5,6 +5,7 @@ import {
   deleteChallenge,
   updateChallenge,
 } from "@/lib/actions";
+import { useSegments } from "@/lib/swr/hooks";
 import { useRevalidate } from "@/lib/swr/revalidate";
 import { formatDate, formatNumber } from "@/lib/format";
 import type { Challenge, Reward } from "@/lib/types";
@@ -12,7 +13,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
-import { Field, Input } from "@/components/ui/Field";
+import { Field, Select } from "@/components/ui/Field";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { ActiveBadge } from "@/components/ui/StatusBadge";
 import { useToast } from "@/components/ui/Toast";
@@ -163,6 +164,7 @@ export function ChallengeCard({
 
 function AssignSegmentButton({ challenge }: { challenge: Challenge }) {
   const revalidate = useRevalidate();
+  const { data: segments } = useSegments();
   return (
     <FormDialog
       trigger={
@@ -182,10 +184,19 @@ function AssignSegmentButton({ challenge }: { challenge: Challenge }) {
       <input type="hidden" name="challenge_id" value={challenge.id} />
       <Field
         label="Segment"
-        htmlFor="segment"
-        help="Members whose segments include this value will be assigned."
+        htmlFor="segment_id"
+        help="Every member currently in this segment will be assigned."
       >
-        <Input id="segment" name="segment" placeholder="e.g. vip" required />
+        <Select id="segment_id" name="segment_id" defaultValue="" required>
+          <option value="" disabled>
+            {segments === undefined ? "Loading…" : "Choose a segment"}
+          </option>
+          {segments?.map((segment) => (
+            <option key={segment.id} value={segment.id}>
+              {segment.name}
+            </option>
+          ))}
+        </Select>
       </Field>
     </FormDialog>
   );

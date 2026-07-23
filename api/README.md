@@ -8,10 +8,12 @@ SQLAlchemy. All API routes are protected by a bearer token.
 
 ## Features
 
-- **Members** - full name, email, phone, segments (array of strings) and a points balance.
+- **Members** - full name, email, phone, segment memberships and a points balance.
+- **Segments** - named member cohorts (e.g. "VIP", "Newsletter") with a description; members belong to any number of segments, picked from the segments list.
 - **Points** - earn, burn (spend) and admin adjustments, with a full transaction history.
 - **Rewards** - a catalog of redeemable rewards with optional stock limits.
 - **Redemptions** - members redeem rewards by spending points.
+- **Challenges** - can be bulk-assigned to every member of a segment.
 - **Tiers** - optional point thresholds that apply an earn-rate multiplier.
 - **Bearer token auth** - every API route requires `Authorization: Bearer <token>`.
 
@@ -26,11 +28,14 @@ loyalty-engine/
 ├── schemas.py         # Pydantic request/response schemas
 ├── requirements.txt
 ├── .env.example       # Sample environment config
+├── migrations/        # Hand-written SQL migrations (no Alembic - see below)
 └── routers/
     ├── members.py     # CRUD for members
     ├── points.py      # earn / burn / adjust / transactions / balance
     ├── rewards.py     # CRUD for rewards
     ├── redemptions.py # redeem a reward + history
+    ├── challenges.py  # CRUD for challenges + member/segment assignment
+    ├── segments.py    # CRUD for segments
     └── tiers.py       # CRUD for tiers
 ```
 
@@ -101,17 +106,37 @@ invalid token receive `401`/`403`.
 | `GET` | `/members/{id}/redemptions` | Redemption history |
 | `POST` / `GET` | `/tiers` | Create / list tiers |
 | `GET` / `DELETE` | `/tiers/{id}` | Get / delete a tier |
+| `POST` / `GET` | `/segments` | Create / list segments |
+| `GET` / `PATCH` / `DELETE` | `/segments/{id}` | Get / update / delete a segment |
+| `POST` | `/challenges/{id}/assign-segment` | Assign a challenge to every member of a segment - `{"segment_id": "..."}` |
 
 ### Member object
 
 ```json
 {
-  "id": 1,
+  "id": "b3f1...",
   "name": "Ada Lovelace",
   "email": "ada@example.com",
   "phone": "+155501",
-  "segments": ["vip", "early-adopter"],
+  "segments": [
+    { "id": "a1c2...", "name": "vip", "description": null, "color": null }
+  ],
   "pointsBalance": 70
+}
+```
+
+### Segment object
+
+Members are assigned to segments by id (`MemberCreate`/`MemberUpdate` take `segment_ids: [UUID]`) - pick from the existing list rather than typing free text.
+
+```json
+{
+  "id": "a1c2...",
+  "name": "vip",
+  "description": "Top-spending members",
+  "color": "#f59e0b",
+  "created_at": "2026-01-01T00:00:00Z",
+  "member_count": 12
 }
 ```
 
@@ -120,11 +145,17 @@ invalid token receive `401`/`403`.
 ```bash
 TOKEN=dev-secret-token
 
-# Create a member
+# Create a segment
+curl -X POST http://localhost:8000/segments \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"vip","description":"Top-spending members"}'
+
+# Create a member in that segment (segment_ids from the response above)
 curl -X POST http://localhost:8000/members \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Ada Lovelace","email":"ada@example.com","phone":"+155501","segments":["vip"]}'
+  -d '{"name":"Ada Lovelace","email":"ada@example.com","phone":"+155501","segment_ids":["<segment-id>"]}'
 
 # Earn points
 curl -X POST http://localhost:8000/members/1/points/earn \
@@ -146,6 +177,8 @@ curl http://localhost:8000/members/1 -H "Authorization: Bearer $TOKEN"
 
 - Earning points applies the member's tier multiplier (if any tiers are defined);
   tiers are assigned automatically based on the balance crossing `min_points`.
-- This app uses SQLAlchemy `create_all` rather than migrations. If you change the
-  data model, drop the affected tables in Supabase (or use a migration tool like
-  Alembic) so the new schema is applied.
+- This app uses SQLAlchemy `create_all` for *new* tables, which is fine for
+  greenfield tables but never alters existing ones. Schema changes to existing
+  tables (new/dropped/retyped columns) need a hand-written SQL script run
+  against Supabase first - see `migrations/`. After that, `create_all` picks up
+  any brand-new tables on the next app start.

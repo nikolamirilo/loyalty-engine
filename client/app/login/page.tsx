@@ -8,7 +8,7 @@ import { LoginForm } from "./LoginForm";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Sign in — Loyalty Engine",
+  title: "Sign in - Loyalty Engine",
 };
 
 export default async function LoginPage() {

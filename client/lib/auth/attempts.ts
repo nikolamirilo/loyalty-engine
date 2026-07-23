@@ -5,7 +5,7 @@ import { LOCKOUT_MS, MAX_ATTEMPTS } from "./config";
  *
  * The store hangs off `globalThis` so the counter survives dev hot-reloads.
  * It's intentionally process-local (not shared with the proxy, per Next.js
- * guidance) and resets on restart — acceptable for a single-instance console.
+ * guidance) and resets on restart - acceptable for a single-instance console.
  */
 
 type Attempt = { fails: number; lockedUntil: number };
@@ -47,7 +47,7 @@ export function registerFailure(ip: string): FailureResult {
 
   const attempt = store.get(ip) ?? { fails: 0, lockedUntil: 0 };
 
-  // A previous lockout has elapsed — start counting fresh.
+  // A previous lockout has elapsed - start counting fresh.
   if (attempt.lockedUntil && attempt.lockedUntil <= now) {
     attempt.fails = 0;
     attempt.lockedUntil = 0;

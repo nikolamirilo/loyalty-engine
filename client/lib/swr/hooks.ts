@@ -10,12 +10,13 @@ import type {
   PointsTransaction,
   Redemption,
   Reward,
+  Segment,
   Tier,
 } from "@/lib/types";
 import { keys } from "./keys";
 
 /**
- * Typed read hooks — the single entry point for component data access. The
+ * Typed read hooks - the single entry point for component data access. The
  * global fetcher is configured once in app/(protected)/providers.tsx
  * (SWRConfig), so hooks only supply the key. Passing `undefined`/empty id
  * yields a `null` key, which tells SWR not to fetch yet.
@@ -61,4 +62,8 @@ export function useRedemptions(id: string | undefined) {
 
 export function useMemberChallenges(id: string | undefined) {
   return useSWR<ChallengeAssignment[]>(id ? keys.memberChallenges(id) : null);
+}
+
+export function useSegments() {
+  return useSWR<Segment[]>(keys.segments());
 }

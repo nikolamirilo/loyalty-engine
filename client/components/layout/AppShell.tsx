@@ -15,6 +15,7 @@ import {
   LayersIcon,
   LogOutIcon,
   MenuIcon,
+  TagIcon,
   TargetIcon,
   UsersIcon,
   XIcon,
@@ -23,6 +24,7 @@ import {
 const NAV = [
   { href: "/", label: "Dashboard", Icon: DashboardIcon, exact: true, preload: preloadRoute.dashboard },
   { href: "/members", label: "Members", Icon: UsersIcon, preload: preloadRoute.members },
+  { href: "/segments", label: "Segments", Icon: TagIcon, preload: preloadRoute.segments },
   { href: "/rewards", label: "Rewards", Icon: GiftIcon, preload: preloadRoute.rewards },
   { href: "/challenges", label: "Challenges", Icon: TargetIcon, preload: preloadRoute.challenges },
   { href: "/tiers", label: "Tiers", Icon: LayersIcon, preload: preloadRoute.tiers },

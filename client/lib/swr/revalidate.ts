@@ -20,5 +20,6 @@ export function useRevalidate() {
     rewards: () => byPrefix("/rewards"),
     challenges: () => byPrefix("/challenges"),
     tiers: () => byPrefix("/tiers"),
+    segments: () => byPrefix("/segments"),
   };
 }

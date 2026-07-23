@@ -6,7 +6,7 @@ import { AUTH_SECRET } from "./config";
  * Stateless session tokens of the form `<expiresAtMs>.<hmac>`.
  *
  * The HMAC (keyed by AUTH_SECRET) makes the token unforgeable, and the embedded
- * expiry makes it self-invalidating — no server-side session store required.
+ * expiry makes it self-invalidating - no server-side session store required.
  *
  * This module is deliberately free of `next/headers` so it can run inside the
  * proxy (which reads cookies straight off the request) as well as in Server

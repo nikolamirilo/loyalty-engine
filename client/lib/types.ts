@@ -18,12 +18,25 @@ export interface Tier {
   multiplier: number;
 }
 
+/** Minimal segment shape embedded in a member (see `Segment` for the full object). */
+export interface SegmentSummary {
+  id: UUID;
+  name: string;
+  description: string | null;
+  color: string | null;
+}
+
+export interface Segment extends SegmentSummary {
+  created_at: string;
+  member_count: number;
+}
+
 export interface Member {
   id: UUID;
   name: string;
   email: string;
   phone: string | null;
-  segments: string[];
+  segments: SegmentSummary[];
   /** Serialized by the API as `pointsBalance` (aliased from `total_points`). */
   pointsBalance: number;
 }
@@ -56,6 +69,7 @@ export interface Reward {
   name: string;
   description: string | null;
   points_cost: number;
+  segments: string[];
   /** `null` means unlimited stock. */
   stock: number | null;
   is_active: boolean;
@@ -121,7 +135,7 @@ export interface ChallengeProgress {
 
 export interface SegmentAssignResult {
   challenge_id: UUID;
-  segment: string;
+  segment_id: UUID;
   assigned: number;
   skipped: number;
 }

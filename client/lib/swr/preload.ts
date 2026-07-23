@@ -26,6 +26,7 @@ export const preloadRoute = {
     warm(keys.members({ skip: 0, limit: 10 }));
     warm(keys.membersCount());
     warm(keys.tiers());
+    warm(keys.segments());
   },
   rewards: () => {
     warm(keys.rewards());
@@ -37,6 +38,9 @@ export const preloadRoute = {
   tiers: () => {
     warm(keys.tiers());
     warm(keys.memberStats());
+  },
+  segments: () => {
+    warm(keys.segments());
   },
 };
 
