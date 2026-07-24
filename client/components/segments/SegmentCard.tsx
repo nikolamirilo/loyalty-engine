@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { PencilIcon, TagIcon, TrashIcon } from "@/components/ui/icons";
+import { AssignMembersDialog } from "./AssignMembersDialog";
 import { SegmentFields } from "./SegmentFields";
 
 export function SegmentCard({ segment }: { segment: Segment }) {
@@ -74,6 +75,9 @@ export function SegmentCard({ segment }: { segment: Segment }) {
       {segment.description && (
         <p className="mt-3 line-clamp-2 text-[13px] text-muted">{segment.description}</p>
       )}
+      <div className="mt-4 flex items-center border-t border-line pt-4">
+        <AssignMembersDialog segment={segment} />
+      </div>
     </Card>
   );
 }

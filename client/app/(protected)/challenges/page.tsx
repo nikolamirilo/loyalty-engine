@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { CardGridSkeleton } from "@/components/ui/Skeletons";
 import { ChallengeCard } from "@/components/challenges/ChallengeCard";
 import { ChallengeFields } from "@/components/challenges/ChallengeFields";
-import { PlusIcon, TargetIcon } from "@/components/ui/icons";
+import { AlertTriangleIcon, PlusIcon, TargetIcon } from "@/components/ui/icons";
 
 function NewChallengeButton({ rewards }: { rewards: Reward[] }) {
   const revalidate = useRevalidate();
@@ -35,7 +35,7 @@ function NewChallengeButton({ rewards }: { rewards: Reward[] }) {
 }
 
 export default function ChallengesPage() {
-  const { data: challenges } = useChallenges();
+  const { data: challenges, error, mutate } = useChallenges();
   const { data: rewards } = useRewards();
   const activeCount = challenges?.filter((c) => c.is_active).length ?? 0;
 
@@ -51,7 +51,20 @@ export default function ChallengesPage() {
         actions={<NewChallengeButton rewards={rewards ?? []} />}
       />
 
-      {challenges === undefined ? (
+      {error && challenges === undefined ? (
+        <Card>
+          <EmptyState
+            icon={<AlertTriangleIcon />}
+            title="Couldn't load challenges"
+            description={error.message}
+            action={
+              <Button variant="secondary" onClick={() => mutate()}>
+                Retry
+              </Button>
+            }
+          />
+        </Card>
+      ) : challenges === undefined ? (
         <div className="grid gap-4 md:grid-cols-2">
           <CardGridSkeleton count={4} />
         </div>

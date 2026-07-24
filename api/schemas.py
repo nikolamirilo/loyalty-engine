@@ -244,3 +244,13 @@ class SegmentAssignResult(BaseModel):
     segment_id: UUID
     assigned: int
     skipped: int
+
+
+class MemberAssignRequest(BaseModel):
+    member_ids: List[UUID]
+
+
+class MemberAssignResult(BaseModel):
+    segment_id: UUID
+    assigned: int
+    skipped: int

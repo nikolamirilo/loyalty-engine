@@ -66,8 +66,8 @@ CREATE INDEX IF NOT EXISTS ix_member_segments_segment_id ON member_segments (seg
 INSERT INTO member_segments (member_id, segment_id)
 SELECT DISTINCT m.id, s.id
 FROM members m
-CROSS JOIN LATERAL json_array_elements_text(m.segments) AS name
-JOIN segments s ON s.name = name
+CROSS JOIN LATERAL json_array_elements_text(m.segments) AS seg_name
+JOIN segments s ON s.name = seg_name
 WHERE m.segments IS NOT NULL AND json_typeof(m.segments) = 'array'
 ON CONFLICT (member_id, segment_id) DO NOTHING;
 

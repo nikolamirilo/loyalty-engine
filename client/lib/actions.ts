@@ -540,3 +540,25 @@ export async function deleteSegment(id: string): Promise<ActionState> {
     return fail(e);
   }
 }
+
+export async function assignSegmentToMembers(
+  segmentId: string,
+  memberIds: string[],
+): Promise<ActionState> {
+  if (memberIds.length === 0) return { ok: false, error: "Select at least one member." };
+  try {
+    const result = await apiRequest<{ assigned: number; skipped: number }>(
+      `/segments/${segmentId}/assign`,
+      { method: "POST", json: { member_ids: memberIds } },
+    );
+    revalidatePath("/");
+    revalidatePath("/segments");
+    revalidatePath("/members");
+    return {
+      ok: true,
+      message: `Assigned to ${result.assigned} member(s); ${result.skipped} already had it.`,
+    };
+  } catch (e) {
+    return fail(e);
+  }
+}

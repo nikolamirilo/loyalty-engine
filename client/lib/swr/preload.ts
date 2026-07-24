@@ -6,7 +6,11 @@ import { fetcher } from "./fetcher";
 import { keys } from "./keys";
 
 const warm = (key: string) => {
-  void preload(key, fetcher);
+  // Best-effort: this only warms the cache ahead of navigation, and the page's
+  // own useSWR hook re-fetches (and surfaces real errors) on mount regardless.
+  // Swallow failures here so a transient/aborted prefetch never becomes an
+  // unhandled rejection.
+  void preload(key, fetcher).catch(() => {});
 };
 
 /**
@@ -41,6 +45,9 @@ export const preloadRoute = {
   },
   segments: () => {
     warm(keys.segments());
+    // Also warm the full member list the "Assign members" dialog reads, so
+    // it's usually already cached by the time a segment card's dialog opens.
+    warm(keys.members());
   },
 };
 

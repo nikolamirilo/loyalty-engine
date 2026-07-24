@@ -4,8 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
 
 from database import get_db
-from models import Segment
-from schemas import SegmentCreate, SegmentOut, SegmentUpdate
+from models import Member, MemberSegment, Segment
+from schemas import (
+    MemberAssignRequest,
+    MemberAssignResult,
+    SegmentCreate,
+    SegmentOut,
+    SegmentUpdate,
+)
 
 router = APIRouter(prefix="/segments", tags=["Segments"])
 
@@ -64,3 +70,34 @@ def delete_segment(segment_id: UUID, db: Session = Depends(get_db)):
     segment = _get_segment_or_404(db, segment_id)
     db.delete(segment)
     db.commit()
+
+
+@router.post("/{segment_id}/assign", response_model=MemberAssignResult)
+def assign_segment_to_members(segment_id: UUID, body: MemberAssignRequest, db: Session = Depends(get_db)):
+    _get_segment_or_404(db, segment_id)
+
+    member_ids = set(body.member_ids)
+    if member_ids:
+        found = {m for (m,) in db.query(Member.id).filter(Member.id.in_(member_ids)).all()}
+        missing = member_ids - found
+        if missing:
+            raise HTTPException(404, f"Member(s) not found: {', '.join(str(i) for i in missing)}")
+
+    already = {
+        member_id
+        for (member_id,) in db.query(MemberSegment.member_id)
+        .filter(MemberSegment.segment_id == segment_id, MemberSegment.member_id.in_(member_ids))
+        .all()
+    }
+
+    assigned = 0
+    skipped = 0
+    for member_id in member_ids:
+        if member_id in already:
+            skipped += 1
+            continue
+        db.add(MemberSegment(member_id=member_id, segment_id=segment_id))
+        assigned += 1
+
+    db.commit()
+    return MemberAssignResult(segment_id=segment_id, assigned=assigned, skipped=skipped)

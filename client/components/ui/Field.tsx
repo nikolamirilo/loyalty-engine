@@ -5,6 +5,7 @@ import type {
 } from "react";
 
 import { cn } from "@/lib/format";
+import { ChevronDownIcon } from "./icons";
 
 const CONTROL =
   "w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-foreground " +
@@ -79,7 +80,15 @@ export function Select({
   className,
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={cn(CONTROL, "cursor-pointer", className)} {...props} />;
+  return (
+    <div className="relative">
+      <select
+        className={cn(CONTROL, "cursor-pointer appearance-none pr-9", className)}
+        {...props}
+      />
+      <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-faint" />
+    </div>
+  );
 }
 
 export function Checkbox({
