@@ -19,6 +19,12 @@ class TierCreate(TierBase):
     pass
 
 
+class TierUpdate(BaseModel):
+    name: Optional[str] = None
+    min_points: Optional[int] = Field(default=None, ge=0)
+    multiplier: Optional[float] = Field(default=None, gt=0)
+
+
 class TierOut(TierBase):
     id: UUID
 

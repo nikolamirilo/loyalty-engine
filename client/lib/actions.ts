@@ -475,6 +475,33 @@ export async function createTier(
   }
 }
 
+export async function updateTier(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const id = str(fd, "id");
+  const name = str(fd, "name");
+  const minPoints = parseNumber(fd, "min_points");
+  const multiplier = parseNumber(fd, "multiplier");
+  if (!id) return { ok: false, error: "Missing tier id." };
+  if (!name) return { ok: false, error: "Name is required." };
+  if (minPoints === null || minPoints < 0)
+    return { ok: false, error: "Min points must be 0 or greater." };
+  if (!multiplier || multiplier <= 0)
+    return { ok: false, error: "Multiplier must be greater than 0." };
+  try {
+    await apiRequest(`/tiers/${id}`, {
+      method: "PATCH",
+      json: { name, min_points: minPoints, multiplier },
+    });
+    revalidatePath("/");
+    revalidatePath("/tiers");
+    return { ok: true, message: "Tier updated." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 export async function deleteTier(id: string): Promise<ActionState> {
   try {
     await apiRequest(`/tiers/${id}`, { method: "DELETE" });

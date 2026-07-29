@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Member, Tier
-from schemas import TierCreate, TierOut
+from schemas import TierCreate, TierOut, TierUpdate
 
 router = APIRouter(prefix="/tiers", tags=["Tiers"])
 
@@ -42,6 +42,22 @@ def get_tier(tier_id: UUID, db: Session = Depends(get_db)):
     tier = db.get(Tier, tier_id)
     if not tier:
         raise HTTPException(404, "Tier not found")
+    return tier
+
+
+@router.patch("/{tier_id}", response_model=TierOut)
+def update_tier(tier_id: UUID, body: TierUpdate, db: Session = Depends(get_db)):
+    tier = db.get(Tier, tier_id)
+    if not tier:
+        raise HTTPException(404, "Tier not found")
+    data = body.model_dump(exclude_none=True)
+    if "name" in data and data["name"] != tier.name:
+        if db.query(Tier).filter(Tier.name == data["name"]).first():
+            raise HTTPException(400, "Tier name already exists")
+    for field, value in data.items():
+        setattr(tier, field, value)
+    db.commit()
+    db.refresh(tier)
     return tier
 
 

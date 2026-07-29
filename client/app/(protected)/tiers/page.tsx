@@ -1,19 +1,17 @@
 "use client";
 
-import { createTier, deleteTier } from "@/lib/actions";
+import { createTier } from "@/lib/actions";
 import { useMemberStats, useTiers } from "@/lib/swr/hooks";
 import { useRevalidate } from "@/lib/swr/revalidate";
-import { formatNumber } from "@/lib/format";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Field, Input } from "@/components/ui/Field";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CardGridSkeleton } from "@/components/ui/Skeletons";
-import { LayersIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
+import { LayersIcon, PlusIcon } from "@/components/ui/icons";
+import { TierCard } from "@/components/tiers/TierCard";
+import { TierFields } from "@/components/tiers/TierFields";
 
 /** A tier change alters the member distribution too, so refresh both. */
 function useTierRevalidate() {
@@ -39,33 +37,7 @@ function NewTierButton() {
       submitLabel="Create tier"
       onSuccess={onChange}
     >
-      <Field label="Name" htmlFor="tier-name">
-        <Input id="tier-name" name="name" placeholder="e.g. Gold" required />
-      </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min points" htmlFor="tier-min" hint="≥ 0">
-          <Input
-            id="tier-min"
-            name="min_points"
-            type="number"
-            min={0}
-            step={1}
-            defaultValue={0}
-            required
-          />
-        </Field>
-        <Field label="Multiplier" htmlFor="tier-mult" hint="> 0">
-          <Input
-            id="tier-mult"
-            name="multiplier"
-            type="number"
-            min={0}
-            step="0.1"
-            defaultValue={1}
-            required
-          />
-        </Field>
-      </div>
+      <TierFields />
     </FormDialog>
   );
 }
@@ -100,62 +72,14 @@ export default function TiersPage() {
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {tiers.map((tier) => {
-            const count = countFor(tier.id);
-            return (
-              <Card key={tier.id} className="flex flex-col p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-yellow/15 text-xl text-accent-yellow">
-                      <LayersIcon />
-                    </span>
-                    <div>
-                      <p className="font-semibold text-foreground">{tier.name}</p>
-                      <p className="text-xs text-faint">
-                        {stats ? `${count} member${count === 1 ? "" : "s"}` : "…"}
-                      </p>
-                    </div>
-                  </div>
-                  <ConfirmButton
-                    trigger={
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Delete ${tier.name}`}
-                        className="text-danger"
-                      >
-                        <TrashIcon />
-                      </Button>
-                    }
-                    title={`Delete "${tier.name}"?`}
-                    description="Members in this tier will fall back to the next-lowest tier. This cannot be undone."
-                    confirmLabel="Delete tier"
-                    action={deleteTier.bind(null, tier.id)}
-                    successMessage="Tier deleted."
-                    onSuccess={onChange}
-                  />
-                </div>
-                <div className="mt-5 grid grid-cols-2 gap-3">
-                  <div className="rounded-lg bg-surface-2 px-3 py-2.5">
-                    <p className="text-xs text-muted">From</p>
-                    <p className="mt-0.5 font-semibold text-foreground tabular-nums">
-                      {formatNumber(tier.min_points)}
-                      <span className="ml-1 text-xs font-normal text-faint">pts</span>
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-surface-2 px-3 py-2.5">
-                    <p className="text-xs text-muted">Earn rate</p>
-                    <p className="mt-0.5 font-semibold text-foreground tabular-nums">
-                      {tier.multiplier}×
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <Badge tone="primary">×{tier.multiplier} points on earn</Badge>
-                </div>
-              </Card>
-            );
-          })}
+          {tiers.map((tier) => (
+            <TierCard
+              key={tier.id}
+              tier={tier}
+              count={stats ? countFor(tier.id) : undefined}
+              onChange={onChange}
+            />
+          ))}
         </div>
       )}
     </div>
