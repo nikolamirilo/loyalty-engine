@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from database import get_db
 from models import Member, MemberSegment, Segment
+from routers.challenges import sync_challenge_assignments_for_segments
 from schemas import (
     MemberAssignRequest,
     MemberAssignResult,
@@ -98,6 +99,11 @@ def assign_segment_to_members(segment_id: UUID, body: MemberAssignRequest, db: S
             continue
         db.add(MemberSegment(member_id=member_id, segment_id=segment_id))
         assigned += 1
+
+    # Covers both newly-assigned members and pre-existing ones, so it also
+    # backfills any challenge that was bulk-assigned to this segment before
+    # this endpoint carried the sync.
+    sync_challenge_assignments_for_segments(db, {segment_id}, member_ids)
 
     db.commit()
     return MemberAssignResult(segment_id=segment_id, assigned=assigned, skipped=skipped)

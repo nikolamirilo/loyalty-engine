@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from database import get_db
 from models import Member, MemberSegment, Segment, Tier
+from routers.challenges import sync_challenge_assignments_for_segments
 from routers.tiers import apply_tier
 from schemas import MemberCreate, MemberUpdate, MemberOut
 
@@ -35,6 +36,7 @@ def create_member(body: MemberCreate, db: Session = Depends(get_db)):
     db.add(member)
     db.flush()
     _sync_member_segments(db, member, body.segment_ids)
+    sync_challenge_assignments_for_segments(db, set(body.segment_ids), {member.id})
     apply_tier(db, member)
     db.commit()
     db.refresh(member)
@@ -137,6 +139,7 @@ def update_member(member_id: UUID, body: MemberUpdate, db: Session = Depends(get
         setattr(member, field, value)
     if body.segment_ids is not None:
         _sync_member_segments(db, member, body.segment_ids)
+        sync_challenge_assignments_for_segments(db, set(body.segment_ids), {member_id})
     db.commit()
     db.refresh(member)
     return member

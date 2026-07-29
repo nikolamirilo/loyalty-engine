@@ -54,6 +54,57 @@ def _is_expired(challenge: Challenge) -> bool:
     return expires_at < _now()
 
 
+def sync_challenge_assignments_for_segments(
+    db: Session, segment_ids: set[UUID], member_ids: set[UUID]
+) -> None:
+    """Assign any active, non-expired challenges bulk-assigned to `segment_ids`
+    to each member in `member_ids`, skipping (member, challenge) pairs that
+    already exist.
+
+    Call this whenever a member's segment membership changes (joins a segment
+    via creation, update, or bulk segment assignment) - `assign_challenge_to_segment`
+    only pushes a challenge to a segment's *current* members, so members who
+    join the segment afterwards would otherwise never get it.
+    """
+    if not segment_ids or not member_ids:
+        return
+
+    challenge_ids = {
+        challenge_id
+        for (challenge_id,) in db.query(ChallengeSegmentAssignment.challenge_id)
+        .filter(ChallengeSegmentAssignment.segment_id.in_(segment_ids))
+        .distinct()
+        .all()
+    }
+    if not challenge_ids:
+        return
+
+    eligible_challenge_ids = {
+        c.id
+        for c in db.query(Challenge).filter(Challenge.id.in_(challenge_ids)).all()
+        if c.is_active and not _is_expired(c)
+    }
+    if not eligible_challenge_ids:
+        return
+
+    existing = {
+        (member_id, challenge_id)
+        for member_id, challenge_id in db.query(
+            ChallengeAssignment.member_id, ChallengeAssignment.challenge_id
+        )
+        .filter(
+            ChallengeAssignment.member_id.in_(member_ids),
+            ChallengeAssignment.challenge_id.in_(eligible_challenge_ids),
+        )
+        .all()
+    }
+
+    for member_id in member_ids:
+        for challenge_id in eligible_challenge_ids:
+            if (member_id, challenge_id) not in existing:
+                db.add(ChallengeAssignment(member_id=member_id, challenge_id=challenge_id))
+
+
 def _get_challenge_or_404(db: Session, challenge_id: UUID, lock: bool = False) -> Challenge:
     q = db.query(Challenge).filter(Challenge.id == challenge_id)
     if lock:
