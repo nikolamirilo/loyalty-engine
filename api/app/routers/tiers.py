@@ -3,22 +3,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from database import get_db
-from models import Member, Tier
-from schemas import TierCreate, TierOut, TierUpdate
+from app.core.database import get_db
+from app.models import Tier
+from app.schemas import TierCreate, TierOut, TierUpdate
+from app.services.tiers import get_tier_or_404
 
 router = APIRouter(prefix="/tiers", tags=["Tiers"])
-
-
-def apply_tier(db: Session, member: Member) -> None:
-    """Assign `member` to the highest tier whose min_points they meet."""
-    tier = (
-        db.query(Tier)
-        .filter(Tier.min_points <= member.total_points)
-        .order_by(Tier.min_points.desc())
-        .first()
-    )
-    member.tier_id = tier.id if tier else None
 
 
 @router.post("", response_model=TierOut, status_code=201)
@@ -39,17 +29,12 @@ def list_tiers(db: Session = Depends(get_db)):
 
 @router.get("/{tier_id}", response_model=TierOut)
 def get_tier(tier_id: UUID, db: Session = Depends(get_db)):
-    tier = db.get(Tier, tier_id)
-    if not tier:
-        raise HTTPException(404, "Tier not found")
-    return tier
+    return get_tier_or_404(db, tier_id)
 
 
 @router.patch("/{tier_id}", response_model=TierOut)
 def update_tier(tier_id: UUID, body: TierUpdate, db: Session = Depends(get_db)):
-    tier = db.get(Tier, tier_id)
-    if not tier:
-        raise HTTPException(404, "Tier not found")
+    tier = get_tier_or_404(db, tier_id)
     data = body.model_dump(exclude_none=True)
     if "name" in data and data["name"] != tier.name:
         if db.query(Tier).filter(Tier.name == data["name"]).first():
@@ -63,8 +48,6 @@ def update_tier(tier_id: UUID, body: TierUpdate, db: Session = Depends(get_db)):
 
 @router.delete("/{tier_id}", status_code=204)
 def delete_tier(tier_id: UUID, db: Session = Depends(get_db)):
-    tier = db.get(Tier, tier_id)
-    if not tier:
-        raise HTTPException(404, "Tier not found")
+    tier = get_tier_or_404(db, tier_id)
     db.delete(tier)
     db.commit()

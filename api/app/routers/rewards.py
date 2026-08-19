@@ -3,11 +3,18 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from database import get_db
-from models import Reward
-from schemas import RewardCreate, RewardOut, RewardUpdate
+from app.core.database import get_db
+from app.models import Reward
+from app.schemas import RewardCreate, RewardOut, RewardUpdate
 
 router = APIRouter(prefix="/rewards", tags=["Rewards"])
+
+
+def _get_reward_or_404(db: Session, reward_id: UUID) -> Reward:
+    reward = db.get(Reward, reward_id)
+    if not reward:
+        raise HTTPException(404, "Reward not found")
+    return reward
 
 
 @router.post("", response_model=RewardOut, status_code=201)
@@ -29,17 +36,12 @@ def list_rewards(active_only: bool = False, skip: int = 0, limit: int = 100, db:
 
 @router.get("/{reward_id}", response_model=RewardOut)
 def get_reward(reward_id: UUID, db: Session = Depends(get_db)):
-    reward = db.get(Reward, reward_id)
-    if not reward:
-        raise HTTPException(404, "Reward not found")
-    return reward
+    return _get_reward_or_404(db, reward_id)
 
 
 @router.patch("/{reward_id}", response_model=RewardOut)
 def update_reward(reward_id: UUID, body: RewardUpdate, db: Session = Depends(get_db)):
-    reward = db.get(Reward, reward_id)
-    if not reward:
-        raise HTTPException(404, "Reward not found")
+    reward = _get_reward_or_404(db, reward_id)
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(reward, field, value)
     db.commit()
@@ -49,8 +51,6 @@ def update_reward(reward_id: UUID, body: RewardUpdate, db: Session = Depends(get
 
 @router.delete("/{reward_id}", status_code=204)
 def delete_reward(reward_id: UUID, db: Session = Depends(get_db)):
-    reward = db.get(Reward, reward_id)
-    if not reward:
-        raise HTTPException(404, "Reward not found")
+    reward = _get_reward_or_404(db, reward_id)
     db.delete(reward)
     db.commit()

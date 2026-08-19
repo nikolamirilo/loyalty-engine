@@ -10,18 +10,18 @@ pooler until it rejected new connections with:
 The engine must use SQLAlchemy's NullPool so each request opens exactly one
 connection and closes it, never leaking connections between invocations.
 
-Run: ./venv/bin/python test_database_pool.py
+Run: ./venv/bin/python -m tests.test_database_pool
 """
 
 import os
 
-# database.py requires these at import time; set harmless placeholders.
+# app.core.config requires these at import time; set harmless placeholders.
 os.environ.setdefault("DATABASE_URL", "postgresql://u:p@h:6543/postgres")
 os.environ.setdefault("API_TOKEN", "test-token")
 
 from sqlalchemy.pool import NullPool
 
-from database import engine
+from app.core.database import engine
 
 
 def main() -> None:

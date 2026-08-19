@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from models import MemberAttribute, MemberAttributeType
+from app.models import MemberAttribute, MemberAttributeType
 
 # The pragmatic intersection of what HubSpot, Braze and Bloomreach offer.
 ATTRIBUTE_TYPES = tuple(t.value for t in MemberAttributeType)

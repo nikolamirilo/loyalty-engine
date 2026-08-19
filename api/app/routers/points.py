@@ -1,20 +1,18 @@
-from __future__ import annotations
-
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from database import get_db
-from models import Member, PointsTransaction, TransactionType
-from routers.tiers import apply_tier
-from schemas import (
+from app.core.database import get_db
+from app.models import Member, PointsTransaction, TransactionType
+from app.schemas import (
     AdjustPointsRequest,
     BalanceOut,
     EarnPointsRequest,
     PointsTransactionOut,
     SpendPointsRequest,
 )
+from app.services.points import record_transaction
 
 router = APIRouter(prefix="/members/{member_id}", tags=["Points"])
 
@@ -29,19 +27,6 @@ def _get_member_or_404(db: Session, member_id: UUID, lock: bool = False) -> Memb
     return member
 
 
-def _record(db: Session, member: Member, points: int, tx_type: TransactionType, description: str | None) -> PointsTransaction:
-    tx = PointsTransaction(
-        member_id=member.id,
-        points=points,
-        type=tx_type,
-        description=description,
-    )
-    db.add(tx)
-    member.total_points += points
-    apply_tier(db, member)
-    return tx
-
-
 @router.get("/balance", response_model=BalanceOut)
 def get_balance(member_id: UUID, db: Session = Depends(get_db)):
     member = _get_member_or_404(db, member_id)
@@ -53,7 +38,7 @@ def earn_points(member_id: UUID, body: EarnPointsRequest, db: Session = Depends(
     member = _get_member_or_404(db, member_id, lock=True)
     multiplier = member.tier.multiplier if member.tier else 1.0
     awarded = round(body.points * multiplier)
-    tx = _record(db, member, awarded, TransactionType.earn, body.description)
+    tx = record_transaction(db, member, awarded, TransactionType.earn, body.description)
     db.commit()
     db.refresh(tx)
     return tx
@@ -64,7 +49,7 @@ def burn_points(member_id: UUID, body: SpendPointsRequest, db: Session = Depends
     member = _get_member_or_404(db, member_id, lock=True)
     if member.total_points < body.points:
         raise HTTPException(400, f"Insufficient points: has {member.total_points}, needs {body.points}")
-    tx = _record(db, member, -body.points, TransactionType.spend, body.description)
+    tx = record_transaction(db, member, -body.points, TransactionType.spend, body.description)
     db.commit()
     db.refresh(tx)
     return tx
@@ -75,7 +60,7 @@ def adjust_points(member_id: UUID, body: AdjustPointsRequest, db: Session = Depe
     member = _get_member_or_404(db, member_id, lock=True)
     if member.total_points + body.points < 0:
         raise HTTPException(400, "Adjustment would result in negative balance")
-    tx = _record(db, member, body.points, TransactionType.adjust, body.description)
+    tx = record_transaction(db, member, body.points, TransactionType.adjust, body.description)
     db.commit()
     db.refresh(tx)
     return tx

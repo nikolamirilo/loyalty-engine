@@ -1,21 +1,16 @@
-import os
+"""SQLAlchemy engine, session factory, declarative base, and the request-scoped
+session dependency.
+"""
 
-from dotenv import load_dotenv
+from collections.abc import Generator
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 
-load_dotenv()
+from app.core.config import settings
 
-# Supabase / Postgres connection string, e.g.
-#   postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError(
-        "DATABASE_URL is not set. Add your Supabase Postgres connection string "
-        "to the environment or a .env file (see .env.example)."
-    )
-
+DATABASE_URL = settings.database_url
 
 # Serverless (Vercel) connection handling:
 #  - NullPool: do NOT keep a client-side pool of warm connections. Every
@@ -48,7 +43,8 @@ class Base(DeclarativeBase):
     pass
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
+    """FastAPI dependency yielding a session that is always closed."""
     db = SessionLocal()
     try:
         yield db

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
-import { deleteMember, updateMember } from "@/lib/actions";
 import {
   useChallenges,
   useMember,
@@ -15,51 +14,26 @@ import {
 } from "@/lib/swr/hooks";
 import { useRevalidate } from "@/lib/swr/revalidate";
 import { ApiError } from "@/lib/swr/error";
-import {
-  cn,
-  formatDateTime,
-  formatNumber,
-  memberTier,
-  signedNumber,
-} from "@/lib/format";
-import { Avatar } from "@/components/ui/Avatar";
+import { cn, formatDateTime, formatNumber, memberTier, signedNumber } from "@/lib/format";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
-import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { FormDialog } from "@/components/ui/FormDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatTile } from "@/components/ui/StatTile";
 import { TransactionBadge } from "@/components/ui/StatusBadge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
-import { useToast } from "@/components/ui/Toast";
-import { CustomAttributeList } from "@/components/members/CustomAttributeList";
 import { MemberChallengeItem } from "@/components/members/MemberChallengeItem";
-import { MemberFields } from "@/components/members/MemberFields";
-import { PointsActions } from "@/components/members/PointsActions";
+import { MemberProfileCard } from "@/components/members/MemberProfileCard";
 import {
   ChevronRightIcon,
   CoinsIcon,
-  CopyIcon,
   GiftIcon,
-  LayersIcon,
-  PencilIcon,
-  TagIcon,
   TargetIcon,
-  TrashIcon,
   UsersIcon,
 } from "@/components/ui/icons";
 
-// Interaction-only dialogs — lazy-loaded so their chunk (and the reward/
-// challenge lists inside) isn't in the initial member-detail bundle.
-const GrantRewardDialog = dynamic(
-  () =>
-    import("@/components/members/GrantRewardDialog").then(
-      (m) => m.GrantRewardDialog,
-    ),
-  { ssr: false },
-);
+// Interaction-only dialog — lazy-loaded so its chunk (and the challenge list
+// inside) isn't in the initial member-detail bundle.
 const AssignChallengeDialog = dynamic(
   () =>
     import("@/components/members/AssignChallengeDialog").then(
@@ -77,16 +51,6 @@ const AssignChallengeDialog = dynamic(
 export function MemberDetail({ id }: { id: string }) {
   const revalidate = useRevalidate();
   const onMutated = () => revalidate.members();
-  const toast = useToast();
-
-  const copyId = async (memberId: string) => {
-    try {
-      await navigator.clipboard.writeText(memberId);
-      toast.success("Member ID copied.");
-    } catch {
-      toast.error("Couldn't copy member ID.");
-    }
-  };
 
   const { data: member, error: memberError } = useMember(id);
   const { data: tiers } = useTiers();
@@ -134,91 +98,14 @@ export function MemberDetail({ id }: { id: string }) {
         All members
       </Link>
 
-      {/* 1 — Profile + actions */}
-      {member ? (
-        <Card className="p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex items-start gap-4">
-              <Avatar name={member.name} className="h-14 w-14 text-base" />
-              <div className="min-w-0">
-                <h1 className="text-xl font-semibold tracking-tight text-foreground">
-                  {member.name}
-                </h1>
-                <p className="text-sm text-muted">{member.email}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  {tiers === undefined ? (
-                    <Skeleton className="h-5 w-20 rounded-full" />
-                  ) : tier ? (
-                    <Badge tone="primary">
-                      <LayersIcon className="text-[13px]" /> {tier.name}
-                    </Badge>
-                  ) : (
-                    <Badge tone="neutral">No tier</Badge>
-                  )}
-                  {member.segments.map((s) => (
-                    <Badge key={s.id} tone="neutral">
-                      <TagIcon className="text-[13px]" /> {s.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="flex shrink-0 gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => copyId(member.id)}
-              >
-                <CopyIcon /> Copy ID
-              </Button>
-              <FormDialog
-                trigger={
-                  <Button variant="secondary" size="sm">
-                    <PencilIcon /> Edit
-                  </Button>
-                }
-                title="Edit member"
-                action={updateMember}
-                submitLabel="Save changes"
-                onSuccess={onMutated}
-              >
-                <input type="hidden" name="id" value={member.id} />
-                <MemberFields member={member} />
-              </FormDialog>
-              <ConfirmButton
-                trigger={
-                  <Button variant="secondary" size="sm" className="text-danger">
-                    <TrashIcon /> Delete
-                  </Button>
-                }
-                title={`Delete ${member.name}?`}
-                description="This permanently deletes the member and all of their points, redemptions, and challenge history."
-                confirmLabel="Delete member"
-                action={deleteMember.bind(null, member.id)}
-                redirectTo="/members"
-                successMessage="Member deleted."
-                onSuccess={onMutated}
-              />
-            </div>
-          </div>
-
-          {/* Renders nothing when no custom attributes are configured. */}
-          <CustomAttributeList member={member} />
-
-          <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-5">
-            <span className="mr-1 text-sm font-medium text-muted">Points:</span>
-            <PointsActions memberId={member.id} />
-            <div className="mx-1 h-5 w-px bg-line" />
-            <GrantRewardDialog
-              memberId={member.id}
-              rewards={rewards ?? []}
-              balance={member.pointsBalance}
-            />
-          </div>
-        </Card>
-      ) : (
-        <ProfileSkeleton />
-      )}
+      {/* 1 — Profile: standard + custom fields, editable in place */}
+      <MemberProfileCard
+        member={member}
+        tier={tier}
+        tiersLoading={tiers === undefined}
+        rewards={rewards ?? []}
+        onMutated={onMutated}
+      />
 
       {/* 2 — Stat tiles */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -407,58 +294,8 @@ export function MemberDetail({ id }: { id: string }) {
               )}
             </div>
           </Card>
-
-          {/* 6 — Details */}
-          <Card>
-            <CardHeader title="Details" />
-            {member ? (
-              <dl className="divide-y divide-line text-sm">
-                <DetailRow label="Email" value={member.email} />
-                <DetailRow label="Phone" value={member.phone ?? "-"} />
-                <DetailRow
-                  label="Segments"
-                  value={
-                    member.segments.length
-                      ? member.segments.map((s) => s.name).join(", ")
-                      : "-"
-                  }
-                />
-                <DetailRow label="Member ID" value={member.id} mono />
-              </dl>
-            ) : (
-              <div className="space-y-3 p-5">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-2/3" />
-              </div>
-            )}
-          </Card>
         </div>
       </div>
-    </div>
-  );
-}
-
-function DetailRow({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-4 px-5 py-3">
-      <dt className="shrink-0 text-muted">{label}</dt>
-      <dd
-        className={cn(
-          "min-w-0 truncate text-right text-foreground",
-          mono && "font-mono text-xs text-muted",
-        )}
-      >
-        {value}
-      </dd>
     </div>
   );
 }
@@ -483,33 +320,6 @@ function MessageState({
         <EmptyState icon={<UsersIcon />} title={title} description={description} />
       </Card>
     </div>
-  );
-}
-
-function ProfileSkeleton() {
-  return (
-    <Card className="p-6">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-4">
-          <Skeleton className="h-14 w-14 rounded-full" />
-          <div className="space-y-2.5">
-            <Skeleton className="h-6 w-44" />
-            <Skeleton className="h-4 w-56" />
-            <Skeleton className="h-5 w-24 rounded-full" />
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-8 w-24 rounded-lg" />
-          <Skeleton className="h-8 w-20 rounded-lg" />
-          <Skeleton className="h-8 w-20 rounded-lg" />
-        </div>
-      </div>
-      <div className="mt-5 flex flex-wrap gap-2 border-t border-line pt-5">
-        <Skeleton className="h-8 w-20 rounded-lg" />
-        <Skeleton className="h-8 w-20 rounded-lg" />
-        <Skeleton className="h-8 w-32 rounded-lg" />
-      </div>
-    </Card>
   );
 }
 

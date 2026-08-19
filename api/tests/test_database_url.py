@@ -4,18 +4,25 @@ Reproduces the Vercel FUNCTION_INVOCATION_FAILED crash: when the connection
 string uses a bare `postgresql://` (or `+psycopg2`) scheme, SQLAlchemy defaults
 to the psycopg2 driver, which is no longer installed -> ModuleNotFoundError.
 
-Run: ./venv/bin/python test_database_url.py
+Run: ./venv/bin/python -m tests.test_database_url
+
+NOTE (pre-existing, found while restructuring the API into app/): this test
+imports `_normalize_database_url` from the database module, but no such
+function exists in app/core/database.py (nor did it in the old flat
+database.py). This test was already failing with an ImportError before this
+restructure; the import path below was only updated to match the new package
+layout, the missing function was not added.
 """
 
 import os
 
-# database.py requires these at import time; set harmless placeholders.
+# app.core.config requires these at import time; set harmless placeholders.
 os.environ.setdefault("DATABASE_URL", "postgresql://u:p@h:6543/postgres")
 os.environ.setdefault("API_TOKEN", "test-token")
 
 from sqlalchemy import create_engine
 
-from database import _normalize_database_url
+from app.core.database import _normalize_database_url
 
 CASES = {
     # Supabase hands out this bare scheme by default.

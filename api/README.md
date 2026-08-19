@@ -19,24 +19,54 @@ SQLAlchemy. All API routes are protected by a bearer token.
 
 ## Project layout
 
+Layered by responsibility: **routers** only translate HTTP <-> ORM (validate the
+request via `schemas`, call a `service` for anything beyond a plain CRUD
+read/write, shape the response); **services** hold the business logic that's
+shared across routers or too involved for a route function; **models** are the
+SQLAlchemy ORM classes; **schemas** are the Pydantic request/response shapes. A
+router never imports another router - shared logic (e.g. `apply_tier`, called
+from points/redemptions/challenges/members) lives in `app/services` instead.
+
 ```
 loyalty-engine/
-├── main.py            # App entry point, DB init, auth wiring
-├── auth.py            # Bearer token dependency
-├── database.py        # SQLAlchemy engine (Supabase/Postgres) + session + Base
-├── models.py          # SQLAlchemy ORM models
-├── schemas.py         # Pydantic request/response schemas
+├── main.py                       # Thin compat shim: `from app.main import app`
 ├── requirements.txt
-├── .env.example       # Sample environment config
-├── migrations/        # Hand-written SQL migrations (no Alembic - see below)
-└── routers/
-    ├── members.py     # CRUD for members
-    ├── points.py      # earn / burn / adjust / transactions / balance
-    ├── rewards.py     # CRUD for rewards
-    ├── redemptions.py # redeem a reward + history
-    ├── challenges.py  # CRUD for challenges + member/segment assignment
-    ├── segments.py    # CRUD for segments
-    └── tiers.py       # CRUD for tiers
+├── .env.example                  # Sample environment config
+├── supabase/migrations/          # Hand-written SQL migrations (no Alembic - see below)
+├── tests/                        # Standalone regression scripts (see Testing below)
+└── app/
+    ├── main.py                   # App entry point: creates the FastAPI app, wires routers
+    ├── core/
+    │   ├── config.py             # Settings - the only place env vars are read
+    │   ├── database.py           # SQLAlchemy engine + session + Base + get_db
+    │   └── security.py           # Bearer token dependency
+    ├── models/                   # SQLAlchemy ORM models, one module per resource
+    │   ├── enums.py
+    │   ├── member.py             # Member, MemberSegment
+    │   ├── member_attribute.py   # Admin-defined custom fields on members
+    │   ├── segment.py
+    │   ├── tier.py
+    │   ├── points.py             # PointsTransaction
+    │   ├── reward.py
+    │   ├── redemption.py
+    │   └── challenge.py          # Challenge, ChallengeAssignment, ChallengeSegmentAssignment
+    ├── schemas/                  # Pydantic request/response schemas, mirrored 1:1 with models/
+    ├── services/                 # Business logic shared across routers
+    │   ├── tiers.py              # apply_tier - re-applied on every balance change
+    │   ├── points.py             # record_transaction - the one path that mutates total_points
+    │   ├── rewards.py            # availability checks + prize granting
+    │   ├── segments.py
+    │   ├── challenges.py         # expiry, segment fan-out, completion rewards
+    │   └── custom_attributes.py  # type validation for member custom attributes
+    └── routers/
+        ├── members.py            # CRUD for members
+        ├── member_attributes.py  # CRUD for member custom-attribute definitions
+        ├── points.py             # earn / burn / adjust / transactions / balance
+        ├── rewards.py            # CRUD for rewards
+        ├── redemptions.py        # redeem a reward + history
+        ├── challenges.py         # CRUD for challenges + member/segment assignment
+        ├── segments.py           # CRUD for segments
+        └── tiers.py              # CRUD for tiers
 ```
 
 ## Setup
@@ -68,8 +98,12 @@ SSL is enabled automatically. Tables are created on first run - no SQL migration
 ## Running
 
 ```bash
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
+
+(`uvicorn main:app --reload` also still works - `api/main.py` is a thin
+`from app.main import app` shim kept for any external process that points at
+it directly.)
 
 - API base URL: `http://localhost:8000`
 - Interactive docs (Swagger UI): `http://localhost:8000/docs` - click **Authorize**
@@ -180,5 +214,20 @@ curl http://localhost:8000/members/1 -H "Authorization: Bearer $TOKEN"
 - This app uses SQLAlchemy `create_all` for *new* tables, which is fine for
   greenfield tables but never alters existing ones. Schema changes to existing
   tables (new/dropped/retyped columns) need a hand-written SQL script run
-  against Supabase first - see `migrations/`. After that, `create_all` picks up
-  any brand-new tables on the next app start.
+  against Supabase first - see `supabase/migrations/`. After that, `create_all`
+  picks up any brand-new tables on the next app start.
+
+## Testing
+
+There's no pytest suite yet - `tests/` holds two standalone regression scripts
+for past production incidents, each runnable directly:
+
+```bash
+./venv/bin/python -m tests.test_database_pool   # NullPool must be in use
+./venv/bin/python -m tests.test_database_url    # DATABASE_URL driver normalization
+```
+
+`test_database_url.py` currently fails with an `ImportError` - it imports a
+`_normalize_database_url` helper that doesn't exist in `app/core/database.py`.
+This predates the `app/` restructure (the old flat `database.py` didn't have it
+either); it's left failing rather than silently patched over.

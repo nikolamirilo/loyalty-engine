@@ -6,10 +6,10 @@ from sqlalchemy import String, cast, literal
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 
-from custom_attributes import coerce, normalize_options, slugify
-from database import get_db
-from models import Member, MemberAttribute
-from schemas import MemberAttributeCreate, MemberAttributeOut, MemberAttributeUpdate
+from app.core.database import get_db
+from app.models import Member, MemberAttribute
+from app.schemas import MemberAttributeCreate, MemberAttributeOut, MemberAttributeUpdate
+from app.services.custom_attributes import coerce, normalize_options, slugify
 
 # Mounted at its own prefix rather than under /members/... so the path can never
 # be parsed as a member id (see the ordering comment in routers/members.py).

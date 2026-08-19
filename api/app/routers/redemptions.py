@@ -4,10 +4,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
-from database import get_db
-from models import Member, PointsTransaction, Redemption, RedemptionSource, Reward, TransactionType
-from routers.tiers import apply_tier
-from schemas import RedemptionOut
+from app.core.database import get_db
+from app.models import Member, Redemption, RedemptionSource, TransactionType
+from app.schemas import RedemptionOut
+from app.services.points import record_transaction
+from app.services.rewards import assert_available, consume_stock, get_reward_or_404, grant_prize
 
 router = APIRouter(tags=["Redemptions"])
 
@@ -18,29 +19,16 @@ def redeem_reward(member_id: UUID, reward_id: UUID, db: Session = Depends(get_db
     if not member:
         raise HTTPException(404, "Member not found")
 
-    reward = db.query(Reward).filter(Reward.id == reward_id).with_for_update().first()
-    if not reward:
-        raise HTTPException(404, "Reward not found")
-    if not reward.is_active:
-        raise HTTPException(400, "Reward is not active")
-    if reward.stock is not None and reward.stock <= 0:
-        raise HTTPException(400, "Reward is out of stock")
+    reward = get_reward_or_404(db, reward_id, lock=True)
+    assert_available(reward)
     if member.total_points < reward.points_cost:
         raise HTTPException(400, f"Insufficient points: has {member.total_points}, needs {reward.points_cost}")
 
-    member.total_points -= reward.points_cost
-    if reward.stock is not None:
-        reward.stock -= 1
-
-    apply_tier(db, member)
-
-    tx = PointsTransaction(
-        member_id=member.id,
-        points=-reward.points_cost,
-        type=TransactionType.spend,
-        description=f"Redeemed: {reward.name}",
+    consume_stock(reward)
+    # Debits total_points and re-applies the tier in one place.
+    record_transaction(
+        db, member, -reward.points_cost, TransactionType.spend, f"Redeemed: {reward.name}"
     )
-    db.add(tx)
 
     redemption = Redemption(
         member_id=member.id,
@@ -60,24 +48,10 @@ def assign_prize(member_id: UUID, reward_id: UUID, db: Session = Depends(get_db)
     if not member:
         raise HTTPException(404, "Member not found")
 
-    reward = db.query(Reward).filter(Reward.id == reward_id).with_for_update().first()
-    if not reward:
-        raise HTTPException(404, "Reward not found")
-    if not reward.is_active:
-        raise HTTPException(400, "Reward is not active")
-    if reward.stock is not None and reward.stock <= 0:
-        raise HTTPException(400, "Reward is out of stock")
+    reward = get_reward_or_404(db, reward_id, lock=True)
+    assert_available(reward)
 
-    if reward.stock is not None:
-        reward.stock -= 1
-
-    redemption = Redemption(
-        member_id=member.id,
-        reward_id=reward.id,
-        points_spent=0,
-        source=RedemptionSource.assigned,
-    )
-    db.add(redemption)
+    redemption = grant_prize(db, member.id, reward)
     db.commit()
     db.refresh(redemption)
     return redemption

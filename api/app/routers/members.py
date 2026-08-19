@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
-from custom_attributes import defaults_for_new_member, validate_payload
-from database import get_db
-from models import Member, MemberSegment, Segment, Tier
-from routers.challenges import sync_challenge_assignments_for_segments
-from routers.tiers import apply_tier
-from schemas import MemberCreate, MemberUpdate, MemberOut
+from app.core.database import get_db
+from app.models import Member, MemberSegment, Segment, Tier
+from app.schemas import MemberCreate, MemberOut, MemberUpdate
+from app.services.challenges import sync_assignments_for_segments
+from app.services.custom_attributes import defaults_for_new_member, validate_payload
+from app.services.tiers import apply_tier
 
 router = APIRouter(prefix="/members", tags=["Members"])
 
@@ -44,7 +44,7 @@ def create_member(body: MemberCreate, db: Session = Depends(get_db)):
     db.add(member)
     db.flush()
     _sync_member_segments(db, member, body.segment_ids)
-    sync_challenge_assignments_for_segments(db, set(body.segment_ids), {member.id})
+    sync_assignments_for_segments(db, set(body.segment_ids), {member.id})
     apply_tier(db, member)
     db.commit()
     db.refresh(member)
@@ -154,7 +154,7 @@ def update_member(member_id: UUID, body: MemberUpdate, db: Session = Depends(get
         member.custom_attributes = {**(member.custom_attributes or {}), **patch}
     if body.segment_ids is not None:
         _sync_member_segments(db, member, body.segment_ids)
-        sync_challenge_assignments_for_segments(db, set(body.segment_ids), {member_id})
+        sync_assignments_for_segments(db, set(body.segment_ids), {member_id})
     db.commit()
     db.refresh(member)
     return member

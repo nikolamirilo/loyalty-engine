@@ -15,7 +15,14 @@ import { Checkbox, Field, Input, Select } from "@/components/ui/Field";
  * opposite things (clear the value vs. leave it alone). Without it, saving
  * before the definitions load would wipe every custom value on the member.
  */
-export function CustomAttributeFields({ member }: { member?: Member }) {
+export function CustomAttributeFields({
+  member,
+  itemClassName,
+}: {
+  member?: Member;
+  /** Applied to each field's wrapper — lets the caller control per-item width/layout. */
+  itemClassName?: string;
+}) {
   const { data: attributes } = useMemberAttributes();
 
   if (!attributes || attributes.length === 0) return null;
@@ -28,6 +35,7 @@ export function CustomAttributeFields({ member }: { member?: Member }) {
           label={attribute.label}
           htmlFor={`custom-${attribute.key}`}
           hint="optional"
+          className={itemClassName}
         >
           <input type="hidden" name="custom_keys" value={attribute.key} />
           <AttributeInput attribute={attribute} member={member} />

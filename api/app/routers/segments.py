@@ -3,25 +3,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
 
-from database import get_db
-from models import Member, MemberSegment, Segment
-from routers.challenges import sync_challenge_assignments_for_segments
-from schemas import (
+from app.core.database import get_db
+from app.models import Member, MemberSegment, Segment
+from app.schemas import (
     MemberAssignRequest,
     MemberAssignResult,
     SegmentCreate,
     SegmentOut,
     SegmentUpdate,
 )
+from app.services.challenges import sync_assignments_for_segments
+from app.services.segments import get_segment_or_404
 
 router = APIRouter(prefix="/segments", tags=["Segments"])
-
-
-def _get_segment_or_404(db: Session, segment_id: UUID) -> Segment:
-    segment = db.get(Segment, segment_id)
-    if not segment:
-        raise HTTPException(404, "Segment not found")
-    return segment
 
 
 @router.post("", response_model=SegmentOut, status_code=201)
@@ -49,12 +43,12 @@ def list_segments(db: Session = Depends(get_db)):
 
 @router.get("/{segment_id}", response_model=SegmentOut)
 def get_segment(segment_id: UUID, db: Session = Depends(get_db)):
-    return _get_segment_or_404(db, segment_id)
+    return get_segment_or_404(db, segment_id)
 
 
 @router.patch("/{segment_id}", response_model=SegmentOut)
 def update_segment(segment_id: UUID, body: SegmentUpdate, db: Session = Depends(get_db)):
-    segment = _get_segment_or_404(db, segment_id)
+    segment = get_segment_or_404(db, segment_id)
     data = body.model_dump(exclude_none=True)
     if "name" in data and data["name"] != segment.name:
         if db.query(Segment).filter(Segment.name == data["name"]).first():
@@ -68,14 +62,14 @@ def update_segment(segment_id: UUID, body: SegmentUpdate, db: Session = Depends(
 
 @router.delete("/{segment_id}", status_code=204)
 def delete_segment(segment_id: UUID, db: Session = Depends(get_db)):
-    segment = _get_segment_or_404(db, segment_id)
+    segment = get_segment_or_404(db, segment_id)
     db.delete(segment)
     db.commit()
 
 
 @router.post("/{segment_id}/assign", response_model=MemberAssignResult)
 def assign_segment_to_members(segment_id: UUID, body: MemberAssignRequest, db: Session = Depends(get_db)):
-    _get_segment_or_404(db, segment_id)
+    get_segment_or_404(db, segment_id)
 
     member_ids = set(body.member_ids)
     if member_ids:
@@ -103,7 +97,7 @@ def assign_segment_to_members(segment_id: UUID, body: MemberAssignRequest, db: S
     # Covers both newly-assigned members and pre-existing ones, so it also
     # backfills any challenge that was bulk-assigned to this segment before
     # this endpoint carried the sync.
-    sync_challenge_assignments_for_segments(db, {segment_id}, member_ids)
+    sync_assignments_for_segments(db, {segment_id}, member_ids)
 
     db.commit()
     return MemberAssignResult(segment_id=segment_id, assigned=assigned, skipped=skipped)

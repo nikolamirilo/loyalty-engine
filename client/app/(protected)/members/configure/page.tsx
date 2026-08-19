@@ -126,7 +126,6 @@ export default function ConfigureMembersPage() {
       <PageHeader
         title="Member fields"
         description="Every field on a member. Built-in fields are fixed; custom attributes are yours to add, rename, and remove."
-        actions={<NewAttributeButton />}
       />
 
       <Card>
