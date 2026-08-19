@@ -162,6 +162,7 @@ export default function ConfigureMembersPage() {
         <CardHeader
           title="Custom attributes"
           description="Applied to every member. Always optional - a member can leave any of them empty."
+          action={attributes && attributes.length > 0 ? <NewAttributeButton /> : undefined}
         />
         {attributes === undefined ? (
           <div className="space-y-3 p-5">
