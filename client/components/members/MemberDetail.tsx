@@ -34,6 +34,7 @@ import { StatTile } from "@/components/ui/StatTile";
 import { TransactionBadge } from "@/components/ui/StatusBadge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
 import { useToast } from "@/components/ui/Toast";
+import { CustomAttributeList } from "@/components/members/CustomAttributeList";
 import { MemberChallengeItem } from "@/components/members/MemberChallengeItem";
 import { MemberFields } from "@/components/members/MemberFields";
 import { PointsActions } from "@/components/members/PointsActions";
@@ -200,6 +201,9 @@ export function MemberDetail({ id }: { id: string }) {
               />
             </div>
           </div>
+
+          {/* Renders nothing when no custom attributes are configured. */}
+          <CustomAttributeList member={member} />
 
           <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-5">
             <span className="mr-1 text-sm font-medium text-muted">Points:</span>

@@ -21,5 +21,9 @@ export function useRevalidate() {
     challenges: () => byPrefix("/challenges"),
     tiers: () => byPrefix("/tiers"),
     segments: () => byPrefix("/segments"),
+    // Attribute mutations also change member rows (creating with a default
+    // backfills every member, deleting strips the key), so callers revalidate
+    // both this and `members()`.
+    memberAttributes: () => byPrefix("/member-attributes"),
   };
 }

@@ -23,6 +23,27 @@ const SIZES: Record<Size, string> = {
   icon: "h-9 w-9 rounded-lg justify-center",
 };
 
+/** Button styling as a bare class string, for elements that can't be a
+ *  `<button>` — e.g. a `<Link>`, since a `<button>` nested in an `<a>` is
+ *  invalid HTML. */
+export function buttonClass({
+  variant = "primary",
+  size = "md",
+  className,
+}: {
+  variant?: Variant;
+  size?: Size;
+  className?: string;
+} = {}) {
+  return cn(
+    "inline-flex items-center justify-center font-medium whitespace-nowrap transition-colors select-none cursor-pointer",
+    "disabled:opacity-50 disabled:cursor-not-allowed",
+    VARIANTS[variant],
+    SIZES[size],
+    className,
+  );
+}
+
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
@@ -40,13 +61,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={cn(
-        "inline-flex items-center justify-center font-medium whitespace-nowrap transition-colors select-none cursor-pointer",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
-        VARIANTS[variant],
-        SIZES[size],
-        className,
-      )}
+      className={buttonClass({ variant, size, className })}
       type="button"
       disabled={disabled || loading}
       {...props}

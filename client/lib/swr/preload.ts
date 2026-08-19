@@ -31,6 +31,9 @@ export const preloadRoute = {
     warm(keys.membersCount());
     warm(keys.tiers());
     warm(keys.segments());
+    // The member form renders one input per custom attribute, so warming the
+    // definitions keeps those fields from popping in after the dialog opens.
+    warm(keys.memberAttributes());
   },
   rewards: () => {
     warm(keys.rewards());

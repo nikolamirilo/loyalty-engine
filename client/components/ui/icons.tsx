@@ -31,6 +31,15 @@ export const DashboardIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const SlidersIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <line x1="4" y1="7" x2="20" y2="7" />
+    <line x1="4" y1="17" x2="20" y2="17" />
+    <circle cx="9" cy="7" r="2.25" />
+    <circle cx="15" cy="17" r="2.25" />
+  </Icon>
+);
+
 export const LogOutIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

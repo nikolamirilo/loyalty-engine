@@ -17,25 +17,34 @@ export function TagsInput({
   defaultValue = [],
   placeholder,
   className,
+  onChange,
 }: {
   id?: string;
   name: string;
   defaultValue?: string[];
   placeholder?: string;
   className?: string;
+  /** Notified on every add/remove, for forms that need to react to the current
+   *  tags (the hidden inputs alone are enough for plain submission). */
+  onChange?: (tags: string[]) => void;
 }) {
   const [tags, setTags] = useState<string[]>(defaultValue);
   const [draft, setDraft] = useState("");
 
+  function commit(next: string[]) {
+    setTags(next);
+    onChange?.(next);
+  }
+
   function addTag(raw: string) {
     const value = raw.trim();
     if (!value || tags.includes(value)) return;
-    setTags((prev) => [...prev, value]);
+    commit([...tags, value]);
     setDraft("");
   }
 
   function removeTag(value: string) {
-    setTags((prev) => prev.filter((tag) => tag !== value));
+    commit(tags.filter((tag) => tag !== value));
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {

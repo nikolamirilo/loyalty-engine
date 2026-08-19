@@ -3,6 +3,7 @@
 import { useSegments } from "@/lib/swr/hooks";
 import type { Member } from "@/lib/types";
 import { Checkbox, Field, Input } from "@/components/ui/Field";
+import { CustomAttributeFields } from "@/components/members/CustomAttributeFields";
 
 /** Shared form fields for creating and editing a member. */
 export function MemberFields({ member }: { member?: Member }) {
@@ -60,6 +61,7 @@ export function MemberFields({ member }: { member?: Member }) {
           </div>
         )}
       </Field>
+      <CustomAttributeFields member={member} />
     </>
   );
 }

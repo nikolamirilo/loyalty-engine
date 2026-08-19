@@ -31,6 +31,31 @@ export interface Segment extends SegmentSummary {
   member_count: number;
 }
 
+export type MemberAttributeType =
+  | "text"
+  | "number"
+  | "boolean"
+  | "date"
+  | "select";
+
+export type CustomAttributeValue = string | number | boolean | null;
+
+/** An admin-defined custom field on members, from `GET /member-attributes`.
+ *
+ * `key` and `type` are immutable server-side: renaming the key would orphan
+ * every stored value and changing the type would invalidate them. `label` and
+ * `default_value` stay editable. */
+export interface MemberAttribute {
+  id: UUID;
+  key: string;
+  label: string;
+  type: MemberAttributeType;
+  /** Choice list for `select`; null for every other type. */
+  options: string[] | null;
+  default_value: CustomAttributeValue;
+  created_at: string;
+}
+
 export interface Member {
   id: UUID;
   name: string;
@@ -39,6 +64,10 @@ export interface Member {
   segments: SegmentSummary[];
   /** Serialized by the API as `pointsBalance` (aliased from `total_points`). */
   pointsBalance: number;
+  /** Values for the fields defined in `MemberAttribute`, keyed by their `key`.
+   * A key can be absent — the UI renders from the definitions list, so absent
+   * and null both display as empty. */
+  custom_attributes: Record<string, CustomAttributeValue>;
 }
 
 export interface PointsTransaction {

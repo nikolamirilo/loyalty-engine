@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
+from custom_attributes import defaults_for_new_member, validate_payload
 from database import get_db
 from models import Member, MemberSegment, Segment, Tier
 from routers.challenges import sync_challenge_assignments_for_segments
@@ -31,8 +32,15 @@ def _sync_member_segments(db: Session, member: Member, segment_ids: list[UUID]) 
 def create_member(body: MemberCreate, db: Session = Depends(get_db)):
     if db.query(Member).filter(Member.email == body.email).first():
         raise HTTPException(400, "Email already registered")
-    data = body.model_dump(exclude={"segment_ids"})
-    member = Member(**data)
+    data = body.model_dump(exclude={"segment_ids", "custom_attributes"})
+    # Definition defaults fill in only the attributes the caller didn't supply, so
+    # a member created through the API lands with the same values an admin sees
+    # prefilled in the console's create form.
+    custom = {
+        **defaults_for_new_member(db),
+        **validate_payload(db, body.custom_attributes),
+    }
+    member = Member(**data, custom_attributes=custom)
     db.add(member)
     db.flush()
     _sync_member_segments(db, member, body.segment_ids)
@@ -134,9 +142,16 @@ def update_member(member_id: UUID, body: MemberUpdate, db: Session = Depends(get
     member = db.get(Member, member_id)
     if not member:
         raise HTTPException(404, "Member not found")
-    data = body.model_dump(exclude_none=True, exclude={"segment_ids"})
+    data = body.model_dump(exclude_none=True, exclude={"segment_ids", "custom_attributes"})
     for field, value in data.items():
         setattr(member, field, value)
+    if body.custom_attributes is not None:
+        # Shallow merge, not replace: a caller that knows about one attribute must
+        # not wipe the others. A key sent as null clears just that value.
+        # Reassignment (not in-place mutation) is what makes SQLAlchemy see the
+        # change on a plain JSONB column.
+        patch = validate_payload(db, body.custom_attributes)
+        member.custom_attributes = {**(member.custom_attributes or {}), **patch}
     if body.segment_ids is not None:
         _sync_member_segments(db, member, body.segment_ids)
         sync_challenge_assignments_for_segments(db, set(body.segment_ids), {member_id})

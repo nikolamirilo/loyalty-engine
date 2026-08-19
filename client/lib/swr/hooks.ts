@@ -6,6 +6,7 @@ import type {
   Challenge,
   ChallengeAssignment,
   Member,
+  MemberAttribute,
   MemberStats,
   PointsTransaction,
   Redemption,
@@ -66,4 +67,8 @@ export function useMemberChallenges(id: string | undefined) {
 
 export function useSegments() {
   return useSWR<Segment[]>(keys.segments());
+}
+
+export function useMemberAttributes() {
+  return useSWR<MemberAttribute[]>(keys.memberAttributes());
 }

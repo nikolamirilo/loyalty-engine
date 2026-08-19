@@ -1,14 +1,16 @@
 "use client";
 
+import Link from "next/link";
+
 import { createMember } from "@/lib/actions";
 import { useMembersCount } from "@/lib/swr/hooks";
 import { useRevalidate } from "@/lib/swr/revalidate";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClass } from "@/components/ui/Button";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { MemberFields } from "@/components/members/MemberFields";
 import { MembersView } from "@/components/members/MembersView";
-import { PlusIcon } from "@/components/ui/icons";
+import { PlusIcon, SlidersIcon } from "@/components/ui/icons";
 
 function NewMemberButton() {
   const revalidate = useRevalidate();
@@ -45,7 +47,19 @@ export default function MembersPage() {
             ? `${total} member${total === 1 ? "" : "s"} in the program.`
             : "Loyalty program members."
         }
-        actions={<NewMemberButton />}
+        actions={
+          <>
+            {/* A Link rather than a Button: a <button> nested in an <a> is
+                invalid HTML, so this borrows the button styling instead. */}
+            <Link
+              href="/members/configure"
+              className={buttonClass({ variant: "secondary" })}
+            >
+              <SlidersIcon /> Configure
+            </Link>
+            <NewMemberButton />
+          </>
+        }
       />
       <MembersView />
     </div>

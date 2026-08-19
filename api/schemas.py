@@ -1,10 +1,15 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
 
-from models import ChallengeStatus, RedemptionSource, TransactionType
+from models import (
+    ChallengeStatus,
+    MemberAttributeType,
+    RedemptionSource,
+    TransactionType,
+)
 
 
 # ── Tier ──────────────────────────────────────────────────────────────────────
@@ -64,6 +69,39 @@ class SegmentOut(SegmentSummary):
     model_config = {"from_attributes": True}
 
 
+# ── Member attribute (custom field definition) ────────────────────────────────
+
+class MemberAttributeCreate(BaseModel):
+    label: str = Field(min_length=1, max_length=100)
+    type: MemberAttributeType
+    options: Optional[List[str]] = None  # `select` only
+    default_value: Optional[Any] = None
+
+
+class MemberAttributeUpdate(BaseModel):
+    """`key` and `type` are deliberately absent - both are immutable once created.
+
+    Renaming the key would orphan every stored value; changing the type would
+    invalidate them. Labels and defaults stay freely editable.
+    """
+
+    label: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    options: Optional[List[str]] = None
+    default_value: Optional[Any] = None
+
+
+class MemberAttributeOut(BaseModel):
+    id: UUID
+    key: str
+    label: str
+    type: MemberAttributeType
+    options: Optional[List[str]] = None
+    default_value: Optional[Any] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # ── Member ────────────────────────────────────────────────────────────────────
 
 class MemberCreate(BaseModel):
@@ -71,6 +109,7 @@ class MemberCreate(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     segment_ids: List[UUID] = Field(default_factory=list)
+    custom_attributes: Dict[str, Any] = Field(default_factory=dict)
 
 
 class MemberUpdate(BaseModel):
@@ -78,6 +117,10 @@ class MemberUpdate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     segment_ids: Optional[List[UUID]] = None
+    # Omit to leave custom attributes untouched. When present, the map is merged
+    # into the stored one (one level deep), so a caller that knows about a single
+    # attribute can't wipe the others; a key sent as null clears that one value.
+    custom_attributes: Optional[Dict[str, Any]] = None
 
 
 class MemberOut(BaseModel):
@@ -87,6 +130,7 @@ class MemberOut(BaseModel):
     phone: Optional[str] = None
     segments: List[SegmentSummary] = Field(default_factory=list)
     pointsBalance: int = Field(validation_alias="total_points", serialization_alias="pointsBalance")
+    custom_attributes: Dict[str, Any] = Field(default_factory=dict)
 
     model_config = {"from_attributes": True, "populate_by_name": True}
 

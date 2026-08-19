@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import type { ActionState } from "./action-state";
+import type { MemberAttribute } from "./types";
 import { ApiError, apiRequest } from "./api";
 
 function fail(error: unknown): ActionState {
@@ -40,6 +41,56 @@ function checkbox(fd: FormData, key: string): boolean {
   return fd.get(key) != null;
 }
 
+/**
+ * Build the `custom_attributes` payload from a member form.
+ *
+ * `CustomAttributeFields` emits a hidden `custom_keys` input for every
+ * definition it actually renders, and this reads only those. That distinction
+ * matters: `fd.get()` returns null both for "the admin cleared this field" and
+ * for "this input was never on the page", and those mean opposite things
+ * server-side (clear the value vs. leave it alone). Without the marker, saving
+ * the form before the definitions load would null out every custom attribute
+ * on the member — and flip every boolean to false.
+ *
+ * Returns `undefined` when no fields were present, which omits the key from the
+ * request body entirely so the API leaves stored values untouched.
+ */
+async function parseCustomAttributes(
+  fd: FormData,
+): Promise<Record<string, unknown> | undefined> {
+  const present = new Set(
+    fd.getAll("custom_keys").filter((k): k is string => typeof k === "string"),
+  );
+  if (present.size === 0) return undefined;
+
+  // Read the definitions rather than trusting the form for types; the API
+  // re-validates against them regardless, so this only has to parse correctly.
+  const defs = (await apiRequest<MemberAttribute[]>("/member-attributes")).filter(
+    (d) => present.has(d.key),
+  );
+
+  const out: Record<string, unknown> = {};
+  for (const d of defs) {
+    if (d.type === "boolean") {
+      // Safe because the marker above proves the checkbox was rendered.
+      out[d.key] = fd.get(`custom_${d.key}`) != null;
+      continue;
+    }
+    const raw = str(fd, `custom_${d.key}`);
+    if (raw === "") {
+      out[d.key] = null; // explicit clear
+    } else if (d.type === "number") {
+      const n = Number(raw);
+      // Unparseable input is forwarded as-is so the API rejects it with the
+      // field's label in the message, rather than sending a silent NaN.
+      out[d.key] = Number.isFinite(n) ? n : raw;
+    } else {
+      out[d.key] = raw;
+    }
+  }
+  return out;
+}
+
 function revalidateMember(id: string) {
   revalidatePath("/");
   revalidatePath("/members");
@@ -64,6 +115,7 @@ export async function createMember(
         email,
         phone: optionalStr(fd, "phone"),
         segment_ids: parseSegmentIds(fd),
+        custom_attributes: (await parseCustomAttributes(fd)) ?? {},
       },
     });
     revalidatePath("/");
@@ -92,6 +144,8 @@ export async function updateMember(
         email,
         phone: optionalStr(fd, "phone"),
         segment_ids: parseSegmentIds(fd),
+        // undefined drops the key from the JSON body, leaving stored values alone.
+        custom_attributes: await parseCustomAttributes(fd),
       },
     });
     revalidateMember(id);
@@ -585,6 +639,96 @@ export async function assignSegmentToMembers(
       ok: true,
       message: `Assigned to ${result.assigned} member(s); ${result.skipped} already had it.`,
     };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// ── Member custom attributes ─────────────────────────────────────────────────
+
+function revalidateAttributes() {
+  revalidatePath("/members");
+  revalidatePath("/members/configure");
+}
+
+/** Read the type-dependent default-value input. The Configure form renders a
+ *  different control per type, so the raw value has to be interpreted the same
+ *  way here; the API re-validates it against the definition regardless. */
+function parseDefaultValue(fd: FormData, type: string): unknown {
+  if (type === "boolean") return checkbox(fd, "default_value");
+  const raw = str(fd, "default_value");
+  if (raw === "") return null;
+  if (type === "number") {
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : raw;
+  }
+  return raw;
+}
+
+function parseOptions(fd: FormData): string[] {
+  return fd
+    .getAll("options")
+    .map((o) => (typeof o === "string" ? o.trim() : ""))
+    .filter(Boolean);
+}
+
+export async function createMemberAttribute(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const label = str(fd, "label");
+  const type = str(fd, "type");
+  if (!label) return { ok: false, error: "Name is required." };
+  if (!type) return { ok: false, error: "Type is required." };
+  try {
+    await apiRequest("/member-attributes", {
+      method: "POST",
+      json: {
+        label,
+        type,
+        options: type === "select" ? parseOptions(fd) : null,
+        default_value: parseDefaultValue(fd, type),
+      },
+    });
+    revalidateAttributes();
+    return { ok: true, message: "Custom attribute created." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function updateMemberAttribute(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const id = str(fd, "id");
+  const label = str(fd, "label");
+  // The type is immutable server-side; it's submitted as a hidden input purely
+  // so the default value and options can be interpreted correctly here.
+  const type = str(fd, "type");
+  if (!id) return { ok: false, error: "Missing attribute id." };
+  if (!label) return { ok: false, error: "Name is required." };
+  try {
+    await apiRequest(`/member-attributes/${id}`, {
+      method: "PATCH",
+      json: {
+        label,
+        ...(type === "select" ? { options: parseOptions(fd) } : {}),
+        default_value: parseDefaultValue(fd, type),
+      },
+    });
+    revalidateAttributes();
+    return { ok: true, message: "Custom attribute updated." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteMemberAttribute(id: string): Promise<ActionState> {
+  try {
+    await apiRequest(`/member-attributes/${id}`, { method: "DELETE" });
+    revalidateAttributes();
+    return { ok: true, message: "Custom attribute deleted." };
   } catch (e) {
     return fail(e);
   }
