@@ -25,7 +25,6 @@ from app.models import EmailVerificationCode, Member
 logger = logging.getLogger("uvicorn.error")
 
 CODE_TTL = timedelta(minutes=10)
-RESEND_COOLDOWN = timedelta(seconds=60)
 MAX_ATTEMPTS = 5
 
 # The SDK's default HTTP timeout (30s) outlives the serverless function budget,
@@ -222,19 +221,30 @@ def _send_verification_email(to_email: str, code: str) -> None:
 
 
 def trigger_verification(db: Session, member: Member) -> None:
+    """Ensure the member has a usable verification code in their inbox.
+
+    If the code from a previous trigger hasn't expired or been used yet, that
+    request is already satisfied: leave the code alone and answer exactly as if
+    a new one had been sent. Mailing a second code would invalidate the first -
+    so a member reading the older email would type a code that no longer works -
+    while also spending a send and risking their inbox for nothing.
+
+    A new code is issued once the previous one expires (CODE_TTL) or is used up
+    (verified, or MAX_ATTEMPTS wrong guesses).
+    """
     if member.email_verified_at is not None:
         raise HTTPException(409, "Member email is already verified")
 
     latest = _latest_active_code(db, member.id)
     now = _now()
-    if latest is not None and now - _as_aware(latest.created_at) < RESEND_COOLDOWN:
-        raise HTTPException(429, "Please wait before requesting another code")
+    if latest is not None and now <= _as_aware(latest.expires_at):
+        return
 
     code = _generate_code()
 
     # Send before touching the DB: if delivery fails, nothing about the member's
-    # verification state should change - no orphaned code row blocking the next
-    # attempt behind the resend cooldown.
+    # verification state should change - an orphaned code row would suppress
+    # every retry until it expired, for a code that was never delivered.
     try:
         _send_verification_email(member.email, code)
     except EmailDeliveryError as exc:

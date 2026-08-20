@@ -11,6 +11,8 @@ router = APIRouter(prefix="/doi", tags=["DOI"])
 @router.post("/trigger", response_model=DOITriggerResponse)
 def trigger(body: DOITriggerRequest, db: Session = Depends(get_db)):
     member = resolve_member(db, body.email, body.member_id)
+    # Whether this issued a new code or left a still-valid one in place, the
+    # caller's request is satisfied the same way: there's a code in that inbox.
     trigger_verification(db, member)
     return {"message": "Verification code sent"}
 
