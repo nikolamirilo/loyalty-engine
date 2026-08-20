@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from app.schemas.base import CamelModel
 
 
-class SegmentBase(BaseModel):
+class SegmentBase(CamelModel):
     name: str
     description: Optional[str] = None
     color: Optional[str] = None
@@ -15,7 +15,7 @@ class SegmentCreate(SegmentBase):
     pass
 
 
-class SegmentUpdate(BaseModel):
+class SegmentUpdate(CamelModel):
     name: Optional[str] = None
     description: Optional[str] = None
     color: Optional[str] = None
@@ -26,21 +26,17 @@ class SegmentSummary(SegmentBase):
 
     id: UUID
 
-    model_config = {"from_attributes": True}
-
 
 class SegmentOut(SegmentSummary):
     created_at: datetime
     member_count: int = 0
 
-    model_config = {"from_attributes": True}
 
-
-class MemberAssignRequest(BaseModel):
+class MemberAssignRequest(CamelModel):
     member_ids: List[UUID]
 
 
-class MemberAssignResult(BaseModel):
+class MemberAssignResult(CamelModel):
     segment_id: UUID
     assigned: int
     skipped: int

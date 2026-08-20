@@ -47,7 +47,7 @@ export function RewardRow({ reward }: { reward: Reward }) {
         )}
       </TD>
       <TD className="text-right font-medium tabular-nums whitespace-nowrap">
-        {formatNumber(reward.points_cost)}
+        {formatNumber(reward.pointsCost)}
         <span className="ml-1 text-xs font-normal text-faint">pts</span>
       </TD>
       <TD className="text-right tabular-nums whitespace-nowrap">
@@ -60,18 +60,18 @@ export function RewardRow({ reward }: { reward: Reward }) {
         )}
       </TD>
       <TD>
-        <ActiveBadge active={reward.is_active} />
+        <ActiveBadge active={reward.isActive} />
       </TD>
       <TD>
         <div className="flex items-center justify-end gap-1">
           <ActionButton
             variant="ghost"
             size="sm"
-            action={setRewardActive.bind(null, reward.id, !reward.is_active)}
-            successMessage={reward.is_active ? "Reward deactivated." : "Reward activated."}
+            action={setRewardActive.bind(null, reward.id, !reward.isActive)}
+            successMessage={reward.isActive ? "Reward deactivated." : "Reward activated."}
             onDone={() => revalidate.rewards()}
           >
-            {reward.is_active ? (
+            {reward.isActive ? (
               <>
                 <BanIcon /> Deactivate
               </>

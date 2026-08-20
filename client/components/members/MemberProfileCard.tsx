@@ -267,14 +267,14 @@ function ProfileCardForm({
               <Checkbox
                 name="email_verified"
                 label="Verified"
-                defaultChecked={!!member.email_verified_at}
+                defaultChecked={!!member.emailVerifiedAt}
               />
             ) : (
               <div className="flex flex-col items-start gap-1">
-                <VerifiedBadge verified={!!member.email_verified_at} />
-                {member.email_verified_at && (
+                <VerifiedBadge verified={!!member.emailVerifiedAt} />
+                {member.emailVerifiedAt && (
                   <span className="text-xs text-faint">
-                    {formatDateTime(member.email_verified_at)}
+                    {formatDateTime(member.emailVerifiedAt)}
                   </span>
                 )}
               </div>

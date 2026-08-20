@@ -29,7 +29,7 @@ export function CustomAttributeList({
       {attributes.map((attribute) => {
         const value = formatCustomValue(
           attribute,
-          member.custom_attributes?.[attribute.key],
+          member.customAttributes?.[attribute.key],
         );
         return (
           <div key={attribute.id} className={cn("min-w-0", itemClassName)}>

@@ -2,24 +2,26 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+from pydantic import EmailStr
+
+from app.schemas.base import CamelModel
 
 
-class DOITriggerRequest(BaseModel):
+class DOITriggerRequest(CamelModel):
     email: Optional[EmailStr] = None
     member_id: Optional[UUID] = None
 
 
-class DOITriggerResponse(BaseModel):
+class DOITriggerResponse(CamelModel):
     message: str
 
 
-class DOIVerifyRequest(BaseModel):
+class DOIVerifyRequest(CamelModel):
     email: Optional[EmailStr] = None
     member_id: Optional[UUID] = None
     code: str
 
 
-class DOIVerifyResponse(BaseModel):
+class DOIVerifyResponse(CamelModel):
     verified: bool
     email_verified_at: datetime

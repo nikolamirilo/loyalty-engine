@@ -47,7 +47,7 @@ export default function TiersPage() {
   const { data: stats } = useMemberStats();
   const onChange = useTierRevalidate();
 
-  const countFor = (tierId: string) => stats?.by_tier[tierId] ?? 0;
+  const countFor = (tierId: string) => stats?.byTier[tierId] ?? 0;
 
   return (
     <div className="space-y-6">

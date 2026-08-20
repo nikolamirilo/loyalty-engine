@@ -14,7 +14,7 @@ export type ChallengeStatus =
 export interface Tier {
   id: UUID;
   name: string;
-  min_points: number;
+  minPoints: number;
   multiplier: number;
 }
 
@@ -27,8 +27,8 @@ export interface SegmentSummary {
 }
 
 export interface Segment extends SegmentSummary {
-  created_at: string;
-  member_count: number;
+  createdAt: string;
+  memberCount: number;
 }
 
 export type MemberAttributeType =
@@ -52,8 +52,8 @@ export interface MemberAttribute {
   type: MemberAttributeType;
   /** Choice list for `select`; null for every other type. */
   options: string[] | null;
-  default_value: CustomAttributeValue;
-  created_at: string;
+  defaultValue: CustomAttributeValue;
+  createdAt: string;
 }
 
 export interface Member {
@@ -66,34 +66,36 @@ export interface Member {
   pointsBalance: number;
   /** Values for the fields defined in `MemberAttribute`, keyed by their `key`.
    * A key can be absent — the UI renders from the definitions list, so absent
-   * and null both display as empty. */
-  custom_attributes: Record<string, CustomAttributeValue>;
-  /** Set by the DOI email-verification flow (or an admin override); null = unverified. */
-  email_verified_at: string | null;
-  /** Computed as `email_verified_at !== null` - convenience mirror of that field. */
-  is_email_verified: boolean;
+   * and null both display as empty. Serialized by the API as `customAttributes`. */
+  customAttributes: Record<string, CustomAttributeValue>;
+  /** Set by the DOI email-verification flow (or an admin override); null = unverified.
+   * Serialized by the API as `emailVerifiedAt`. */
+  emailVerifiedAt: string | null;
+  /** Computed as `emailVerifiedAt !== null` - convenience mirror of that field.
+   * Serialized by the API as `isEmailVerified`. */
+  isEmailVerified: boolean;
 }
 
 export interface PointsTransaction {
   id: UUID;
-  member_id: UUID;
+  memberId: UUID;
   points: number;
   type: TransactionType;
   description: string | null;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface Balance {
-  member_id: UUID;
+  memberId: UUID;
   pointsBalance: number;
 }
 
-/** Dashboard aggregates from `GET /members/stats`. `by_tier` maps a tier id to
+/** Dashboard aggregates from `GET /members/stats`. `byTier` maps a tier id to
  * its member count; `untiered` counts members below the lowest tier. */
 export interface MemberStats {
   count: number;
-  points_in_circulation: number;
-  by_tier: Record<string, number>;
+  pointsInCirculation: number;
+  byTier: Record<string, number>;
   untiered: number;
 }
 
@@ -101,47 +103,47 @@ export interface Reward {
   id: UUID;
   name: string;
   description: string | null;
-  points_cost: number;
+  pointsCost: number;
   segments: string[];
   /** `null` means unlimited stock. */
   stock: number | null;
-  is_active: boolean;
-  created_at: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export interface Redemption {
   id: UUID;
-  member_id: UUID;
-  reward_id: UUID;
-  points_spent: number;
+  memberId: UUID;
+  rewardId: UUID;
+  pointsSpent: number;
   source: RedemptionSource;
   reward: Reward;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface Challenge {
   id: UUID;
   name: string;
   description: string | null;
-  target_value: number;
-  reward_points: number;
-  reward_id: UUID | null;
-  is_active: boolean;
-  starts_at: string | null;
-  expires_at: string | null;
-  created_at: string;
+  targetValue: number;
+  rewardPoints: number;
+  rewardId: UUID | null;
+  isActive: boolean;
+  startsAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
   /** Segments this challenge has been bulk-assigned to (via "Assign to segment"). */
   segments: string[];
 }
 
 export interface ChallengeAssignment {
   id: UUID;
-  challenge_id: UUID;
-  member_id: UUID;
+  challengeId: UUID;
+  memberId: UUID;
   status: ChallengeStatus;
-  current_value: number;
-  assigned_at: string;
-  completed_at: string | null;
+  currentValue: number;
+  assignedAt: string;
+  completedAt: string | null;
   challenge: Challenge;
 }
 
@@ -149,26 +151,26 @@ export interface ChallengeProgress {
   id: UUID;
   name: string;
   description: string | null;
-  target_value: number;
-  reward_points: number;
-  reward_id: UUID | null;
-  is_active: boolean;
-  starts_at: string | null;
-  expires_at: string | null;
-  is_assigned: boolean;
-  assignment_id: UUID | null;
-  current_value: number;
-  progress_percent: number;
+  targetValue: number;
+  rewardPoints: number;
+  rewardId: UUID | null;
+  isActive: boolean;
+  startsAt: string | null;
+  expiresAt: string | null;
+  isAssigned: boolean;
+  assignmentId: UUID | null;
+  currentValue: number;
+  progressPercent: number;
   remaining: number;
-  is_expired: boolean;
-  effective_status: ChallengeStatus | null;
-  assigned_at: string | null;
-  completed_at: string | null;
+  isExpired: boolean;
+  effectiveStatus: ChallengeStatus | null;
+  assignedAt: string | null;
+  completedAt: string | null;
 }
 
 export interface SegmentAssignResult {
-  challenge_id: UUID;
-  segment_id: UUID;
+  challengeId: UUID;
+  segmentId: UUID;
   assigned: number;
   skipped: number;
 }

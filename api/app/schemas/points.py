@@ -2,27 +2,28 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.models.enums import TransactionType
+from app.schemas.base import CamelModel
 
 
-class EarnPointsRequest(BaseModel):
+class EarnPointsRequest(CamelModel):
     points: int = Field(gt=0)
     description: Optional[str] = None
 
 
-class SpendPointsRequest(BaseModel):
+class SpendPointsRequest(CamelModel):
     points: int = Field(gt=0)
     description: Optional[str] = None
 
 
-class AdjustPointsRequest(BaseModel):
+class AdjustPointsRequest(CamelModel):
     points: int  # can be negative
     description: Optional[str] = None
 
 
-class PointsTransactionOut(BaseModel):
+class PointsTransactionOut(CamelModel):
     id: UUID
     member_id: UUID
     points: int
@@ -30,9 +31,7 @@ class PointsTransactionOut(BaseModel):
     description: Optional[str]
     created_at: datetime
 
-    model_config = {"from_attributes": True}
 
-
-class BalanceOut(BaseModel):
+class BalanceOut(CamelModel):
     member_id: UUID
-    pointsBalance: int
+    points_balance: int

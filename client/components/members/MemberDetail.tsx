@@ -85,7 +85,7 @@ export function MemberDetail({ id }: { id: string }) {
     ? memberChallenges.filter((c) => c.status === "completed").length
     : 0;
   const assignedIds = memberChallenges
-    ? memberChallenges.map((c) => c.challenge_id)
+    ? memberChallenges.map((c) => c.challengeId)
     : [];
 
   return (
@@ -200,7 +200,7 @@ export function MemberDetail({ id }: { id: string }) {
                         {t.description ?? "-"}
                       </TD>
                       <TD className="text-right whitespace-nowrap text-muted">
-                        {formatDateTime(t.created_at)}
+                        {formatDateTime(t.createdAt)}
                       </TD>
                     </TR>
                   ))}
@@ -245,10 +245,10 @@ export function MemberDetail({ id }: { id: string }) {
                         )}
                       </TD>
                       <TD className="text-right font-medium tabular-nums">
-                        {r.points_spent > 0 ? formatNumber(r.points_spent) : "Free"}
+                        {r.pointsSpent > 0 ? formatNumber(r.pointsSpent) : "Free"}
                       </TD>
                       <TD className="text-right whitespace-nowrap text-muted">
-                        {formatDateTime(r.created_at)}
+                        {formatDateTime(r.createdAt)}
                       </TD>
                     </TR>
                   ))}

@@ -24,7 +24,7 @@ export function TierFields({ tier }: { tier?: Tier }) {
             type="number"
             min={0}
             step={1}
-            defaultValue={tier?.min_points ?? 0}
+            defaultValue={tier?.minPoints ?? 0}
             required
           />
         </Field>

@@ -2,12 +2,13 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, computed_field
+from pydantic import EmailStr, Field, computed_field
 
+from app.schemas.base import CamelModel
 from app.schemas.segment import SegmentSummary
 
 
-class MemberCreate(BaseModel):
+class MemberCreate(CamelModel):
     name: str
     email: EmailStr
     phone: Optional[str] = None
@@ -15,7 +16,7 @@ class MemberCreate(BaseModel):
     custom_attributes: Dict[str, Any] = Field(default_factory=dict)
 
 
-class MemberUpdate(BaseModel):
+class MemberUpdate(CamelModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
@@ -30,17 +31,15 @@ class MemberUpdate(BaseModel):
     email_verified: Optional[bool] = None
 
 
-class MemberOut(BaseModel):
+class MemberOut(CamelModel):
     id: UUID
     name: str
     email: str
     phone: Optional[str] = None
     segments: List[SegmentSummary] = Field(default_factory=list)
-    pointsBalance: int = Field(validation_alias="total_points", serialization_alias="pointsBalance")
+    points_balance: int = Field(validation_alias="total_points")
     custom_attributes: Dict[str, Any] = Field(default_factory=dict)
     email_verified_at: Optional[datetime] = None
-
-    model_config = {"from_attributes": True, "populate_by_name": True}
 
     @computed_field  # type: ignore[prop-decorator]
     @property

@@ -2,12 +2,13 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.models.enums import ChallengeStatus
+from app.schemas.base import CamelModel
 
 
-class ChallengeBase(BaseModel):
+class ChallengeBase(CamelModel):
     name: str
     description: Optional[str] = None
     target_value: int = Field(gt=0, default=1)
@@ -22,7 +23,7 @@ class ChallengeCreate(ChallengeBase):
     pass
 
 
-class ChallengeUpdate(BaseModel):
+class ChallengeUpdate(CamelModel):
     name: Optional[str] = None
     description: Optional[str] = None
     target_value: Optional[int] = Field(default=None, gt=0)
@@ -38,10 +39,8 @@ class ChallengeOut(ChallengeBase):
     created_at: datetime
     segments: List[str] = Field(default_factory=list)  # segments this challenge was bulk-assigned to
 
-    model_config = {"from_attributes": True}
 
-
-class ChallengeAssignmentOut(BaseModel):
+class ChallengeAssignmentOut(CamelModel):
     id: UUID
     challenge_id: UUID
     member_id: UUID
@@ -51,10 +50,8 @@ class ChallengeAssignmentOut(BaseModel):
     completed_at: Optional[datetime] = None
     challenge: ChallengeOut
 
-    model_config = {"from_attributes": True}
 
-
-class ChallengeProgressOut(BaseModel):
+class ChallengeProgressOut(CamelModel):
     """Challenge info + one member's progress on it, combined."""
 
     id: UUID
@@ -78,16 +75,16 @@ class ChallengeProgressOut(BaseModel):
     completed_at: Optional[datetime] = None
 
 
-class ProgressRequest(BaseModel):
+class ProgressRequest(CamelModel):
     amount: int = Field(gt=0, default=1)
     description: Optional[str] = None
 
 
-class SegmentAssignRequest(BaseModel):
+class SegmentAssignRequest(CamelModel):
     segment_id: UUID
 
 
-class SegmentAssignResult(BaseModel):
+class SegmentAssignResult(CamelModel):
     challenge_id: UUID
     segment_id: UUID
     assigned: int

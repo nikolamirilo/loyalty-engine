@@ -36,7 +36,7 @@ function NewRewardButton() {
 
 export default function RewardsPage() {
   const { data: rewards } = useRewards();
-  const activeCount = rewards?.filter((r) => r.is_active).length ?? 0;
+  const activeCount = rewards?.filter((r) => r.isActive).length ?? 0;
 
   return (
     <div className="space-y-6">

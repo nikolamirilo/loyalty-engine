@@ -203,7 +203,7 @@ export default function ConfigureMembersPage() {
                     ) : null}
                   </TD>
                   <TD className="text-muted">
-                    {formatCustomValue(attribute, attribute.default_value) ?? (
+                    {formatCustomValue(attribute, attribute.defaultValue) ?? (
                       <span className="text-faint">-</span>
                     )}
                   </TD>

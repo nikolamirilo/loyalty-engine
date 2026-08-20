@@ -57,8 +57,8 @@ function AttributeInput({
   // the current default onto a member who never had a value, just because
   // someone opened the dialog, silently detaching them from later default changes.
   const value: CustomAttributeValue | undefined = member
-    ? member.custom_attributes?.[attribute.key]
-    : attribute.default_value;
+    ? member.customAttributes?.[attribute.key]
+    : attribute.defaultValue;
 
   const id = `custom-${attribute.key}`;
   const name = `custom_${attribute.key}`;

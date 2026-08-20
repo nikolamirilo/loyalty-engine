@@ -28,7 +28,7 @@ export function GrantRewardDialog({
     revalidate.rewards();
   };
   const available = rewards.filter(
-    (r) => r.is_active && !(r.stock != null && r.stock <= 0),
+    (r) => r.isActive && !(r.stock != null && r.stock <= 0),
   );
 
   return (
@@ -52,7 +52,7 @@ export function GrantRewardDialog({
         ) : (
           <ul className="max-h-[60vh] divide-y divide-line overflow-y-auto">
             {available.map((reward) => {
-              const affordable = balance >= reward.points_cost;
+              const affordable = balance >= reward.pointsCost;
               return (
                 <li key={reward.id} className="flex items-center gap-3 py-3">
                   <div className="min-w-0 flex-1">
@@ -60,7 +60,7 @@ export function GrantRewardDialog({
                       {reward.name}
                     </p>
                     <p className="text-xs text-muted">
-                      {formatNumber(reward.points_cost)} pts
+                      {formatNumber(reward.pointsCost)} pts
                       {reward.stock != null && ` · ${reward.stock} left`}
                     </p>
                   </div>

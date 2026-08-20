@@ -24,7 +24,7 @@ export function AssignChallengeDialog({
   const [open, setOpen] = useState(false);
   const revalidate = useRevalidate();
   const available = challenges.filter(
-    (c) => c.is_active && !assignedIds.includes(c.id),
+    (c) => c.isActive && !assignedIds.includes(c.id),
   );
 
   return (
@@ -54,9 +54,9 @@ export function AssignChallengeDialog({
                     {challenge.name}
                   </p>
                   <p className="text-xs text-muted">
-                    Target {formatNumber(challenge.target_value)}
-                    {challenge.reward_points > 0 &&
-                      ` · ${formatNumber(challenge.reward_points)} pts`}
+                    Target {formatNumber(challenge.targetValue)}
+                    {challenge.rewardPoints > 0 &&
+                      ` · ${formatNumber(challenge.rewardPoints)} pts`}
                   </p>
                 </div>
                 <ActionButton

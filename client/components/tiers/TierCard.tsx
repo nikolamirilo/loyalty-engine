@@ -74,7 +74,7 @@ export function TierCard({
         <div className="rounded-lg bg-surface-2 px-3 py-2.5">
           <p className="text-xs text-muted">From</p>
           <p className="mt-0.5 font-semibold text-foreground tabular-nums">
-            {formatNumber(tier.min_points)}
+            {formatNumber(tier.minPoints)}
             <span className="ml-1 text-xs font-normal text-faint">pts</span>
           </p>
         </div>

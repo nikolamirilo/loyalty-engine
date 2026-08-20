@@ -30,7 +30,7 @@ def _get_member_or_404(db: Session, member_id: UUID, lock: bool = False) -> Memb
 @router.get("/balance", response_model=BalanceOut)
 def get_balance(member_id: UUID, db: Session = Depends(get_db)):
     member = _get_member_or_404(db, member_id)
-    return BalanceOut(member_id=member.id, pointsBalance=member.total_points)
+    return BalanceOut(member_id=member.id, points_balance=member.total_points)
 
 
 @router.post("/points/earn", response_model=PointsTransactionOut, status_code=201)

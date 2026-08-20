@@ -36,8 +36,8 @@ export default function DashboardPage() {
   const { data: challenges } = useChallenges();
   const { data: recentMembers } = useMembers({ limit: 6 });
 
-  const activeRewards = rewards?.filter((r) => r.is_active).length ?? 0;
-  const activeChallenges = challenges?.filter((c) => c.is_active).length ?? 0;
+  const activeRewards = rewards?.filter((r) => r.isActive).length ?? 0;
+  const activeChallenges = challenges?.filter((c) => c.isActive).length ?? 0;
 
   // Members per tier (highest first), plus an untiered bucket.
   const distribution =
@@ -46,7 +46,7 @@ export default function DashboardPage() {
           const perTier = tiers.map((tier) => ({
             id: tier.id,
             name: tier.name,
-            count: stats.by_tier[tier.id] ?? 0,
+            count: stats.byTier[tier.id] ?? 0,
           }));
           const rows = [...perTier].reverse();
           if (stats.untiered > 0 || tiers.length === 0) {
@@ -69,7 +69,7 @@ export default function DashboardPage() {
         {stats ? (
           <StatTile
             label="Points in circulation"
-            value={stats.points_in_circulation}
+            value={stats.pointsInCirculation}
             icon={<CoinsIcon />}
             accent="aqua"
           />

@@ -37,7 +37,7 @@ function NewChallengeButton({ rewards }: { rewards: Reward[] }) {
 export default function ChallengesPage() {
   const { data: challenges, error, mutate } = useChallenges();
   const { data: rewards } = useRewards();
-  const activeCount = challenges?.filter((c) => c.is_active).length ?? 0;
+  const activeCount = challenges?.filter((c) => c.isActive).length ?? 0;
 
   return (
     <div className="space-y-6">

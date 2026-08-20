@@ -30,7 +30,7 @@ export function RewardFields({ reward }: { reward?: Reward }) {
             type="number"
             min={1}
             step={1}
-            defaultValue={reward?.points_cost}
+            defaultValue={reward?.pointsCost}
             required
           />
         </Field>
@@ -48,7 +48,7 @@ export function RewardFields({ reward }: { reward?: Reward }) {
       <Checkbox
         name="is_active"
         label="Active (available to redeem)"
-        defaultChecked={reward ? reward.is_active : true}
+        defaultChecked={reward ? reward.isActive : true}
       />
     </>
   );

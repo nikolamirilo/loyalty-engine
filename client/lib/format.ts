@@ -89,7 +89,7 @@ export function humanize(value: string): string {
 export function tierForBalance(tiers: Tier[], balance: number): Tier | null {
   let current: Tier | null = null;
   for (const tier of tiers) {
-    if (balance >= tier.min_points) current = tier;
+    if (balance >= tier.minPoints) current = tier;
   }
   return current;
 }

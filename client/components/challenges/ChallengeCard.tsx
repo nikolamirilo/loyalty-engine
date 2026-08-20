@@ -39,8 +39,8 @@ export function ChallengeCard({
 }) {
   const revalidate = useRevalidate();
   const toast = useToast();
-  const prize = challenge.reward_id
-    ? rewards.find((r) => r.id === challenge.reward_id)
+  const prize = challenge.rewardId
+    ? rewards.find((r) => r.id === challenge.rewardId)
     : null;
 
   const copyId = async () => {
@@ -68,16 +68,16 @@ export function ChallengeCard({
             )}
           </div>
         </div>
-        <ActiveBadge active={challenge.is_active} />
+        <ActiveBadge active={challenge.isActive} />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Badge tone="neutral">
-          <TargetIcon className="text-[13px]" /> Target {formatNumber(challenge.target_value)}
+          <TargetIcon className="text-[13px]" /> Target {formatNumber(challenge.targetValue)}
         </Badge>
-        {challenge.reward_points > 0 && (
+        {challenge.rewardPoints > 0 && (
           <Badge tone="primary">
-            <CoinsIcon className="text-[13px]" /> {formatNumber(challenge.reward_points)} pts
+            <CoinsIcon className="text-[13px]" /> {formatNumber(challenge.rewardPoints)} pts
           </Badge>
         )}
         {prize && (
@@ -85,9 +85,9 @@ export function ChallengeCard({
             <AwardIcon className="text-[13px]" /> {prize.name}
           </Badge>
         )}
-        {challenge.expires_at && (
+        {challenge.expiresAt && (
           <Badge tone="neutral">
-            <ClockIcon className="text-[13px]" /> Expires {formatDate(challenge.expires_at)}
+            <ClockIcon className="text-[13px]" /> Expires {formatDate(challenge.expiresAt)}
           </Badge>
         )}
       </div>

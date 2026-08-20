@@ -135,6 +135,14 @@ The token is read from the `API_TOKEN` environment variable (or `.env`) and
 defaults to `dev-secret-token` for local development. Requests with a missing or
 invalid token receive `401`/`403`.
 
+## JSON casing
+
+Every response is camelCase (`pointsBalance`, `createdAt`, `isActive`, ...), via
+a shared `CamelModel` base (`app/schemas/base.py`) that generates aliases from
+the snake_case Python/ORM field names - see that file for details. Request
+bodies accept snake_case *or* camelCase keys, so existing snake_case payloads
+keep working.
+
 ## API reference
 
 | Method | Path | Description |
@@ -171,8 +179,8 @@ invalid token receive `401`/`403`.
     { "id": "a1c2...", "name": "vip", "description": null, "color": null }
   ],
   "pointsBalance": 70,
-  "email_verified_at": null,
-  "is_email_verified": false
+  "emailVerifiedAt": null,
+  "isEmailVerified": false
 }
 ```
 
@@ -186,8 +194,8 @@ Members are assigned to segments by id (`MemberCreate`/`MemberUpdate` take `segm
   "name": "vip",
   "description": "Top-spending members",
   "color": "#f59e0b",
-  "created_at": "2026-01-01T00:00:00Z",
-  "member_count": 12
+  "createdAt": "2026-01-01T00:00:00Z",
+  "memberCount": 12
 }
 ```
 

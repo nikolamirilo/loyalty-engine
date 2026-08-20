@@ -18,7 +18,7 @@ export function SegmentCard({ segment }: { segment: Segment }) {
     revalidate.members();
     revalidate.challenges();
   };
-  const count = segment.member_count;
+  const count = segment.memberCount;
 
   return (
     <Card className="flex flex-col p-5">

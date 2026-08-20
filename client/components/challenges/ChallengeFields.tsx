@@ -41,7 +41,7 @@ export function ChallengeFields({
             type="number"
             min={1}
             step={1}
-            defaultValue={challenge?.target_value ?? 1}
+            defaultValue={challenge?.targetValue ?? 1}
             required
           />
         </Field>
@@ -56,7 +56,7 @@ export function ChallengeFields({
             type="number"
             min={0}
             step={1}
-            defaultValue={challenge?.reward_points ?? 0}
+            defaultValue={challenge?.rewardPoints ?? 0}
           />
         </Field>
       </div>
@@ -64,7 +64,7 @@ export function ChallengeFields({
         <Select
           id="challenge-reward"
           name="reward_id"
-          defaultValue={challenge?.reward_id ?? ""}
+          defaultValue={challenge?.rewardId ?? ""}
         >
           <option value="">No prize</option>
           {rewards.map((reward) => (
@@ -79,13 +79,13 @@ export function ChallengeFields({
           id="challenge-expires"
           name="expires_at"
           type="datetime-local"
-          defaultValue={toDatetimeLocalValue(challenge?.expires_at)}
+          defaultValue={toDatetimeLocalValue(challenge?.expiresAt)}
         />
       </Field>
       <Checkbox
         name="is_active"
         label="Active (can be assigned)"
-        defaultChecked={challenge ? challenge.is_active : true}
+        defaultChecked={challenge ? challenge.isActive : true}
       />
     </>
   );

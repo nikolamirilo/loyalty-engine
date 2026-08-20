@@ -41,9 +41,9 @@ export function MemberChallengeItem({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-medium text-foreground">{challenge.name}</p>
-          {challenge.reward_points > 0 && (
+          {challenge.rewardPoints > 0 && (
             <p className="mt-0.5 text-xs text-muted">
-              {formatNumber(challenge.reward_points)} pts on completion
+              {formatNumber(challenge.rewardPoints)} pts on completion
             </p>
           )}
         </div>
@@ -54,13 +54,13 @@ export function MemberChallengeItem({
         <div className="mb-1.5 flex justify-between text-xs text-muted tabular-nums">
           <span>Progress</span>
           <span>
-            {formatNumber(assignment.current_value)} /{" "}
-            {formatNumber(challenge.target_value)}
+            {formatNumber(assignment.currentValue)} /{" "}
+            {formatNumber(challenge.targetValue)}
           </span>
         </div>
         <ProgressMeter
-          value={assignment.current_value}
-          max={challenge.target_value}
+          value={assignment.currentValue}
+          max={challenge.targetValue}
           tone={tone}
         />
       </div>

@@ -106,7 +106,7 @@ export function AttributeFields({ attribute }: { attribute?: MemberAttribute }) 
         <DefaultValueInput
           type={type}
           options={options}
-          current={attribute?.default_value}
+          current={attribute?.defaultValue}
         />
       </Field>
     </>
