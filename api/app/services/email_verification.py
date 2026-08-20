@@ -8,10 +8,12 @@ long enough to be emailed.
 
 import hashlib
 import hmac
+import html
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from urllib.parse import urlencode
 from uuid import UUID
 
 import resend
@@ -20,7 +22,7 @@ from resend.exceptions import ResendError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models import EmailVerificationCode, Member
+from app.models import DOIType, EmailVerificationCode, Member
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -118,52 +120,39 @@ def _latest_active_code(db: Session, member_id: UUID) -> Optional[EmailVerificat
     )
 
 
-def _verification_email_html(code: str, ttl_minutes: int) -> str:
-    # Table layout + inline styles: the only markup broadly supported across
-    # email clients (no external stylesheets, no flex/grid). There's no real
-    # "copy" button here - email clients strip all JavaScript, so a clipboard
-    # button can't actually run. This is the standard alternative: a large,
-    # spaced-out, monospaced code that's trivial to tap-and-select-all.
-    #
-    # Colors are the app's light-mode design tokens (client/app/globals.css)
-    # - hardcoded because email clients don't reliably honor prefers-color-scheme.
-    background = "#f8fafc"  # --background
-    surface = "#ffffff"  # --surface
-    foreground = "#0f172a"  # --foreground
-    muted = "#475569"  # --muted
-    faint = "#64748b"  # --faint
-    line = "#e2e8f0"  # --line
-    primary = "#5b4bd6"  # --primary
-    code_bg = "#efecfd"  # --primary-subtle
-    code_fg = "#4338ca"  # --primary-subtle-fg
+# The app's light-mode design tokens (client/app/globals.css), hardcoded
+# because email clients don't reliably honor prefers-color-scheme.
+BACKGROUND = "#f8fafc"  # --background
+SURFACE = "#ffffff"  # --surface
+MUTED = "#475569"  # --muted
+FAINT = "#64748b"  # --faint
+LINE = "#e2e8f0"  # --line
+PRIMARY = "#5b4bd6"  # --primary
+PRIMARY_FG = "#ffffff"  # --primary-fg
+CODE_BG = "#efecfd"  # --primary-subtle
+CODE_FG = "#4338ca"  # --primary-subtle-fg
 
+
+def _email_shell(content: str) -> str:
+    """Wrap a verification email's content in the shared card layout.
+
+    Table layout + inline styles: the only markup broadly supported across
+    email clients (no external stylesheets, no flex/grid).
+    """
     return f"""\
 <!DOCTYPE html>
 <html>
-  <body style="margin:0;padding:0;background-color:{background};font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:{background};padding:32px 16px;">
+  <body style="margin:0;padding:0;background-color:{BACKGROUND};font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:{BACKGROUND};padding:32px 16px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:{surface};border:1px solid {line};border-radius:12px;max-width:480px;width:100%;overflow:hidden;">
+          <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:{SURFACE};border:1px solid {LINE};border-radius:12px;max-width:480px;width:100%;overflow:hidden;">
             <tr>
-              <td style="background-color:{primary};height:4px;line-height:4px;font-size:0;">&nbsp;</td>
+              <td style="background-color:{PRIMARY};height:4px;line-height:4px;font-size:0;">&nbsp;</td>
             </tr>
             <tr>
               <td style="padding:40px;text-align:center;">
-                <p style="margin:0 0 8px;font-size:14px;color:{muted};">Your verification code</p>
-                <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:16px auto;background-color:{code_bg};border-radius:10px;">
-                  <tr>
-                    <td style="padding:20px 28px;">
-                      <span style="font-family:'SFMono-Regular',Consolas,Menlo,monospace;font-size:40px;font-weight:700;letter-spacing:10px;color:{code_fg};">{code}</span>
-                    </td>
-                  </tr>
-                </table>
-                <p style="margin:16px 0 0;font-size:13px;color:{faint};">
-                  Tap and hold the code above to select and copy it.
-                </p>
-                <p style="margin:24px 0 0;font-size:13px;color:{faint};">
-                  This code expires in {ttl_minutes} minutes. If you didn't request this, you can ignore this email.
-                </p>
+{content}
               </td>
             </tr>
           </table>
@@ -173,6 +162,80 @@ def _verification_email_html(code: str, ttl_minutes: int) -> str:
   </body>
 </html>
 """
+
+
+def _expiry_note(subject: str, ttl_minutes: int) -> str:
+    return f"""\
+                <p style="margin:24px 0 0;font-size:13px;color:{FAINT};">
+                  This {subject} expires in {ttl_minutes} minutes. If you didn't request this, you can ignore this email.
+                </p>"""
+
+
+def _code_email_html(code: str, ttl_minutes: int) -> str:
+    # There's no real "copy" button here - email clients strip all JavaScript,
+    # so a clipboard button can't actually run. This is the standard
+    # alternative: a large, spaced-out, monospaced code that's trivial to
+    # tap-and-select-all.
+    return _email_shell(
+        f"""\
+                <p style="margin:0 0 8px;font-size:14px;color:{MUTED};">Your verification code</p>
+                <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:16px auto;background-color:{CODE_BG};border-radius:10px;">
+                  <tr>
+                    <td style="padding:20px 28px;">
+                      <span style="font-family:'SFMono-Regular',Consolas,Menlo,monospace;font-size:40px;font-weight:700;letter-spacing:10px;color:{CODE_FG};">{code}</span>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:16px 0 0;font-size:13px;color:{FAINT};">
+                  Tap and hold the code above to select and copy it.
+                </p>
+{_expiry_note("code", ttl_minutes)}"""
+    )
+
+
+def _page_email_html(link: str, ttl_minutes: int) -> str:
+    # A bulletproof-ish button: a padded <a> inside its own table cell, which
+    # is what email clients render consistently. The raw URL is repeated below
+    # it for clients that strip links or open in a different browser.
+    #
+    # Escaped because the link's `&` separator is markup in HTML: an unescaped
+    # `&code=` is a parse error that strict clients may swallow, taking the code
+    # out of the URL with it.
+    link = html.escape(link, quote=True)
+    return _email_shell(
+        f"""\
+                <p style="margin:0 0 8px;font-size:14px;color:{MUTED};">Confirm your email address</p>
+                <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:24px auto;">
+                  <tr>
+                    <td align="center" style="background-color:{PRIMARY};border-radius:10px;">
+                      <a href="{link}" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:{PRIMARY_FG};text-decoration:none;">Verify my email</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:16px 0 0;font-size:12px;color:{FAINT};word-break:break-all;">
+                  Or paste this address into your browser:<br />
+                  <a href="{link}" style="color:{CODE_FG};">{link}</a>
+                </p>
+{_expiry_note("link", ttl_minutes)}"""
+    )
+
+
+def _verify_page_link(member_id: UUID, code: str) -> str:
+    """The client's verification page, addressed to this member and code.
+
+    Raises if the client's base URL was never configured: without it there is
+    no link to send, and a page email with a broken button is worse than a
+    clear failure.
+    """
+    base = settings.client_base_url
+    if not base:
+        raise HTTPException(
+            500,
+            'Verification emails of type "page" need CLIENT_BASE_URL set to the '
+            "public base URL of the client app.",
+        )
+    query = urlencode({"memberId": str(member_id), "code": code})
+    return f"{base}/verify?{query}"
 
 
 def _send_status(exc: ResendError) -> Optional[int]:
@@ -195,17 +258,38 @@ def _send_reason(exc: ResendError) -> str:
     return f"{head}: {detail}" if detail else head
 
 
-def _send_verification_email(to_email: str, code: str) -> None:
+def _verification_email(member: Member, code: str, doi_type: DOIType) -> dict:
+    """The provider payload for the email this DOI type calls for."""
     ttl_minutes = int(CODE_TTL.total_seconds() // 60)
+    if doi_type is DOIType.page:
+        link = _verify_page_link(member.id, code)
+        return {
+            "subject": "Confirm your email address",
+            "text": (
+                f"Confirm your email address by opening {link} and pressing "
+                f"Verify my email. The link expires in {ttl_minutes} minutes."
+            ),
+            "html": _page_email_html(link, ttl_minutes),
+        }
+    return {
+        "subject": "Your verification code",
+        "text": f"Your verification code is {code}. It expires in {ttl_minutes} minutes.",
+        "html": _code_email_html(code, ttl_minutes),
+    }
+
+
+def _send_verification_email(member: Member, code: str, doi_type: DOIType) -> None:
+    # Built before the try: a misconfigured CLIENT_BASE_URL is a deployment
+    # error with its own answer, not a delivery failure to be reclassified as
+    # "try again shortly" by the blanket handler below.
+    payload = _verification_email(member, code, doi_type)
     resend.api_key = settings.resend_api_key
     try:
         resend.Emails.send(
             {
                 "from": settings.doi_from_email,
-                "to": [to_email],
-                "subject": "Your verification code",
-                "text": f"Your verification code is {code}. It expires in {ttl_minutes} minutes.",
-                "html": _verification_email_html(code, ttl_minutes),
+                "to": [member.email],
+                **payload,
             }
         )
     except ResendError as exc:
@@ -220,24 +304,39 @@ def _send_verification_email(to_email: str, code: str) -> None:
         ) from exc
 
 
-def trigger_verification(db: Session, member: Member) -> None:
-    """Ensure the member has a usable verification code in their inbox.
+def trigger_verification(
+    db: Session, member: Member, doi_type: DOIType = DOIType.code
+) -> None:
+    """Ensure the member has a usable verification email in their inbox.
 
-    If the code from a previous trigger hasn't expired or been used yet, that
-    request is already satisfied: leave the code alone and answer exactly as if
-    a new one had been sent. Mailing a second code would invalidate the first -
-    so a member reading the older email would type a code that no longer works -
-    while also spending a send and risking their inbox for nothing.
+    ``doi_type`` picks which email that is: ``code`` mails a 6-digit code to
+    type back, ``page`` mails a link to the client's /verify page that submits
+    the code for them.
 
-    A new code is issued once the previous one expires (CODE_TTL) or is used up
-    (verified, or MAX_ATTEMPTS wrong guesses).
+    If the email from a previous trigger hasn't expired or been used yet, and
+    it was the same type, that request is already satisfied: leave the code
+    alone and answer exactly as if a new one had been sent. Mailing a second
+    code would invalidate the first - so a member reading the older email would
+    use a code that no longer works - while also spending a send and risking
+    their inbox for nothing.
+
+    A trigger asking for the *other* type does issue a new code: the live one
+    was delivered in a shape this caller isn't asking for (and only its hash is
+    stored, so the page link behind it cannot be rebuilt to re-send).
+
+    A new code is also issued once the previous one expires (CODE_TTL) or is
+    used up (verified, or MAX_ATTEMPTS wrong guesses).
     """
     if member.email_verified_at is not None:
         raise HTTPException(409, "Member email is already verified")
 
     latest = _latest_active_code(db, member.id)
     now = _now()
-    if latest is not None and now <= _as_aware(latest.expires_at):
+    if (
+        latest is not None
+        and latest.type is doi_type
+        and now <= _as_aware(latest.expires_at)
+    ):
         return
 
     code = _generate_code()
@@ -246,7 +345,7 @@ def trigger_verification(db: Session, member: Member) -> None:
     # verification state should change - an orphaned code row would suppress
     # every retry until it expired, for a code that was never delivered.
     try:
-        _send_verification_email(member.email, code)
+        _send_verification_email(member, code, doi_type)
     except EmailDeliveryError as exc:
         # Log the provider's own words. Without this the endpoint answers with
         # a generic failure forever and the actual cause never reaches the logs.
@@ -276,6 +375,7 @@ def trigger_verification(db: Session, member: Member) -> None:
         EmailVerificationCode(
             member_id=member.id,
             code_hash=_hash_code(member.id, code),
+            type=doi_type,
             expires_at=now + CODE_TTL,
         )
     )

@@ -108,7 +108,8 @@ a JSON body instead of crashing the request.
 
 SSL is enabled automatically. Tables are created on first run - no SQL migration step needed
 (the DOI feature's `members.email_verified_at` column is the one exception - see
-`supabase/migrations/20260820095328_doi_email_verification.sql`, which must be run
+`supabase/migrations/20260820095328_doi_email_verification.sql` and
+`supabase/migrations/20260820121500_doi_verification_type.sql`, which must be run
 by hand since `create_all` never alters an existing table).
 
 ### DOI email verification
@@ -127,6 +128,36 @@ reason (e.g. `Resend 403 validation_error: The <domain> domain is not verified`)
 the same reason is written to the logs. Rate limits, provider outages and network
 failures answer `502` instead, since those are worth retrying.
 
+#### Trigger types
+
+`/doi/trigger` takes a `type` deciding which email the member gets:
+
+| `type` | Email | Member does |
+|--------|-------|-------------|
+| `code` (default) | A 6-digit code | Types it back into whatever screen started the flow, which posts it to `/doi/verify` |
+| `page` | A **Verify my email** button linking to `{CLIENT_BASE_URL}/verify?memberId=<id>&code=<code>` | Presses the button; that page posts to `/doi/verify` for them |
+
+```jsonc
+{ "memberId": "b3f1...", "type": "page" }   // or "email": "ada@example.com"
+```
+
+Both types issue the same kind of single-use code with the same 10-minute
+lifetime and 5-attempt limit, and both end at `POST /doi/verify` - the page flow
+just spares the member the typing. `type` is optional and defaults to `code`, so
+callers written before the page flow keep working unchanged.
+
+The page flow needs the client's public base URL:
+
+```
+CLIENT_BASE_URL=https://your-client-app.example.com
+```
+
+Without it a `type: "page"` trigger answers `500` rather than mailing a button
+that goes nowhere. The `code` flow never reads it, so an install that only sends
+codes can leave it unset.
+
+#### Idempotency
+
 `/doi/trigger` is idempotent while a code is live. If the member's previous code
 hasn't expired (10 minutes) or been used up yet, the endpoint answers `200` with
 the same body and sends nothing - the request is already satisfied by the code
@@ -134,6 +165,10 @@ sitting in their inbox, and a second email would silently invalidate the first.
 A new code is issued once the old one expires, is verified, or is burned through
 5 wrong guesses. Nothing is written to the database unless the email was
 accepted, so a failed send can't suppress the next attempt.
+
+Asking for the *other* `type` while a code is live does issue a new code: the
+live one was delivered in a shape this caller isn't asking for, and since only
+its hash is stored the page link behind it can never be rebuilt to re-send.
 
 ## Running
 
@@ -191,7 +226,7 @@ keep working.
 | `POST` / `GET` | `/segments` | Create / list segments |
 | `GET` / `PATCH` / `DELETE` | `/segments/{id}` | Get / update / delete a segment |
 | `POST` | `/challenges/{id}/assign-segment` | Assign a challenge to every member of a segment - `{"segment_id": "..."}` |
-| `POST` | `/doi/trigger` | Send a DOI email verification code - `{"email": "..."}` or `{"member_id": "..."}` |
+| `POST` | `/doi/trigger` | Send a DOI verification email - `{"email": "..."}` or `{"member_id": "..."}`, plus optional `"type": "code" \| "page"` |
 | `POST` | `/doi/verify` | Confirm a DOI code - add `"code": "123456"` to the same identifier |
 
 ### Member object
@@ -279,6 +314,7 @@ past production incidents, each runnable directly:
 ./venv/bin/python -m tests.test_database_pooler_port   # session pooler -> transaction pooler
 ./venv/bin/python -m tests.test_doi_email_errors       # DOI send failures are classified, not swallowed
 ./venv/bin/python -m tests.test_doi_trigger_flow       # /doi/trigger is idempotent while a code is live
+./venv/bin/python -m tests.test_doi_page_flow          # type="page" mails a working /verify link
 ./venv/bin/python -m tests.test_database_url           # DATABASE_URL driver normalization
 ```
 

@@ -32,3 +32,16 @@ class MemberAttributeType(str, enum.Enum):
     boolean = "boolean"
     date = "date"
     select = "select"
+
+
+class DOIType(str, enum.Enum):
+    """How a DOI verification email asks the member to confirm their address.
+
+    ``code``: the email shows a 6-digit code the member types back into
+    whatever screen triggered the flow.
+    ``page``: the email carries a link to the client's ``/verify`` page, which
+    submits the verification for them at the press of a button.
+    """
+
+    code = "code"
+    page = "page"

@@ -14,6 +14,7 @@ from app.models.challenge import (
 from app.models.email_verification import EmailVerificationCode
 from app.models.enums import (
     ChallengeStatus,
+    DOIType,
     MemberAttributeType,
     RedemptionSource,
     TransactionType,
@@ -31,6 +32,7 @@ __all__ = [
     "ChallengeAssignment",
     "ChallengeSegmentAssignment",
     "ChallengeStatus",
+    "DOIType",
     "EmailVerificationCode",
     "Member",
     "MemberAttribute",
