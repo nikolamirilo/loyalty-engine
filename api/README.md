@@ -125,9 +125,15 @@ DOI_FROM_EMAIL=<a verified Resend sender address>
 Resend rejects every send and `/doi/trigger` answers `500` quoting the provider's
 reason (e.g. `Resend 403 validation_error: The <domain> domain is not verified`);
 the same reason is written to the logs. Rate limits, provider outages and network
-failures answer `502` instead, since those are worth retrying. Nothing is written
-to the database unless the email was accepted, so a failed attempt never locks the
-member out behind the 60-second resend cooldown.
+failures answer `502` instead, since those are worth retrying.
+
+`/doi/trigger` is idempotent while a code is live. If the member's previous code
+hasn't expired (10 minutes) or been used up yet, the endpoint answers `200` with
+the same body and sends nothing - the request is already satisfied by the code
+sitting in their inbox, and a second email would silently invalidate the first.
+A new code is issued once the old one expires, is verified, or is burned through
+5 wrong guesses. Nothing is written to the database unless the email was
+accepted, so a failed send can't suppress the next attempt.
 
 ## Running
 
@@ -272,6 +278,7 @@ past production incidents, each runnable directly:
 ./venv/bin/python -m tests.test_database_pool          # NullPool must be in use
 ./venv/bin/python -m tests.test_database_pooler_port   # session pooler -> transaction pooler
 ./venv/bin/python -m tests.test_doi_email_errors       # DOI send failures are classified, not swallowed
+./venv/bin/python -m tests.test_doi_trigger_flow       # /doi/trigger is idempotent while a code is live
 ./venv/bin/python -m tests.test_database_url           # DATABASE_URL driver normalization
 ```
 
