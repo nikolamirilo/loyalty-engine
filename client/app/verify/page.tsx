@@ -18,7 +18,7 @@ function param(value: string | string[] | undefined): string {
 }
 
 /**
- * Public landing page for the DOI `type: "page"` email.
+ * Public landing page for the DOI `type: "link"` email.
  *
  * The email links here as `/verify?memberId=<id>&code=<code>`; the member
  * presses one button and the Server Action posts the pair to the API. It is

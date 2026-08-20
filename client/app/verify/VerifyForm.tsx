@@ -9,7 +9,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { CheckCircleIcon } from "@/components/ui/icons";
 
 /**
- * The one thing the DOI page flow asks of a member: press a button.
+ * The one thing the DOI link flow asks of a member: press a button.
  *
  * The id and code come from the emailed link and ride along as hidden inputs -
  * nothing to read, type, or copy.

@@ -35,7 +35,7 @@ class Settings:
     resend_api_key: str
     doi_from_email: str
     # Public base URL of the client app, used to build the link in the
-    # `type: "page"` DOI email. Only that one flow needs it, so an install that
+    # `type: "link"` DOI email. Only that one flow needs it, so an install that
     # sends nothing but codes must not fail to boot for want of it - it is
     # checked where it is used instead (app/services/email_verification.py).
     client_base_url: str = ""

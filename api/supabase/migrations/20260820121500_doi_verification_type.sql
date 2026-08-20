@@ -1,6 +1,6 @@
 -- DOI trigger type: which email a verification code was issued for.
 -- `code` (the default, and what every existing row was) mails a 6-digit code;
--- `page` mails a link to the client's /verify page.
+-- `link` mails a link that verifies for the member.
 --
 -- As with the migration next to this one, the ALTER TABLE must be run by hand
 -- against Supabase: SQLAlchemy's create_all() only creates brand-new tables on
@@ -8,7 +8,7 @@
 
 DO $$
 BEGIN
-    CREATE TYPE doitype AS ENUM ('code', 'page');
+    CREATE TYPE doitype AS ENUM ('code', 'link');
 EXCEPTION
     WHEN duplicate_object THEN NULL;
 END

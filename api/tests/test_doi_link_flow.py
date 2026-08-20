@@ -1,8 +1,8 @@
-"""Regression test for POST /doi/trigger with `type: "page"`.
+"""Regression test for POST /doi/trigger with `type: "link"`.
 
 What this guards:
 
-  * `type: "page"` mails a link to the client's /verify page carrying the
+  * `type: "link"` mails a link to the client's /verify page carrying the
     member id and the raw code - that link *is* the flow, so a missing or
     malformed one breaks verification for every member who gets it.
   * The code inside that link is the one /doi/verify accepts.
@@ -11,13 +11,13 @@ What this guards:
     issues a fresh code. Only the hash is stored, so the emailed link can never
     be rebuilt - leaving the code alone there would answer 200 while the member
     never receives the link they were promised.
-  * `type: "page"` without CLIENT_BASE_URL configured fails loudly (500) and
+  * `type: "link"` without CLIENT_BASE_URL configured fails loudly (500) and
     persists nothing, rather than mailing a broken button.
 
 Runs against an in-memory SQLite database with the Resend SDK stubbed out, so
 it never touches Supabase and never sends mail.
 
-Run: ./venv/bin/python -m tests.test_doi_page_flow
+Run: ./venv/bin/python -m tests.test_doi_link_flow
 """
 
 import os
@@ -91,7 +91,7 @@ def _active_codes():
 
 def main() -> None:
     session = database.SessionLocal()
-    session.add(Member(id=MEMBER_ID, name="Page Member", email="page@example.com"))
+    session.add(Member(id=MEMBER_ID, name="Link Member", email="link@example.com"))
     session.commit()
     session.close()
 
@@ -107,13 +107,13 @@ def main() -> None:
     try:
         resend.Emails.send = recording_send
 
-        status, body = _trigger("page")
+        status, body = _trigger("link")
         if status != 200:
-            failures.append(f"page trigger answered {status} {body}, expected 200")
+            failures.append(f"link trigger answered {status} {body}, expected 200")
         if body.get("message") != "Verification link sent":
-            failures.append(f"page trigger message was {body.get('message')!r}")
+            failures.append(f"link trigger message was {body.get('message')!r}")
         if len(sent) != 1:
-            failures.append(f"page trigger sent {len(sent)} emails, expected 1")
+            failures.append(f"link trigger sent {len(sent)} emails, expected 1")
 
         # The email must carry a usable /verify link, in both the HTML and the
         # plain-text part (clients that render either must both work). The HTML
@@ -124,7 +124,7 @@ def main() -> None:
             marker = "https://console.example.com/verify?"
             rendered = unescape(email.get(part, ""))
             if marker not in rendered:
-                failures.append(f"page email {part} part has no /verify link")
+                failures.append(f"link email {part} part has no /verify link")
                 continue
             links[part] = marker + rendered.split(marker)[1].split('"')[0].split()[0]
 
@@ -140,7 +140,7 @@ def main() -> None:
             failures.append(f"link carried no numeric code (query={query})")
 
         # Same type while the code is live: nothing new goes out.
-        again = _trigger("page")
+        again = _trigger("link")
         if again != (status, body):
             failures.append(f"re-trigger answered {again}, expected {(status, body)}")
         if len(sent) != 1:
@@ -155,7 +155,7 @@ def main() -> None:
                 f"switching type sent {len(sent)} emails in total, expected 2"
             )
         if "verify?" in sent[-1].get("text", ""):
-            failures.append("the code email carried a page link")
+            failures.append("the code email carried a verification link")
         if len(_active_codes()) != 1:
             failures.append(f"expected 1 outstanding code, found {len(_active_codes())}")
 
@@ -170,13 +170,13 @@ def main() -> None:
                 f"superseded link code answered {superseded.status_code}, expected 400"
             )
 
-        # ...so go back to a page email and verify with the link it sends.
+        # ...so go back to a link email and verify with the link it sends.
         session = database.SessionLocal()
         session.query(EmailVerificationCode).delete()
         session.commit()
         session.close()
 
-        _trigger("page")
+        _trigger("link")
         link_code = parse_qs(urlparse(
             f"https://console.example.com/verify?"
             + sent[-1]["text"].split("/verify?")[1].split()[0]
@@ -207,16 +207,16 @@ def main() -> None:
             }
         )
         before = len(sent)
-        unconfigured_status, _ = _trigger("page")
+        unconfigured_status, _ = _trigger("link")
         if unconfigured_status != 500:
             failures.append(
-                f"page trigger without CLIENT_BASE_URL answered "
+                f"link trigger without CLIENT_BASE_URL answered "
                 f"{unconfigured_status}, expected 500"
             )
         if len(sent) != before:
-            failures.append("page trigger without CLIENT_BASE_URL still sent an email")
+            failures.append("link trigger without CLIENT_BASE_URL still sent an email")
         if _active_codes():
-            failures.append("page trigger without CLIENT_BASE_URL left a code row")
+            failures.append("link trigger without CLIENT_BASE_URL left a code row")
     finally:
         resend.Emails.send = original_send
         email_verification.settings = type(email_verification.settings)(
@@ -228,7 +228,7 @@ def main() -> None:
         for f in failures:
             print("  -", f)
         raise SystemExit(1)
-    print('OK: /doi/trigger type="page" mails a working /verify link')
+    print('OK: /doi/trigger type="link" mails a working /verify link')
 
 
 if __name__ == "__main__":

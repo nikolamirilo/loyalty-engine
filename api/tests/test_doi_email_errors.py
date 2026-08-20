@@ -27,7 +27,7 @@ from app.models import DOIType, Member
 from app.services.email_verification import (EmailDeliveryError,
                                              _send_verification_email)
 
-# Never persisted - the send path only reads the address and (for page emails)
+# Never persisted - the send path only reads the address and (for link emails)
 # the id off it.
 MEMBER = Member(id=uuid.uuid4(), name="Test Member", email="member@example.com")
 

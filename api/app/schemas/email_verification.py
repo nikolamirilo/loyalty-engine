@@ -12,7 +12,7 @@ class DOITriggerRequest(CamelModel):
     email: Optional[EmailStr] = None
     member_id: Optional[UUID] = None
     # Which email to send. Defaults to the original behaviour (a typed code) so
-    # callers written before the page flow existed keep working unchanged.
+    # callers written before the link flow existed keep working unchanged.
     type: DOIType = DOIType.code
 
 

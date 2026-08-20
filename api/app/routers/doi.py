@@ -12,7 +12,7 @@ router = APIRouter(prefix="/doi", tags=["DOI"])
 # for without having to re-derive it from the request.
 MESSAGES = {
     DOIType.code: "Verification code sent",
-    DOIType.page: "Verification link sent",
+    DOIType.link: "Verification link sent",
 }
 
 

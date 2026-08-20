@@ -135,24 +135,24 @@ failures answer `502` instead, since those are worth retrying.
 | `type` | Email | Member does |
 |--------|-------|-------------|
 | `code` (default) | A 6-digit code | Types it back into whatever screen started the flow, which posts it to `/doi/verify` |
-| `page` | A **Verify my email** button linking to `{CLIENT_BASE_URL}/verify?memberId=<id>&code=<code>` | Presses the button; that page posts to `/doi/verify` for them |
+| `link` | A **Verify my email** button linking to `{CLIENT_BASE_URL}/verify?memberId=<id>&code=<code>` | Presses the button; that page posts to `/doi/verify` for them |
 
 ```jsonc
-{ "memberId": "b3f1...", "type": "page" }   // or "email": "ada@example.com"
+{ "memberId": "b3f1...", "type": "link" }   // or "email": "ada@example.com"
 ```
 
 Both types issue the same kind of single-use code with the same 10-minute
-lifetime and 5-attempt limit, and both end at `POST /doi/verify` - the page flow
+lifetime and 5-attempt limit, and both end at `POST /doi/verify` - the link flow
 just spares the member the typing. `type` is optional and defaults to `code`, so
-callers written before the page flow keep working unchanged.
+callers written before the link flow keep working unchanged.
 
-The page flow needs the client's public base URL:
+The link flow needs the client's public base URL:
 
 ```
 CLIENT_BASE_URL=https://your-client-app.example.com
 ```
 
-Without it a `type: "page"` trigger answers `500` rather than mailing a button
+Without it a `type: "link"` trigger answers `500` rather than mailing a button
 that goes nowhere. The `code` flow never reads it, so an install that only sends
 codes can leave it unset.
 
@@ -168,7 +168,7 @@ accepted, so a failed send can't suppress the next attempt.
 
 Asking for the *other* `type` while a code is live does issue a new code: the
 live one was delivered in a shape this caller isn't asking for, and since only
-its hash is stored the page link behind it can never be rebuilt to re-send.
+its hash is stored the link behind it can never be rebuilt to re-send.
 
 ## Running
 
@@ -226,7 +226,7 @@ keep working.
 | `POST` / `GET` | `/segments` | Create / list segments |
 | `GET` / `PATCH` / `DELETE` | `/segments/{id}` | Get / update / delete a segment |
 | `POST` | `/challenges/{id}/assign-segment` | Assign a challenge to every member of a segment - `{"segment_id": "..."}` |
-| `POST` | `/doi/trigger` | Send a DOI verification email - `{"email": "..."}` or `{"member_id": "..."}`, plus optional `"type": "code" \| "page"` |
+| `POST` | `/doi/trigger` | Send a DOI verification email - `{"email": "..."}` or `{"member_id": "..."}`, plus optional `"type": "code" \| "link"` |
 | `POST` | `/doi/verify` | Confirm a DOI code - add `"code": "123456"` to the same identifier |
 
 ### Member object
@@ -314,7 +314,7 @@ past production incidents, each runnable directly:
 ./venv/bin/python -m tests.test_database_pooler_port   # session pooler -> transaction pooler
 ./venv/bin/python -m tests.test_doi_email_errors       # DOI send failures are classified, not swallowed
 ./venv/bin/python -m tests.test_doi_trigger_flow       # /doi/trigger is idempotent while a code is live
-./venv/bin/python -m tests.test_doi_page_flow          # type="page" mails a working /verify link
+./venv/bin/python -m tests.test_doi_link_flow          # type="link" mails a working /verify link
 ./venv/bin/python -m tests.test_database_url           # DATABASE_URL driver normalization
 ```
 

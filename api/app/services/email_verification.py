@@ -193,7 +193,7 @@ def _code_email_html(code: str, ttl_minutes: int) -> str:
     )
 
 
-def _page_email_html(link: str, ttl_minutes: int) -> str:
+def _link_email_html(link: str, ttl_minutes: int) -> str:
     # A bulletproof-ish button: a padded <a> inside its own table cell, which
     # is what email clients render consistently. The raw URL is repeated below
     # it for clients that strip links or open in a different browser.
@@ -220,18 +220,19 @@ def _page_email_html(link: str, ttl_minutes: int) -> str:
     )
 
 
-def _verify_page_link(member_id: UUID, code: str) -> str:
-    """The client's verification page, addressed to this member and code.
+def _verify_link(member_id: UUID, code: str) -> str:
+    """The verification link for this member and code.
 
-    Raises if the client's base URL was never configured: without it there is
-    no link to send, and a page email with a broken button is worse than a
-    clear failure.
+    It addresses the client's /verify page, which is the only thing that knows
+    how to turn a press into a /doi/verify call. Raises if the client's base
+    URL was never configured: without it there is no link to send, and an email
+    with a broken button is worse than a clear failure.
     """
     base = settings.client_base_url
     if not base:
         raise HTTPException(
             500,
-            'Verification emails of type "page" need CLIENT_BASE_URL set to the '
+            'Verification emails of type "link" need CLIENT_BASE_URL set to the '
             "public base URL of the client app.",
         )
     query = urlencode({"memberId": str(member_id), "code": code})
@@ -261,15 +262,15 @@ def _send_reason(exc: ResendError) -> str:
 def _verification_email(member: Member, code: str, doi_type: DOIType) -> dict:
     """The provider payload for the email this DOI type calls for."""
     ttl_minutes = int(CODE_TTL.total_seconds() // 60)
-    if doi_type is DOIType.page:
-        link = _verify_page_link(member.id, code)
+    if doi_type is DOIType.link:
+        link = _verify_link(member.id, code)
         return {
             "subject": "Confirm your email address",
             "text": (
                 f"Confirm your email address by opening {link} and pressing "
                 f"Verify my email. The link expires in {ttl_minutes} minutes."
             ),
-            "html": _page_email_html(link, ttl_minutes),
+            "html": _link_email_html(link, ttl_minutes),
         }
     return {
         "subject": "Your verification code",
@@ -310,7 +311,7 @@ def trigger_verification(
     """Ensure the member has a usable verification email in their inbox.
 
     ``doi_type`` picks which email that is: ``code`` mails a 6-digit code to
-    type back, ``page`` mails a link to the client's /verify page that submits
+    type back, ``link`` mails a link to the client's /verify page that submits
     the code for them.
 
     If the email from a previous trigger hasn't expired or been used yet, and
@@ -322,7 +323,7 @@ def trigger_verification(
 
     A trigger asking for the *other* type does issue a new code: the live one
     was delivered in a shape this caller isn't asking for (and only its hash is
-    stored, so the page link behind it cannot be rebuilt to re-send).
+    stored, so the link behind it cannot be rebuilt to re-send).
 
     A new code is also issued once the previous one expires (CODE_TTL) or is
     used up (verified, or MAX_ATTEMPTS wrong guesses).

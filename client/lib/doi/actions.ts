@@ -4,7 +4,7 @@ import type { ActionState } from "@/lib/action-state";
 import { ApiError, apiRequest } from "@/lib/api";
 
 /**
- * Server Action behind the public /verify page (the DOI `type: "page"` flow).
+ * Server Action behind the public /verify page (the DOI `type: "link"` flow).
  *
  * The member arrives from an email link and is not signed in, so the call to
  * the API cannot go through the session-gated /api/le proxy. It runs here

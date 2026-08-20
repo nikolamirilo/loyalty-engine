@@ -26,7 +26,7 @@ Everything under `app/(protected)` is the admin console and needs a signed-in
 session (see `proxy.ts`). Two routes are public:
 
 - `/login` - the console sign-in.
-- `/verify` - where DOI verification emails of `type: "page"` land. The API mails
+- `/verify` - where DOI verification emails of `type: "link"` land. The API mails
   the member `{CLIENT_BASE_URL}/verify?memberId=<id>&code=<code>`; the page reads
   that pair from the query string and a single button posts it to the API's
   `/doi/verify` through a Server Action, so the API token stays on the server.
@@ -34,7 +34,7 @@ session (see `proxy.ts`). Two routes are public:
   outside `(protected)` and is exempted in `proxy.ts`.
 
   Set `CLIENT_BASE_URL` on the **API** to this app's public base URL, otherwise a
-  `type: "page"` trigger has no link to send and answers `500`.
+  `type: "link"` trigger has no link to send and answers `500`.
 
 ## Learn More
 
