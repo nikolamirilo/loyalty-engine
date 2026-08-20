@@ -18,7 +18,7 @@ from app.models import MemberAttribute, MemberAttributeType
 # The pragmatic intersection of what HubSpot, Braze and Bloomreach offer.
 ATTRIBUTE_TYPES = tuple(t.value for t in MemberAttributeType)
 
-_KEY_RE = re.compile(r"[^a-z0-9]+")
+_WORD_RE = re.compile(r"[A-Za-z0-9]+")
 _MAX_KEY_LENGTH = 63  # Postgres identifier limit; keeps keys promotable to columns later.
 _MAX_TEXT_LENGTH = 500
 
@@ -26,11 +26,13 @@ _MAX_TEXT_LENGTH = 500
 def slugify(label: str) -> str:
     """Derive a stable internal key from a human label.
 
-    ``"Favourite colour!"`` -> ``"favourite_colour"``. The result is immutable
-    once the attribute exists, which is why it must not depend on anything
-    editable beyond the label the admin first typed.
+    ``"Favourite colour!"`` -> ``"favouriteColour"`` - camelCase, matching the
+    camelCase convention every other JSON key in the API uses. The result is
+    immutable once the attribute exists, which is why it must not depend on
+    anything editable beyond the label the admin first typed.
     """
-    key = _KEY_RE.sub("_", label.strip().lower()).strip("_")[:_MAX_KEY_LENGTH].strip("_")
+    words = _WORD_RE.findall(label)
+    key = (words[0].lower() + "".join(w.capitalize() for w in words[1:]))[:_MAX_KEY_LENGTH] if words else ""
     if not key or not key[0].isalpha():
         raise HTTPException(
             400,
