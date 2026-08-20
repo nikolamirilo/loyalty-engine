@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Routes
+
+Everything under `app/(protected)` is the admin console and needs a signed-in
+session (see `proxy.ts`). Two routes are public:
+
+- `/login` - the console sign-in.
+- `/verify` - where DOI verification emails of `type: "link"` land. The API mails
+  the member `{CLIENT_BASE_URL}/verify?memberId=<id>&code=<code>`; the page reads
+  that pair from the query string and a single button posts it to the API's
+  `/doi/verify` through a Server Action, so the API token stays on the server.
+  Members opening it are not admins and never will be, which is why it sits
+  outside `(protected)` and is exempted in `proxy.ts`.
+
+  Set `CLIENT_BASE_URL` on the **API** to this app's public base URL, otherwise a
+  `type: "link"` trigger has no link to send and answers `500`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

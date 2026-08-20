@@ -18,11 +18,18 @@ os.environ.setdefault("API_TOKEN", "test-token")
 os.environ.setdefault("RESEND_API_KEY", "test-resend-key")
 os.environ.setdefault("DOI_FROM_EMAIL", "noreply@example.com")
 
+import uuid
+
 import resend
 from resend.exceptions import ResendError
 
+from app.models import DOIType, Member
 from app.services.email_verification import (EmailDeliveryError,
                                              _send_verification_email)
+
+# Never persisted - the send path only reads the address and (for link emails)
+# the id off it.
+MEMBER = Member(id=uuid.uuid4(), name="Test Member", email="member@example.com")
 
 # (label, exception raised by the SDK, expected `transient`, text expected in reason)
 CASES = [
@@ -90,7 +97,7 @@ def main() -> None:
 
             resend.Emails.send = failing_send
             try:
-                _send_verification_email("member@example.com", "123456")
+                _send_verification_email(MEMBER, "123456", DOIType.code)
             except EmailDeliveryError as exc:
                 if exc.transient != expect_transient:
                     failures.append(

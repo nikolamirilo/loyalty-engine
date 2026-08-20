@@ -22,6 +22,10 @@ def _required(name: str, hint: str) -> str:
     return value
 
 
+def _optional(name: str, default: str = "") -> str:
+    return (os.getenv(name) or default).strip()
+
+
 @dataclass(frozen=True)
 class Settings:
     """Validated runtime configuration."""
@@ -30,6 +34,11 @@ class Settings:
     api_token: str
     resend_api_key: str
     doi_from_email: str
+    # Public base URL of the client app, used to build the link in the
+    # `type: "link"` DOI email. Only that one flow needs it, so an install that
+    # sends nothing but codes must not fail to boot for want of it - it is
+    # checked where it is used instead (app/services/email_verification.py).
+    client_base_url: str = ""
 
     project_name: str = "Loyalty Engine"
     version: str = "1.0.0"
@@ -55,6 +64,9 @@ def get_settings() -> Settings:
             "DOI_FROM_EMAIL",
             "Add the verified Resend sender address for DOI verification emails.",
         ),
+        # Trailing slashes stripped so links are built as `{base}/verify?...`
+        # without doubling up the separator.
+        client_base_url=_optional("CLIENT_BASE_URL").rstrip("/"),
     )
 
 
