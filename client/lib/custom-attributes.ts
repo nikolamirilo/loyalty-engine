@@ -24,14 +24,12 @@ export const ATTRIBUTE_TYPES = Object.keys(
  *  authoritative. */
 export function previewKey(label: string): string {
   const words = label.match(/[A-Za-z0-9]+/g) ?? [];
-  if (words.length === 0) return "";
-  return (
-    words[0].toLowerCase() +
-    words
-      .slice(1)
-      .map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase())
-      .join("")
-  ).slice(0, 63);
+  return words
+    .map((w, i) =>
+      i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
+    )
+    .join("")
+    .slice(0, 63);
 }
 
 /** Render a stored value for read-only display. */
