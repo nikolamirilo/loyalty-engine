@@ -1,7 +1,9 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 
 from app.core.config import settings
 from app.core.database import Base, engine
@@ -48,6 +50,24 @@ app.include_router(challenges.router, dependencies=protected)
 app.include_router(tiers.router, dependencies=protected)
 app.include_router(segments.router, dependencies=protected)
 app.include_router(doi.router, dependencies=protected)
+
+
+@app.exception_handler(OperationalError)
+async def database_unavailable(request: Request, exc: OperationalError) -> JSONResponse:
+    """Answer with a clean 503 when the database can't be reached.
+
+    A saturated Supabase pooler or a paused project is not the caller's fault
+    and is not a bug in the handler that happened to run. Without this the
+    driver error escapes as an unhandled ASGI exception: no JSON body, a raw
+    traceback in the logs, and nothing the client can act on.
+    """
+    logger.exception(
+        "Database unavailable handling %s %s", request.method, request.url.path
+    )
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Database is temporarily unavailable. Please try again shortly."},
+    )
 
 
 @app.get("/health", tags=["Health"])

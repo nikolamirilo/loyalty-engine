@@ -93,6 +93,19 @@ cp .env.example .env        # then set DATABASE_URL + API_TOKEN (see below)
 DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
 ```
 
+Use **Transaction mode (port `6543`)**, not Session mode (`5432`). Session mode gives
+each client its own Postgres backend out of a budget of ~15, which a serverless
+deployment exhausts almost immediately:
+
+```
+FATAL: (EMAXCONNSESSION) max clients reached in session mode - max clients are limited to pool_size: 15
+```
+
+A session-mode Supabase pooler URL is redirected to port `6543` at startup with a
+warning in the logs (`app/core/database.py`), but fix `DATABASE_URL` rather than
+relying on that. If the database is unreachable anyway, the API answers `503` with
+a JSON body instead of crashing the request.
+
 SSL is enabled automatically. Tables are created on first run - no SQL migration step needed
 (the DOI feature's `members.email_verified_at` column is the one exception - see
 `supabase/migrations/20260820095328_doi_email_verification.sql`, which must be run
@@ -107,6 +120,14 @@ Set:
 RESEND_API_KEY=<your Resend API key>
 DOI_FROM_EMAIL=<a verified Resend sender address>
 ```
+
+`DOI_FROM_EMAIL` must be on a domain you have verified in Resend. Until it is,
+Resend rejects every send and `/doi/trigger` answers `500` quoting the provider's
+reason (e.g. `Resend 403 validation_error: The <domain> domain is not verified`);
+the same reason is written to the logs. Rate limits, provider outages and network
+failures answer `502` instead, since those are worth retrying. Nothing is written
+to the database unless the email was accepted, so a failed attempt never locks the
+member out behind the 60-second resend cooldown.
 
 ## Running
 
@@ -244,12 +265,14 @@ curl http://localhost:8000/members/1 -H "Authorization: Bearer $TOKEN"
 
 ## Testing
 
-There's no pytest suite yet - `tests/` holds two standalone regression scripts
-for past production incidents, each runnable directly:
+There's no pytest suite yet - `tests/` holds standalone regression scripts for
+past production incidents, each runnable directly:
 
 ```bash
-./venv/bin/python -m tests.test_database_pool   # NullPool must be in use
-./venv/bin/python -m tests.test_database_url    # DATABASE_URL driver normalization
+./venv/bin/python -m tests.test_database_pool          # NullPool must be in use
+./venv/bin/python -m tests.test_database_pooler_port   # session pooler -> transaction pooler
+./venv/bin/python -m tests.test_doi_email_errors       # DOI send failures are classified, not swallowed
+./venv/bin/python -m tests.test_database_url           # DATABASE_URL driver normalization
 ```
 
 `test_database_url.py` currently fails with an `ImportError` - it imports a

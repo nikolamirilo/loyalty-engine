@@ -8,6 +8,7 @@ long enough to be emailed.
 
 import hashlib
 import hmac
+import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -15,14 +16,49 @@ from uuid import UUID
 
 import resend
 from fastapi import HTTPException
+from resend.exceptions import ResendError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models import EmailVerificationCode, Member
 
+logger = logging.getLogger("uvicorn.error")
+
 CODE_TTL = timedelta(minutes=10)
 RESEND_COOLDOWN = timedelta(seconds=60)
 MAX_ATTEMPTS = 5
+
+# The SDK's default HTTP timeout (30s) outlives the serverless function budget,
+# so a slow provider would surface as an opaque platform timeout instead of an
+# error this module can classify and log. Cap it well under that budget.
+SEND_TIMEOUT_SECONDS = 10
+
+try:
+    resend.default_http_client = resend.RequestsClient(timeout=SEND_TIMEOUT_SECONDS)
+except AttributeError:  # SDK too old to expose a pluggable HTTP client
+    pass
+
+# Statuses Resend uses for failures a retry cannot resolve: a rejected or
+# missing API key, an unverified sender domain, a recipient the account is not
+# allowed to mail, a malformed payload. Everything else - 429, 5xx, network
+# trouble - is treated as transient.
+PERMANENT_SEND_STATUSES = frozenset({400, 401, 402, 403, 404, 405, 409, 413, 422})
+
+
+class EmailDeliveryError(Exception):
+    """The verification email could not be handed to the email provider.
+
+    ``transient`` separates the two cases that need opposite answers: a rate
+    limit or provider blip is worth retrying, while a rejected API key or an
+    unverified sender domain fails identically forever and needs a human to fix
+    the deployment - telling that caller to "try again shortly" hides a broken
+    deployment behind an endpoint that can never succeed.
+    """
+
+    def __init__(self, reason: str, *, transient: bool) -> None:
+        super().__init__(reason)
+        self.reason = reason
+        self.transient = transient
 
 
 def _now() -> datetime:
@@ -140,18 +176,49 @@ def _verification_email_html(code: str, ttl_minutes: int) -> str:
 """
 
 
+def _send_status(exc: ResendError) -> Optional[int]:
+    # ResendError.code is documented as the HTTP status but is typed as
+    # str | int, and the SDK also synthesises a 500 for client-side failures.
+    try:
+        return int(exc.code)
+    except (TypeError, ValueError):
+        return None
+
+
+def _send_reason(exc: ResendError) -> str:
+    """The provider's own explanation, condensed for a log line."""
+    status = _send_status(exc)
+    head = f"Resend {status}" if status is not None else "Resend"
+    error_type = getattr(exc, "error_type", None)
+    if error_type:
+        head = f"{head} {error_type}"
+    detail = str(getattr(exc, "message", "") or exc).strip()
+    return f"{head}: {detail}" if detail else head
+
+
 def _send_verification_email(to_email: str, code: str) -> None:
     ttl_minutes = int(CODE_TTL.total_seconds() // 60)
     resend.api_key = settings.resend_api_key
-    resend.Emails.send(
-        {
-            "from": settings.doi_from_email,
-            "to": [to_email],
-            "subject": "Your verification code",
-            "text": f"Your verification code is {code}. It expires in {ttl_minutes} minutes.",
-            "html": _verification_email_html(code, ttl_minutes),
-        }
-    )
+    try:
+        resend.Emails.send(
+            {
+                "from": settings.doi_from_email,
+                "to": [to_email],
+                "subject": "Your verification code",
+                "text": f"Your verification code is {code}. It expires in {ttl_minutes} minutes.",
+                "html": _verification_email_html(code, ttl_minutes),
+            }
+        )
+    except ResendError as exc:
+        status = _send_status(exc)
+        raise EmailDeliveryError(
+            _send_reason(exc),
+            transient=status is None or status not in PERMANENT_SEND_STATUSES,
+        ) from exc
+    except Exception as exc:  # noqa: BLE001 - anything else is still a send failure
+        raise EmailDeliveryError(
+            f"{type(exc).__name__}: {exc}".strip(), transient=True
+        ) from exc
 
 
 def trigger_verification(db: Session, member: Member) -> None:
@@ -167,13 +234,27 @@ def trigger_verification(db: Session, member: Member) -> None:
 
     # Send before touching the DB: if delivery fails, nothing about the member's
     # verification state should change - no orphaned code row blocking the next
-    # attempt behind the resend cooldown, and no raw 500 leaking a provider
-    # exception straight to the caller.
+    # attempt behind the resend cooldown.
     try:
         _send_verification_email(member.email, code)
-    except Exception as exc:
+    except EmailDeliveryError as exc:
+        # Log the provider's own words. Without this the endpoint answers with
+        # a generic failure forever and the actual cause never reaches the logs.
+        logger.exception(
+            "DOI: could not send verification email for member %s (from=%s): %s",
+            member.id,
+            settings.doi_from_email,
+            exc.reason,
+        )
+        if exc.transient:
+            raise HTTPException(
+                502, "Could not send the verification email. Please try again shortly."
+            ) from exc
+        # Permanent: retrying is pointless, so say what actually needs fixing.
         raise HTTPException(
-            502, "Could not send the verification email. Please try again shortly."
+            500,
+            "Verification email could not be sent - email delivery is "
+            f"misconfigured. {exc.reason}",
         ) from exc
 
     # A member should only ever have one outstanding code at a time.
