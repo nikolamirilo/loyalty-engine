@@ -163,13 +163,24 @@ def trigger_verification(db: Session, member: Member) -> None:
     if latest is not None and now - _as_aware(latest.created_at) < RESEND_COOLDOWN:
         raise HTTPException(429, "Please wait before requesting another code")
 
+    code = _generate_code()
+
+    # Send before touching the DB: if delivery fails, nothing about the member's
+    # verification state should change - no orphaned code row blocking the next
+    # attempt behind the resend cooldown, and no raw 500 leaking a provider
+    # exception straight to the caller.
+    try:
+        _send_verification_email(member.email, code)
+    except Exception as exc:
+        raise HTTPException(
+            502, "Could not send the verification email. Please try again shortly."
+        ) from exc
+
     # A member should only ever have one outstanding code at a time.
     db.query(EmailVerificationCode).filter(
         EmailVerificationCode.member_id == member.id,
         EmailVerificationCode.consumed_at.is_(None),
     ).delete()
-
-    code = _generate_code()
     db.add(
         EmailVerificationCode(
             member_id=member.id,
@@ -178,8 +189,6 @@ def trigger_verification(db: Session, member: Member) -> None:
         )
     )
     db.commit()
-
-    _send_verification_email(member.email, code)
 
 
 def verify_code(db: Session, member: Member, code: str) -> Member:
