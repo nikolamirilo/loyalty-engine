@@ -70,6 +70,8 @@ export interface Member {
   custom_attributes: Record<string, CustomAttributeValue>;
   /** Set by the DOI email-verification flow (or an admin override); null = unverified. */
   email_verified_at: string | null;
+  /** Computed as `email_verified_at !== null` - convenience mirror of that field. */
+  is_email_verified: boolean;
 }
 
 export interface PointsTransaction {

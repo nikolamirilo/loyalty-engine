@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, computed_field
 
 from app.schemas.segment import SegmentSummary
 
@@ -41,3 +41,8 @@ class MemberOut(BaseModel):
     email_verified_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True, "populate_by_name": True}
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def is_email_verified(self) -> bool:
+        return self.email_verified_at is not None

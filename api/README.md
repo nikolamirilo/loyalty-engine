@@ -170,7 +170,9 @@ invalid token receive `401`/`403`.
   "segments": [
     { "id": "a1c2...", "name": "vip", "description": null, "color": null }
   ],
-  "pointsBalance": 70
+  "pointsBalance": 70,
+  "email_verified_at": null,
+  "is_email_verified": false
 }
 ```
 
