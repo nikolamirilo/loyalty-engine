@@ -68,6 +68,8 @@ export interface Member {
    * A key can be absent — the UI renders from the definitions list, so absent
    * and null both display as empty. */
   custom_attributes: Record<string, CustomAttributeValue>;
+  /** Set by the DOI email-verification flow (or an admin override); null = unverified. */
+  email_verified_at: string | null;
 }
 
 export interface PointsTransaction {

@@ -93,7 +93,20 @@ cp .env.example .env        # then set DATABASE_URL + API_TOKEN (see below)
 DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
 ```
 
-SSL is enabled automatically. Tables are created on first run - no SQL migration step needed.
+SSL is enabled automatically. Tables are created on first run - no SQL migration step needed
+(the DOI feature's `members.email_verified_at` column is the one exception - see
+`supabase/migrations/20260820095328_doi_email_verification.sql`, which must be run
+by hand since `create_all` never alters an existing table).
+
+### DOI email verification
+
+Sending verification codes (`/doi/trigger`) uses [Resend](https://resend.com).
+Set:
+
+```
+RESEND_API_KEY=<your Resend API key>
+DOI_FROM_EMAIL=<a verified Resend sender address>
+```
 
 ## Running
 
@@ -143,6 +156,8 @@ invalid token receive `401`/`403`.
 | `POST` / `GET` | `/segments` | Create / list segments |
 | `GET` / `PATCH` / `DELETE` | `/segments/{id}` | Get / update / delete a segment |
 | `POST` | `/challenges/{id}/assign-segment` | Assign a challenge to every member of a segment - `{"segment_id": "..."}` |
+| `POST` | `/doi/trigger` | Send a DOI email verification code - `{"email": "..."}` or `{"member_id": "..."}` |
+| `POST` | `/doi/verify` | Confirm a DOI code - add `"code": "123456"` to the same identifier |
 
 ### Member object
 

@@ -26,6 +26,8 @@ class Member(Base):
     total_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     tier_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("tiers.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    # NULL = email not yet verified via the DOI flow (see app/services/email_verification.py).
+    email_verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     # Values for the admin-defined fields in `member_attributes`, keyed by their
     # `key`. Plain JSONB isn't change-tracked, so writes must *reassign* the dict
     # (`member.custom_attributes = {**old, **patch}`) - mutating it in place

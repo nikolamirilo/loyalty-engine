@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -142,9 +143,13 @@ def update_member(member_id: UUID, body: MemberUpdate, db: Session = Depends(get
     member = db.get(Member, member_id)
     if not member:
         raise HTTPException(404, "Member not found")
-    data = body.model_dump(exclude_none=True, exclude={"segment_ids", "custom_attributes"})
+    data = body.model_dump(
+        exclude_none=True, exclude={"segment_ids", "custom_attributes", "email_verified"}
+    )
     for field, value in data.items():
         setattr(member, field, value)
+    if body.email_verified is not None:
+        member.email_verified_at = datetime.now(timezone.utc) if body.email_verified else None
     if body.custom_attributes is not None:
         # Shallow merge, not replace: a caller that knows about one attribute must
         # not wipe the others. A key sent as null clears just that value.

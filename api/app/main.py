@@ -8,6 +8,7 @@ from app.core.database import Base, engine
 from app.core.security import verify_token
 from app.routers import (
     challenges,
+    doi,
     member_attributes,
     members,
     points,
@@ -46,6 +47,7 @@ app.include_router(redemptions.router, dependencies=protected)
 app.include_router(challenges.router, dependencies=protected)
 app.include_router(tiers.router, dependencies=protected)
 app.include_router(segments.router, dependencies=protected)
+app.include_router(doi.router, dependencies=protected)
 
 
 @app.get("/health", tags=["Health"])

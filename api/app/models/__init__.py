@@ -11,6 +11,7 @@ from app.models.challenge import (
     ChallengeAssignment,
     ChallengeSegmentAssignment,
 )
+from app.models.email_verification import EmailVerificationCode
 from app.models.enums import (
     ChallengeStatus,
     MemberAttributeType,
@@ -30,6 +31,7 @@ __all__ = [
     "ChallengeAssignment",
     "ChallengeSegmentAssignment",
     "ChallengeStatus",
+    "EmailVerificationCode",
     "Member",
     "MemberAttribute",
     "MemberAttributeType",

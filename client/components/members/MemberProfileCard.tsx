@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 
 import { deleteMember, updateMember } from "@/lib/actions";
 import { idleState } from "@/lib/action-state";
+import { formatDateTime } from "@/lib/format";
 import { useSegments } from "@/lib/swr/hooks";
 import type { Member, Reward, Tier } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
@@ -16,6 +17,7 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Checkbox, Input } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { VerifiedBadge } from "@/components/ui/StatusBadge";
 import { useToast } from "@/components/ui/Toast";
 import {
   CopyIcon,
@@ -256,6 +258,30 @@ function ProfileCardForm({
             {editing && (
               <p className="mt-1 text-xs text-faint">
                 Assigned automatically from points balance.
+              </p>
+            )}
+          </ProfileField>
+
+          <ProfileField label="Email verified" className="w-40">
+            {editing ? (
+              <Checkbox
+                name="email_verified"
+                label="Verified"
+                defaultChecked={!!member.email_verified_at}
+              />
+            ) : (
+              <div className="flex flex-col items-start gap-1">
+                <VerifiedBadge verified={!!member.email_verified_at} />
+                {member.email_verified_at && (
+                  <span className="text-xs text-faint">
+                    {formatDateTime(member.email_verified_at)}
+                  </span>
+                )}
+              </div>
+            )}
+            {editing && (
+              <p className="mt-1 text-xs text-faint">
+                Normally set by the DOI email flow; check/uncheck to override.
               </p>
             )}
           </ProfileField>

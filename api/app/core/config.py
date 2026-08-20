@@ -28,6 +28,8 @@ class Settings:
 
     database_url: str
     api_token: str
+    resend_api_key: str
+    doi_from_email: str
 
     project_name: str = "Loyalty Engine"
     version: str = "1.0.0"
@@ -44,6 +46,14 @@ def get_settings() -> Settings:
         api_token=_required(
             "API_TOKEN",
             "Add a secret bearer token to the environment or a .env file.",
+        ),
+        resend_api_key=_required(
+            "RESEND_API_KEY",
+            "Add the Resend API key used to send DOI verification emails.",
+        ),
+        doi_from_email=_required(
+            "DOI_FROM_EMAIL",
+            "Add the verified Resend sender address for DOI verification emails.",
         ),
     )
 

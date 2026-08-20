@@ -66,3 +66,17 @@ export function ActiveBadge({ active }: { active: boolean }) {
     </Badge>
   );
 }
+
+export function VerifiedBadge({ verified }: { verified: boolean }) {
+  return verified ? (
+    <Badge tone="success">
+      <CheckCircleIcon className="text-[13px]" />
+      Verified
+    </Badge>
+  ) : (
+    <Badge tone="neutral">
+      <BanIcon className="text-[13px]" />
+      Unverified
+    </Badge>
+  );
+}

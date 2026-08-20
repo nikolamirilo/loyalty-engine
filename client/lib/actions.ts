@@ -146,6 +146,7 @@ export async function updateMember(
         segment_ids: parseSegmentIds(fd),
         // undefined drops the key from the JSON body, leaving stored values alone.
         custom_attributes: await parseCustomAttributes(fd),
+        email_verified: checkbox(fd, "email_verified"),
       },
     });
     revalidateMember(id);

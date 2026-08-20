@@ -15,6 +15,12 @@ from app.schemas.challenge import (
     SegmentAssignRequest,
     SegmentAssignResult,
 )
+from app.schemas.email_verification import (
+    DOITriggerRequest,
+    DOITriggerResponse,
+    DOIVerifyRequest,
+    DOIVerifyResponse,
+)
 from app.schemas.member import MemberCreate, MemberOut, MemberUpdate
 from app.schemas.member_attribute import (
     MemberAttributeCreate,
@@ -50,6 +56,10 @@ __all__ = [
     "ChallengeOut",
     "ChallengeProgressOut",
     "ChallengeUpdate",
+    "DOITriggerRequest",
+    "DOITriggerResponse",
+    "DOIVerifyRequest",
+    "DOIVerifyResponse",
     "EarnPointsRequest",
     "MemberAssignRequest",
     "MemberAssignResult",
