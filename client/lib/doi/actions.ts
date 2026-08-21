@@ -26,7 +26,7 @@ export async function verifyMemberEmail(
   try {
     await apiRequest("/doi/verify", {
       method: "POST",
-      json: { member_id: memberId, code },
+      json: { memberId, code },
     });
     return { ok: true, message: "Your email address is verified." };
   } catch (e) {

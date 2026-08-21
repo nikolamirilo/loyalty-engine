@@ -9,7 +9,7 @@ import { Checkbox, Field, Input, Select } from "@/components/ui/Field";
  * Renders nothing when no attributes are configured, so the form is unchanged
  * for programs that don't use them.
  *
- * Each field also emits a hidden `custom_keys` input. That marker is what lets
+ * Each field also emits a hidden `customKeys` input. That marker is what lets
  * the Server Action tell "the admin cleared this field" from "this input was
  * never rendered" — `FormData.get()` returns null for both, and they mean
  * opposite things (clear the value vs. leave it alone). Without it, saving
@@ -37,7 +37,7 @@ export function CustomAttributeFields({
           hint="optional"
           className={itemClassName}
         >
-          <input type="hidden" name="custom_keys" value={attribute.key} />
+          <input type="hidden" name="customKeys" value={attribute.key} />
           <AttributeInput attribute={attribute} member={member} />
         </Field>
       ))}

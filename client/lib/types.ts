@@ -44,7 +44,7 @@ export type CustomAttributeValue = string | number | boolean | null;
  *
  * `key` and `type` are immutable server-side: renaming the key would orphan
  * every stored value and changing the type would invalidate them. `label` and
- * `default_value` stay editable. */
+ * `defaultValue` stay editable. */
 export interface MemberAttribute {
   id: UUID;
   key: string;

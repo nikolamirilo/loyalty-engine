@@ -83,8 +83,8 @@ export function humanize(value: string): string {
 
 /**
  * Compute a member's current tier from their balance, mirroring the server's
- * rule: the highest tier whose `min_points` the balance meets or exceeds.
- * Assumes `tiers` is sorted ascending by `min_points`.
+ * rule: the highest tier whose `minPoints` the balance meets or exceeds.
+ * Assumes `tiers` is sorted ascending by `minPoints`.
  */
 export function tierForBalance(tiers: Tier[], balance: number): Tier | null {
   let current: Tier | null = null;

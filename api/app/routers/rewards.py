@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -27,7 +27,14 @@ def create_reward(body: RewardCreate, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=list[RewardOut])
-def list_rewards(active_only: bool = False, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def list_rewards(
+    # Aliased so the wire-level query key is camelCase like every other JSON
+    # key in the API; the Python parameter stays snake_case.
+    active_only: bool = Query(False, alias="activeOnly"),
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
     q = db.query(Reward)
     if active_only:
         q = q.filter(Reward.is_active)

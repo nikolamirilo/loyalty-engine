@@ -52,7 +52,7 @@ export function MemberFields({ member }: { member?: Member }) {
             {segments.map((segment) => (
               <Checkbox
                 key={segment.id}
-                name="segment_ids"
+                name="segmentIds"
                 value={segment.id}
                 label={segment.name}
                 defaultChecked={selectedIds.includes(segment.id)}

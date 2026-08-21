@@ -45,3 +45,22 @@ class MemberOut(CamelModel):
     @property
     def is_email_verified(self) -> bool:
         return self.email_verified_at is not None
+
+
+class MemberCountOut(CamelModel):
+    """Result of ``GET /members/count``. Typed rather than returned as a bare
+    dict so the route serializes through the same alias generator as every
+    other response and shows up in the OpenAPI schema."""
+
+    count: int
+
+
+class MemberStatsOut(CamelModel):
+    """Dashboard aggregates from ``GET /members/stats``. Declared as a schema so
+    the route serializes through the camelCase alias generator like every other
+    response, instead of leaking snake_case keys from a plain dict."""
+
+    count: int
+    points_in_circulation: int
+    by_tier: Dict[str, int] = Field(default_factory=dict)
+    untiered: int

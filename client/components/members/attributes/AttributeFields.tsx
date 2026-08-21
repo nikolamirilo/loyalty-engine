@@ -127,7 +127,7 @@ function DefaultValueInput({
 }) {
   const asString = current === null || current === undefined ? "" : String(current);
   const id = "attribute-default";
-  const name = "default_value";
+  const name = "defaultValue";
 
   switch (type) {
     case "boolean":

@@ -32,7 +32,7 @@ function parseNumber(fd: FormData, key: string): number | null {
 
 function parseSegmentIds(fd: FormData): string[] {
   return fd
-    .getAll("segment_ids")
+    .getAll("segmentIds")
     .map((s) => (typeof s === "string" ? s.trim() : ""))
     .filter(Boolean);
 }
@@ -42,9 +42,9 @@ function checkbox(fd: FormData, key: string): boolean {
 }
 
 /**
- * Build the `custom_attributes` payload from a member form.
+ * Build the `customAttributes` payload from a member form.
  *
- * `CustomAttributeFields` emits a hidden `custom_keys` input for every
+ * `CustomAttributeFields` emits a hidden `customKeys` input for every
  * definition it actually renders, and this reads only those. That distinction
  * matters: `fd.get()` returns null both for "the admin cleared this field" and
  * for "this input was never on the page", and those mean opposite things
@@ -59,7 +59,7 @@ async function parseCustomAttributes(
   fd: FormData,
 ): Promise<Record<string, unknown> | undefined> {
   const present = new Set(
-    fd.getAll("custom_keys").filter((k): k is string => typeof k === "string"),
+    fd.getAll("customKeys").filter((k): k is string => typeof k === "string"),
   );
   if (present.size === 0) return undefined;
 
@@ -114,8 +114,8 @@ export async function createMember(
         name,
         email,
         phone: optionalStr(fd, "phone"),
-        segment_ids: parseSegmentIds(fd),
-        custom_attributes: (await parseCustomAttributes(fd)) ?? {},
+        segmentIds: parseSegmentIds(fd),
+        customAttributes: (await parseCustomAttributes(fd)) ?? {},
       },
     });
     revalidatePath("/");
@@ -143,10 +143,10 @@ export async function updateMember(
         name,
         email,
         phone: optionalStr(fd, "phone"),
-        segment_ids: parseSegmentIds(fd),
+        segmentIds: parseSegmentIds(fd),
         // undefined drops the key from the JSON body, leaving stored values alone.
-        custom_attributes: await parseCustomAttributes(fd),
-        email_verified: checkbox(fd, "email_verified"),
+        customAttributes: await parseCustomAttributes(fd),
+        emailVerified: checkbox(fd, "emailVerified"),
       },
     });
     revalidateMember(id);
@@ -173,7 +173,7 @@ export async function earnPoints(
   _prev: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const id = str(fd, "member_id");
+  const id = str(fd, "memberId");
   const points = parseNumber(fd, "points");
   if (!points || points <= 0)
     return { ok: false, error: "Enter a positive number of points." };
@@ -193,7 +193,7 @@ export async function burnPoints(
   _prev: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const id = str(fd, "member_id");
+  const id = str(fd, "memberId");
   const points = parseNumber(fd, "points");
   if (!points || points <= 0)
     return { ok: false, error: "Enter a positive number of points." };
@@ -213,7 +213,7 @@ export async function adjustPoints(
   _prev: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const id = str(fd, "member_id");
+  const id = str(fd, "memberId");
   const points = parseNumber(fd, "points");
   if (points === null || points === 0)
     return { ok: false, error: "Enter a non-zero adjustment (+ or -)." };
@@ -269,9 +269,9 @@ function rewardBody(fd: FormData) {
   return {
     name: str(fd, "name"),
     description: optionalStr(fd, "description"),
-    points_cost: parseNumber(fd, "points_cost"),
+    pointsCost: parseNumber(fd, "pointsCost"),
     stock: parseNumber(fd, "stock"), // null => unlimited
-    is_active: checkbox(fd, "is_active"),
+    isActive: checkbox(fd, "isActive"),
   };
 }
 
@@ -281,7 +281,7 @@ export async function createReward(
 ): Promise<ActionState> {
   const body = rewardBody(fd);
   if (!body.name) return { ok: false, error: "Name is required." };
-  if (!body.points_cost || body.points_cost <= 0)
+  if (!body.pointsCost || body.pointsCost <= 0)
     return { ok: false, error: "Points cost must be greater than 0." };
   try {
     await apiRequest("/rewards", { method: "POST", json: body });
@@ -301,7 +301,7 @@ export async function updateReward(
   const body = rewardBody(fd);
   if (!id) return { ok: false, error: "Missing reward id." };
   if (!body.name) return { ok: false, error: "Name is required." };
-  if (!body.points_cost || body.points_cost <= 0)
+  if (!body.pointsCost || body.pointsCost <= 0)
     return { ok: false, error: "Points cost must be greater than 0." };
   try {
     await apiRequest(`/rewards/${id}`, { method: "PATCH", json: body });
@@ -320,7 +320,7 @@ export async function setRewardActive(
   try {
     await apiRequest(`/rewards/${id}`, {
       method: "PATCH",
-      json: { is_active: isActive },
+      json: { isActive: isActive },
     });
     revalidatePath("/");
     revalidatePath("/rewards");
@@ -347,11 +347,11 @@ function challengeBody(fd: FormData) {
   return {
     name: str(fd, "name"),
     description: optionalStr(fd, "description"),
-    target_value: parseNumber(fd, "target_value"),
-    reward_points: parseNumber(fd, "reward_points") ?? 0,
-    reward_id: optionalStr(fd, "reward_id"),
-    is_active: checkbox(fd, "is_active"),
-    expires_at: toIso(optionalStr(fd, "expires_at")),
+    targetValue: parseNumber(fd, "targetValue"),
+    rewardPoints: parseNumber(fd, "rewardPoints") ?? 0,
+    rewardId: optionalStr(fd, "rewardId"),
+    isActive: checkbox(fd, "isActive"),
+    expiresAt: toIso(optionalStr(fd, "expiresAt")),
   };
 }
 
@@ -368,7 +368,7 @@ export async function createChallenge(
 ): Promise<ActionState> {
   const body = challengeBody(fd);
   if (!body.name) return { ok: false, error: "Name is required." };
-  if (!body.target_value || body.target_value <= 0)
+  if (!body.targetValue || body.targetValue <= 0)
     return { ok: false, error: "Target value must be greater than 0." };
   try {
     await apiRequest("/challenges", { method: "POST", json: body });
@@ -388,7 +388,7 @@ export async function updateChallenge(
   const body = challengeBody(fd);
   if (!id) return { ok: false, error: "Missing challenge id." };
   if (!body.name) return { ok: false, error: "Name is required." };
-  if (!body.target_value || body.target_value <= 0)
+  if (!body.targetValue || body.targetValue <= 0)
     return { ok: false, error: "Target value must be greater than 0." };
   try {
     await apiRequest(`/challenges/${id}`, { method: "PATCH", json: body });
@@ -415,13 +415,13 @@ export async function assignChallengeToSegment(
   _prev: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const id = str(fd, "challenge_id");
-  const segmentId = str(fd, "segment_id");
+  const id = str(fd, "challengeId");
+  const segmentId = str(fd, "segmentId");
   if (!segmentId) return { ok: false, error: "Choose a segment." };
   try {
     const result = await apiRequest<{ assigned: number; skipped: number }>(
       `/challenges/${id}/assign-segment`,
-      { method: "POST", json: { segment_id: segmentId } },
+      { method: "POST", json: { segmentId: segmentId } },
     );
     revalidatePath("/");
     revalidatePath("/challenges");
@@ -455,8 +455,8 @@ export async function addChallengeProgress(
   _prev: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const memberId = str(fd, "member_id");
-  const challengeId = str(fd, "challenge_id");
+  const memberId = str(fd, "memberId");
+  const challengeId = str(fd, "challengeId");
   const amount = parseNumber(fd, "amount");
   if (!amount || amount <= 0)
     return { ok: false, error: "Enter a positive amount." };
@@ -510,7 +510,7 @@ export async function createTier(
   fd: FormData,
 ): Promise<ActionState> {
   const name = str(fd, "name");
-  const minPoints = parseNumber(fd, "min_points");
+  const minPoints = parseNumber(fd, "minPoints");
   const multiplier = parseNumber(fd, "multiplier");
   if (!name) return { ok: false, error: "Name is required." };
   if (minPoints === null || minPoints < 0)
@@ -520,7 +520,7 @@ export async function createTier(
   try {
     await apiRequest("/tiers", {
       method: "POST",
-      json: { name, min_points: minPoints, multiplier },
+      json: { name, minPoints: minPoints, multiplier },
     });
     revalidatePath("/");
     revalidatePath("/tiers");
@@ -536,7 +536,7 @@ export async function updateTier(
 ): Promise<ActionState> {
   const id = str(fd, "id");
   const name = str(fd, "name");
-  const minPoints = parseNumber(fd, "min_points");
+  const minPoints = parseNumber(fd, "minPoints");
   const multiplier = parseNumber(fd, "multiplier");
   if (!id) return { ok: false, error: "Missing tier id." };
   if (!name) return { ok: false, error: "Name is required." };
@@ -547,7 +547,7 @@ export async function updateTier(
   try {
     await apiRequest(`/tiers/${id}`, {
       method: "PATCH",
-      json: { name, min_points: minPoints, multiplier },
+      json: { name, minPoints: minPoints, multiplier },
     });
     revalidatePath("/");
     revalidatePath("/tiers");
@@ -631,7 +631,7 @@ export async function assignSegmentToMembers(
   try {
     const result = await apiRequest<{ assigned: number; skipped: number }>(
       `/segments/${segmentId}/assign`,
-      { method: "POST", json: { member_ids: memberIds } },
+      { method: "POST", json: { memberIds: memberIds } },
     );
     revalidatePath("/");
     revalidatePath("/segments");
@@ -656,8 +656,8 @@ function revalidateAttributes() {
  *  different control per type, so the raw value has to be interpreted the same
  *  way here; the API re-validates it against the definition regardless. */
 function parseDefaultValue(fd: FormData, type: string): unknown {
-  if (type === "boolean") return checkbox(fd, "default_value");
-  const raw = str(fd, "default_value");
+  if (type === "boolean") return checkbox(fd, "defaultValue");
+  const raw = str(fd, "defaultValue");
   if (raw === "") return null;
   if (type === "number") {
     const n = Number(raw);
@@ -688,7 +688,7 @@ export async function createMemberAttribute(
         label,
         type,
         options: type === "select" ? parseOptions(fd) : null,
-        default_value: parseDefaultValue(fd, type),
+        defaultValue: parseDefaultValue(fd, type),
       },
     });
     revalidateAttributes();
@@ -715,7 +715,7 @@ export async function updateMemberAttribute(
       json: {
         label,
         ...(type === "select" ? { options: parseOptions(fd) } : {}),
-        default_value: parseDefaultValue(fd, type),
+        defaultValue: parseDefaultValue(fd, type),
       },
     });
     revalidateAttributes();

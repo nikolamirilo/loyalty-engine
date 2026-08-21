@@ -8,7 +8,13 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.database import get_db
 from app.models import Member, MemberSegment, Segment, Tier
-from app.schemas import MemberCreate, MemberOut, MemberUpdate
+from app.schemas import (
+    MemberCountOut,
+    MemberCreate,
+    MemberOut,
+    MemberStatsOut,
+    MemberUpdate,
+)
 from app.services.challenges import sync_assignments_for_segments
 from app.services.custom_attributes import defaults_for_new_member, validate_payload
 from app.services.tiers import apply_tier
@@ -80,14 +86,14 @@ def list_members(
     )
 
 
-@router.get("/count")
+@router.get("/count", response_model=MemberCountOut)
 def count_members(q: Optional[str] = None, db: Session = Depends(get_db)):
     # Declared before /{member_id} so "count" isn't parsed as a member id.
     total = _members_query(db, q).with_entities(func.count(Member.id)).scalar()
     return {"count": total or 0}
 
 
-@router.get("/stats")
+@router.get("/stats", response_model=MemberStatsOut)
 def member_stats(db: Session = Depends(get_db)):
     """Dashboard aggregates computed server-side so the client doesn't download
     every member just to tally them: total count, points in circulation, and the

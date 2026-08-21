@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -53,7 +53,14 @@ def create_challenge(body: ChallengeCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/challenges", response_model=list[ChallengeOut])
-def list_challenges(active_only: bool = False, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def list_challenges(
+    # Aliased so the wire-level query key is camelCase like every other JSON
+    # key in the API; the Python parameter stays snake_case.
+    active_only: bool = Query(False, alias="activeOnly"),
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
     # selectinload the segment assignments (+ each one's segment) so serializing
     # ChallengeOut.segments doesn't lazy-load one query per challenge (N+1).
     q = db.query(Challenge).options(

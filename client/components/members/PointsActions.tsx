@@ -21,7 +21,7 @@ export function PointsActions({ memberId }: { memberId: string }) {
         submitLabel="Add points"
         onSuccess={() => revalidate.members()}
       >
-        <input type="hidden" name="member_id" value={memberId} />
+        <input type="hidden" name="memberId" value={memberId} />
         <Field label="Points" htmlFor="earn-points" hint="before multiplier">
           <Input
             id="earn-points"
@@ -55,7 +55,7 @@ export function PointsActions({ memberId }: { memberId: string }) {
         submitLabel="Burn points"
         onSuccess={() => revalidate.members()}
       >
-        <input type="hidden" name="member_id" value={memberId} />
+        <input type="hidden" name="memberId" value={memberId} />
         <Field label="Points" htmlFor="burn-points">
           <Input
             id="burn-points"
@@ -89,7 +89,7 @@ export function PointsActions({ memberId }: { memberId: string }) {
         submitLabel="Apply adjustment"
         onSuccess={() => revalidate.members()}
       >
-        <input type="hidden" name="member_id" value={memberId} />
+        <input type="hidden" name="memberId" value={memberId} />
         <Field label="Amount" htmlFor="adjust-points" help="Use a negative value to subtract">
           <Input
             id="adjust-points"

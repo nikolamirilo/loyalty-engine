@@ -21,7 +21,13 @@ from app.schemas.email_verification import (
     DOIVerifyRequest,
     DOIVerifyResponse,
 )
-from app.schemas.member import MemberCreate, MemberOut, MemberUpdate
+from app.schemas.member import (
+    MemberCountOut,
+    MemberCreate,
+    MemberOut,
+    MemberStatsOut,
+    MemberUpdate,
+)
 from app.schemas.member_attribute import (
     MemberAttributeCreate,
     MemberAttributeOut,
@@ -66,8 +72,10 @@ __all__ = [
     "MemberAttributeCreate",
     "MemberAttributeOut",
     "MemberAttributeUpdate",
+    "MemberCountOut",
     "MemberCreate",
     "MemberOut",
+    "MemberStatsOut",
     "MemberUpdate",
     "PointsTransactionOut",
     "ProgressRequest",

@@ -36,9 +36,9 @@ export const keys = {
     `/members/${id}/challenges${qs({ limit: 200 })}`,
   tiers: () => `/tiers`,
   rewards: (activeOnly = false) =>
-    `/rewards${qs({ limit: 1000, active_only: activeOnly })}`,
+    `/rewards${qs({ limit: 1000, activeOnly })}`,
   challenges: (activeOnly = false) =>
-    `/challenges${qs({ limit: 1000, active_only: activeOnly })}`,
+    `/challenges${qs({ limit: 1000, activeOnly })}`,
   segments: () => `/segments`,
   memberAttributes: () => `/member-attributes`,
 } as const;

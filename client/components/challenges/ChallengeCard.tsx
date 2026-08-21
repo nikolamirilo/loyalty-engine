@@ -181,13 +181,13 @@ function AssignSegmentButton({ challenge }: { challenge: Challenge }) {
         revalidate.members();
       }}
     >
-      <input type="hidden" name="challenge_id" value={challenge.id} />
+      <input type="hidden" name="challengeId" value={challenge.id} />
       <Field
         label="Segment"
-        htmlFor="segment_id"
+        htmlFor="segmentId"
         help="Every member currently in this segment will be assigned."
       >
-        <Select id="segment_id" name="segment_id" defaultValue="" required>
+        <Select id="segmentId" name="segmentId" defaultValue="" required>
           <option value="" disabled>
             {segments === undefined ? "Loading…" : "Choose a segment"}
           </option>

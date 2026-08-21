@@ -183,14 +183,14 @@ export const getMemberChallenges = (id: string, status?: ChallengeStatus) =>
 
 export const getRewards = (activeOnly = false) =>
   apiRequest<Reward[]>("/rewards", {
-    query: { limit: 1000, active_only: activeOnly },
+    query: { limit: 1000, activeOnly },
   });
 
 export const getReward = (id: string) => apiRequest<Reward>(`/rewards/${id}`);
 
 export const getChallenges = (activeOnly = false) =>
   apiRequest<Challenge[]>("/challenges", {
-    query: { limit: 1000, active_only: activeOnly },
+    query: { limit: 1000, activeOnly },
   });
 
 export const getChallenge = (id: string) =>

@@ -79,8 +79,8 @@ export function MemberChallengeItem({
             submitLabel="Add progress"
             onSuccess={() => revalidate.members()}
           >
-            <input type="hidden" name="member_id" value={memberId} />
-            <input type="hidden" name="challenge_id" value={challenge.id} />
+            <input type="hidden" name="memberId" value={memberId} />
+            <input type="hidden" name="challengeId" value={challenge.id} />
             <Field label="Amount" htmlFor="progress-amount">
               <Input
                 id="progress-amount"

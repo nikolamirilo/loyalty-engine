@@ -265,7 +265,7 @@ function ProfileCardForm({
           <ProfileField label="Email verified" className="w-40">
             {editing ? (
               <Checkbox
-                name="email_verified"
+                name="emailVerified"
                 label="Verified"
                 defaultChecked={!!member.emailVerifiedAt}
               />
@@ -356,7 +356,7 @@ function SegmentCheckboxes({ selectedIds }: { selectedIds: string[] }) {
       {segments.map((segment) => (
         <Checkbox
           key={segment.id}
-          name="segment_ids"
+          name="segmentIds"
           value={segment.id}
           label={segment.name}
           defaultChecked={selectedIds.includes(segment.id)}

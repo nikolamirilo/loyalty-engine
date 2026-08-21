@@ -20,7 +20,7 @@ export function TierFields({ tier }: { tier?: Tier }) {
         <Field label="Min points" htmlFor="tier-min" hint="≥ 0">
           <Input
             id="tier-min"
-            name="min_points"
+            name="minPoints"
             type="number"
             min={0}
             step={1}

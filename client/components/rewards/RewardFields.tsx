@@ -26,7 +26,7 @@ export function RewardFields({ reward }: { reward?: Reward }) {
         <Field label="Points cost" htmlFor="reward-cost" hint="> 0">
           <Input
             id="reward-cost"
-            name="points_cost"
+            name="pointsCost"
             type="number"
             min={1}
             step={1}
@@ -46,7 +46,7 @@ export function RewardFields({ reward }: { reward?: Reward }) {
         </Field>
       </div>
       <Checkbox
-        name="is_active"
+        name="isActive"
         label="Active (available to redeem)"
         defaultChecked={reward ? reward.isActive : true}
       />

@@ -37,7 +37,7 @@ export function ChallengeFields({
         >
           <Input
             id="challenge-target"
-            name="target_value"
+            name="targetValue"
             type="number"
             min={1}
             step={1}
@@ -52,7 +52,7 @@ export function ChallengeFields({
         >
           <Input
             id="challenge-points"
-            name="reward_points"
+            name="rewardPoints"
             type="number"
             min={0}
             step={1}
@@ -63,7 +63,7 @@ export function ChallengeFields({
       <Field label="Prize reward" htmlFor="challenge-reward" help="Optional - assigned on completion">
         <Select
           id="challenge-reward"
-          name="reward_id"
+          name="rewardId"
           defaultValue={challenge?.rewardId ?? ""}
         >
           <option value="">No prize</option>
@@ -77,13 +77,13 @@ export function ChallengeFields({
       <Field label="Expires at" htmlFor="challenge-expires" help="Optional deadline">
         <Input
           id="challenge-expires"
-          name="expires_at"
+          name="expiresAt"
           type="datetime-local"
           defaultValue={toDatetimeLocalValue(challenge?.expiresAt)}
         />
       </Field>
       <Checkbox
-        name="is_active"
+        name="isActive"
         label="Active (can be assigned)"
         defaultChecked={challenge ? challenge.isActive : true}
       />
