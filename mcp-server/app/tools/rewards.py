@@ -1,0 +1,28 @@
+"""Reward catalog tools. Read-only for now - creating/editing/deleting
+rewards is a program-configuration action, held back for a future admin
+scope rather than exposed here.
+"""
+
+from typing import Any, Dict, List
+
+from app.client import loyalty_api_client as api
+from app.core.auth import require_scope
+from app.mcp_instance import mcp
+
+
+@mcp.tool()
+async def list_rewards(
+    active_only: bool = False, skip: int = 0, limit: int = 100
+) -> List[Dict[str, Any]]:
+    """List the reward catalog, optionally restricted to active rewards."""
+    require_scope("read")
+    return await api.get(
+        "/rewards", params={"activeOnly": active_only, "skip": skip, "limit": limit}
+    )
+
+
+@mcp.tool()
+async def get_reward(reward_id: str) -> Dict[str, Any]:
+    """Get a single reward by id."""
+    require_scope("read")
+    return await api.get(f"/rewards/{reward_id}")

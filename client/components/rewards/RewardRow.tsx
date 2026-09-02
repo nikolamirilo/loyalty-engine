@@ -10,7 +10,8 @@ import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { ActiveBadge } from "@/components/ui/StatusBadge";
 import { TD, TR } from "@/components/ui/Table";
-import { BanIcon, CheckIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
+import { useToast } from "@/components/ui/Toast";
+import { BanIcon, CheckIcon, CopyIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
 import { RewardFields } from "./RewardFields";
 
 function EditRewardButton({ reward }: { reward: Reward }) {
@@ -35,7 +36,17 @@ function EditRewardButton({ reward }: { reward: Reward }) {
 
 export function RewardRow({ reward }: { reward: Reward }) {
   const revalidate = useRevalidate();
+  const toast = useToast();
   const outOfStock = reward.stock != null && reward.stock <= 0;
+
+  const copyId = async () => {
+    try {
+      await navigator.clipboard.writeText(reward.id);
+      toast.success("Reward ID copied.");
+    } catch {
+      toast.error("Couldn't copy reward ID.");
+    }
+  };
   return (
     <TR className="hover:bg-surface-2/60">
       <TD>
@@ -81,6 +92,14 @@ export function RewardRow({ reward }: { reward: Reward }) {
               </>
             )}
           </ActionButton>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`Copy ID for ${reward.name}`}
+            onClick={copyId}
+          >
+            <CopyIcon />
+          </Button>
           <EditRewardButton reward={reward} />
           <ConfirmButton
             trigger={
