@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from app.core.config import settings
 from app.core.database import Base, engine
@@ -67,6 +67,23 @@ async def database_unavailable(request: Request, exc: OperationalError) -> JSONR
     return JSONResponse(
         status_code=503,
         content={"detail": "Database is temporarily unavailable. Please try again shortly."},
+    )
+
+
+@app.exception_handler(IntegrityError)
+async def constraint_violation(request: Request, exc: IntegrityError) -> JSONResponse:
+    """Answer with a clean 409 when a write violates a DB constraint (e.g. a
+    unique index) that a route handler didn't check for up front.
+
+    Without this the driver error escapes as an unhandled ASGI exception: no
+    JSON body, a raw traceback in the logs, and nothing the client can act on.
+    """
+    logger.exception(
+        "Constraint violation handling %s %s", request.method, request.url.path
+    )
+    return JSONResponse(
+        status_code=409,
+        content={"detail": "The request conflicts with existing data."},
     )
 
 

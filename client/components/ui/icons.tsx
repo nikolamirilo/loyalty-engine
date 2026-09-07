@@ -255,3 +255,11 @@ export const CopyIcon = (p: IconProps) => (
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
   </Icon>
 );
+
+export const MoreVerticalIcon = (p: IconProps) => (
+  <Icon {...p} strokeWidth={0}>
+    <circle cx="12" cy="5" r="1.75" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.75" fill="currentColor" />
+    <circle cx="12" cy="19" r="1.75" fill="currentColor" />
+  </Icon>
+);

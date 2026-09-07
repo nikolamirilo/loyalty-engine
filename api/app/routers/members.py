@@ -149,6 +149,9 @@ def update_member(member_id: UUID, body: MemberUpdate, db: Session = Depends(get
     member = db.get(Member, member_id)
     if not member:
         raise HTTPException(404, "Member not found")
+    if body.email is not None and body.email != member.email:
+        if db.query(Member).filter(Member.email == body.email, Member.id != member_id).first():
+            raise HTTPException(400, "Email already registered")
     data = body.model_dump(
         exclude_none=True, exclude={"segment_ids", "custom_attributes", "email_verified"}
     )

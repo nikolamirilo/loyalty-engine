@@ -1,27 +1,36 @@
 "use client";
 
+import { useTransition } from "react";
+
 import { deleteReward, setRewardActive, updateReward } from "@/lib/actions";
 import { useRevalidate } from "@/lib/swr/revalidate";
 import { formatNumber } from "@/lib/format";
 import type { Reward } from "@/lib/types";
-import { ActionButton } from "@/components/ui/ActionButton";
 import { Button } from "@/components/ui/Button";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import { DropdownMenu, DropdownMenuItem } from "@/components/ui/DropdownMenu";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { ActiveBadge } from "@/components/ui/StatusBadge";
 import { TD, TR } from "@/components/ui/Table";
 import { useToast } from "@/components/ui/Toast";
-import { BanIcon, CheckIcon, CopyIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
+import {
+  BanIcon,
+  CheckIcon,
+  CopyIcon,
+  MoreVerticalIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@/components/ui/icons";
 import { RewardFields } from "./RewardFields";
 
-function EditRewardButton({ reward }: { reward: Reward }) {
+function EditRewardMenuItem({ reward }: { reward: Reward }) {
   const revalidate = useRevalidate();
   return (
     <FormDialog
       trigger={
-        <Button variant="ghost" size="icon" aria-label={`Edit ${reward.name}`}>
-          <PencilIcon />
-        </Button>
+        <DropdownMenuItem>
+          <PencilIcon /> Edit
+        </DropdownMenuItem>
       }
       title="Edit reward"
       action={updateReward}
@@ -37,6 +46,7 @@ function EditRewardButton({ reward }: { reward: Reward }) {
 export function RewardRow({ reward }: { reward: Reward }) {
   const revalidate = useRevalidate();
   const toast = useToast();
+  const [togglePending, startToggle] = useTransition();
   const outOfStock = reward.stock != null && reward.stock <= 0;
 
   const copyId = async () => {
@@ -47,6 +57,19 @@ export function RewardRow({ reward }: { reward: Reward }) {
       toast.error("Couldn't copy reward ID.");
     }
   };
+
+  const toggleActive = () => {
+    startToggle(async () => {
+      const res = await setRewardActive(reward.id, !reward.isActive);
+      if (res.ok) {
+        toast.success(reward.isActive ? "Reward deactivated." : "Reward activated.");
+        revalidate.rewards();
+      } else {
+        toast.error(res.error ?? "Something went wrong.");
+      }
+    });
+  };
+
   return (
     <TR className="hover:bg-surface-2/60">
       <TD>
@@ -74,51 +97,43 @@ export function RewardRow({ reward }: { reward: Reward }) {
         <ActiveBadge active={reward.isActive} />
       </TD>
       <TD>
-        <div className="flex items-center justify-end gap-1">
-          <ActionButton
-            variant="ghost"
-            size="sm"
-            action={setRewardActive.bind(null, reward.id, !reward.isActive)}
-            successMessage={reward.isActive ? "Reward deactivated." : "Reward activated."}
-            onDone={() => revalidate.rewards()}
-          >
-            {reward.isActive ? (
-              <>
-                <BanIcon /> Deactivate
-              </>
-            ) : (
-              <>
-                <CheckIcon /> Activate
-              </>
-            )}
-          </ActionButton>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={`Copy ID for ${reward.name}`}
-            onClick={copyId}
-          >
-            <CopyIcon />
-          </Button>
-          <EditRewardButton reward={reward} />
-          <ConfirmButton
+        <div className="flex justify-end">
+          <DropdownMenu
             trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`Delete ${reward.name}`}
-                className="text-danger"
-              >
-                <TrashIcon />
+              <Button variant="ghost" size="icon" aria-label={`Actions for ${reward.name}`}>
+                <MoreVerticalIcon />
               </Button>
             }
-            title={`Delete "${reward.name}"?`}
-            description="This removes the reward from the catalog. Existing redemption history is kept."
-            confirmLabel="Delete reward"
-            action={deleteReward.bind(null, reward.id)}
-            successMessage="Reward deleted."
-            onSuccess={() => revalidate.rewards()}
-          />
+          >
+            <DropdownMenuItem onClick={toggleActive} disabled={togglePending}>
+              {reward.isActive ? (
+                <>
+                  <BanIcon /> Deactivate
+                </>
+              ) : (
+                <>
+                  <CheckIcon /> Activate
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={copyId}>
+              <CopyIcon /> Copy ID
+            </DropdownMenuItem>
+            <EditRewardMenuItem reward={reward} />
+            <ConfirmButton
+              trigger={
+                <DropdownMenuItem danger>
+                  <TrashIcon /> Delete
+                </DropdownMenuItem>
+              }
+              title={`Delete "${reward.name}"?`}
+              description="This removes the reward from the catalog. Existing redemption history is kept."
+              confirmLabel="Delete reward"
+              action={deleteReward.bind(null, reward.id)}
+              successMessage="Reward deleted."
+              onSuccess={() => revalidate.rewards()}
+            />
+          </DropdownMenu>
         </div>
       </TD>
     </TR>
