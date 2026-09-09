@@ -279,6 +279,13 @@ export const WalletIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const UserIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" />
+  </Icon>
+);
+
 export const MoreVerticalIcon = (p: IconProps) => (
   <Icon {...p} strokeWidth={0}>
     <circle cx="12" cy="5" r="1.75" fill="currentColor" />
