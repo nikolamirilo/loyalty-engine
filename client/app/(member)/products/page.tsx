@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PackageIcon } from "@/components/ui/icons";
 
-export const metadata: Metadata = { title: "Products - Loyalty Engine" };
+export const metadata: Metadata = { title: "Products - Loyalty App" };
 
 export default function ProductsPage() {
   return (

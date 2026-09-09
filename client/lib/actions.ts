@@ -8,6 +8,10 @@ import { ApiError, apiRequest } from "./api";
 
 function fail(error: unknown): ActionState {
   if (error instanceof ApiError) return { ok: false, error: error.message };
+  // Anything that is not an ApiError is a bug or a misconfiguration, not
+  // something the member can act on. Keep the message generic for them, but
+  // log the cause - swallowing it silently makes these impossible to debug.
+  console.error("[action] unexpected error:", error);
   return { ok: false, error: "Something went wrong. Please try again." };
 }
 

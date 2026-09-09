@@ -19,7 +19,12 @@ export function CopyIdButton({ id }: { id: string }) {
   };
 
   return (
-    <Button variant="secondary" size="sm" onClick={copyId}>
+    <Button
+      variant="secondary"
+      size="sm"
+      onClick={copyId}
+      className="w-full justify-center sm:w-auto"
+    >
       <CopyIcon /> Copy ID
     </Button>
   );

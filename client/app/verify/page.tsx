@@ -7,7 +7,7 @@ import { VerifyForm } from "./VerifyForm";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Verify your email - Loyalty Engine",
+  title: "Verify your email - Loyalty App",
   // A verification link is single-use and member-specific; keep it out of search.
   robots: { index: false, follow: false },
 };
@@ -42,7 +42,7 @@ export default async function VerifyPage({
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <Image
             src="/logo.svg"
-            alt="Loyalty Engine"
+            alt="Loyalty App"
             width={48}
             height={48}
             className="h-12 w-12 shadow-sm"

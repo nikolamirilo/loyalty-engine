@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { StatTile } from "@/components/ui/StatTile";
 import { CoinsIcon, GiftIcon, WalletIcon } from "@/components/ui/icons";
 
-export const metadata: Metadata = { title: "Wallet - Loyalty Engine" };
+export const metadata: Metadata = { title: "Wallet - Loyalty App" };
 export const dynamic = "force-dynamic";
 
 export default async function WalletPage() {

@@ -46,7 +46,18 @@ interface RequestOptions {
 }
 
 function buildUrl(path: string, query?: RequestOptions["query"]): string {
-  const url = new URL(`${BASE_URL}${path}`);
+  let url: URL;
+  try {
+    url = new URL(`${BASE_URL}${path}`);
+  } catch {
+    // A misconfigured API_BASE_URL would otherwise surface as a bare TypeError
+    // from the URL constructor, which callers treat as "unexpected" and report
+    // as a generic failure. Name the actual problem instead.
+    throw new ApiError(
+      0,
+      `Invalid API base URL ${JSON.stringify(BASE_URL)} - check API_BASE_URL.`,
+    );
+  }
   if (query) {
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined && value !== null && value !== "") {

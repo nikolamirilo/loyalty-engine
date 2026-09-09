@@ -25,6 +25,7 @@ export async function requestLoginCode(
     return { ok: true };
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message };
+    console.error("[action] unexpected error:", e);
     return { ok: false, error: "Something went wrong. Please try again." };
   }
 }
@@ -48,6 +49,7 @@ export async function requestSignupCode(
     return { ok: true };
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message };
+    console.error("[action] unexpected error:", e);
     return { ok: false, error: "Something went wrong. Please try again." };
   }
 }
@@ -76,6 +78,7 @@ export async function verifyLoginCode(
     member = result.member;
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message };
+    console.error("[action] unexpected error:", e);
     return { ok: false, error: "Something went wrong. Please try again." };
   }
 

@@ -1,82 +1,44 @@
 "use client";
 
-import { useState } from "react";
-
+import { useCampaign } from "./CampaignContext";
 import { Button } from "@/components/ui/Button";
-import { Card, CardHeader } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { Field, Input } from "@/components/ui/Field";
-import { useToast } from "@/components/ui/Toast";
-import { TargetIcon, XIcon } from "@/components/ui/icons";
+import { TargetIcon } from "@/components/ui/icons";
 
-/** Appends the signed-in member's id as `userId` on the campaign URL, adding
- * to any query string it already has. */
-function withMemberId(rawUrl: string, memberId: string): string {
-  const url = new URL(rawUrl);
-  url.searchParams.set("userId", memberId);
-  return url.toString();
-}
+/**
+ * Home's content: the URL box that starts a campaign.
+ *
+ * The campaign itself is rendered by CampaignFrame up in MemberShell so it can
+ * outlive navigation, which is why this component is only the form - once a
+ * campaign is open there is nothing here to show, and the frame covers this
+ * area anyway.
+ */
+export function CampaignLauncher() {
+  const { draftUrl, setDraftUrl, loadedUrl, open, restored } = useCampaign();
 
-export function CampaignLauncher({ memberId }: { memberId: string }) {
-  const [campaignUrl, setCampaignUrl] = useState("");
-  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
-  const toast = useToast();
-
-  const openCampaign = () => {
-    const trimmed = campaignUrl.trim();
-    if (!trimmed) {
-      toast.error("Enter a campaign URL.");
-      return;
-    }
-
-    let finalUrl: string;
-    try {
-      finalUrl = withMemberId(trimmed, memberId);
-    } catch {
-      toast.error("Enter a valid campaign URL.");
-      return;
-    }
-
-    setLoadedUrl(finalUrl);
-  };
+  // Nothing to show until we know whether a campaign was left open, and
+  // nothing to show while one is open.
+  if (!restored || loadedUrl) return null;
 
   return (
-    <Card>
-      <CardHeader
-        title="Campaigns"
-        description="Load a campaign link with your user ID attached."
-        action={
-          loadedUrl && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setLoadedUrl(null)}
-            >
-              <XIcon /> Close
-            </Button>
-          )
-        }
-      />
-      <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-end">
-        <Field label="Campaign URL" className="flex-1">
+    <Card className="p-5">
+      <div className="flex flex-col gap-3">
+        <Field label="Campaign URL">
           <Input
             type="url"
             placeholder="https://example.com/campaign"
-            value={campaignUrl}
-            onChange={(e) => setCampaignUrl(e.target.value)}
+            value={draftUrl}
+            onChange={(e) => setDraftUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") open();
+            }}
           />
         </Field>
-        <Button onClick={openCampaign}>
+        <Button onClick={open}>
           <TargetIcon /> Open campaign
         </Button>
       </div>
-      {loadedUrl && (
-        <iframe
-          key={loadedUrl}
-          src={loadedUrl}
-          title="Campaign"
-          className="h-[70vh] w-full border-t border-line"
-        />
-      )}
     </Card>
   );
 }

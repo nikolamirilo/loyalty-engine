@@ -31,6 +31,7 @@ export async function verifyMemberEmail(
     return { ok: true, message: "Your email address is verified." };
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message };
+    console.error("[action] unexpected error:", e);
     return { ok: false, error: "Something went wrong. Please try again." };
   }
 }

@@ -12,7 +12,11 @@ export default async function MemberLayout({
 }) {
   // The proxy is the primary gate; this re-check guards the initial render and
   // keeps the tab shell protected even if the proxy matcher ever changes.
-  if (!(await getSessionMemberId())) redirect("/login");
+  const memberId = await getSessionMemberId();
+  if (!memberId) redirect("/login");
 
-  return <MemberShell>{children}</MemberShell>;
+  // The shell owns the campaign (see CampaignContext) so it survives tab
+  // switches, which is why the member id is resolved here rather than in the
+  // Home page.
+  return <MemberShell memberId={memberId}>{children}</MemberShell>;
 }

@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Loyalty Engine",
-  description: "Track your points, rewards, and wallet with Loyalty Engine.",
+  title: "Loyalty App",
+  description: "Track your points, rewards, and wallet with Loyalty App.",
 };
 
 export default function RootLayout({
