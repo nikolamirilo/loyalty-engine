@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Field, Input } from "@/components/ui/Field";
 import { useToast } from "@/components/ui/Toast";
-import { TargetIcon } from "@/components/ui/icons";
+import { TargetIcon, XIcon } from "@/components/ui/icons";
 
 /** Appends the signed-in member's id as `userId` on the campaign URL, adding
  * to any query string it already has. */
@@ -18,6 +18,7 @@ function withMemberId(rawUrl: string, memberId: string): string {
 
 export function CampaignLauncher({ memberId }: { memberId: string }) {
   const [campaignUrl, setCampaignUrl] = useState("");
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   const toast = useToast();
 
   const openCampaign = () => {
@@ -35,14 +36,25 @@ export function CampaignLauncher({ memberId }: { memberId: string }) {
       return;
     }
 
-    window.open(finalUrl, "_blank", "noopener,noreferrer");
+    setLoadedUrl(finalUrl);
   };
 
   return (
     <Card>
       <CardHeader
         title="Campaigns"
-        description="Open a campaign link with your user ID attached."
+        description="Load a campaign link with your user ID attached."
+        action={
+          loadedUrl && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setLoadedUrl(null)}
+            >
+              <XIcon /> Close
+            </Button>
+          )
+        }
       />
       <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-end">
         <Field label="Campaign URL" className="flex-1">
@@ -57,6 +69,14 @@ export function CampaignLauncher({ memberId }: { memberId: string }) {
           <TargetIcon /> Open campaign
         </Button>
       </div>
+      {loadedUrl && (
+        <iframe
+          key={loadedUrl}
+          src={loadedUrl}
+          title="Campaign"
+          className="h-[70vh] w-full border-t border-line"
+        />
+      )}
     </Card>
   );
 }
