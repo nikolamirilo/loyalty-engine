@@ -3,36 +3,58 @@ import type { NextRequest } from "next/server";
 
 import { SESSION_COOKIE } from "@/lib/auth/config";
 import { verifyToken } from "@/lib/auth/token";
+import { MEMBER_SESSION_COOKIE } from "@/lib/memberAuth/config";
+import { verifyMemberToken } from "@/lib/memberAuth/token";
+
+/** Routes gated by a member session; anything else under `/` is public. */
+const MEMBER_PROTECTED_ROUTES = new Set(["/home", "/products", "/wallet"]);
 
 /**
- * Routes that must stay reachable without an admin session.
+ * Auth gate. Runs before every matched route (see `config.matcher`) and
+ * enforces two independent auth domains that never overlap:
  *
- * `/verify` is the landing page for DOI verification emails: the person opening
- * it is a loyalty member confirming their address, not an admin, so redirecting
- * them to /login would dead-end the flow. It carries no console data - it
- * posts the emailed id/code pair to the API and shows the answer.
- */
-const PUBLIC_ROUTES = new Set(["/login", "/verify"]);
-
-/**
- * Auth gate. Runs before every matched route (see `config.matcher`):
- *   - unauthenticated + not on a public route -> redirect to /login
- *   - authenticated     + on /login           -> redirect to /
+ *   - `/admin/**`   - admin console, gated by the `admin_session` cookie
+ *   - everything else - the member app, gated by the `member_session` cookie
  *
- * Only reads the signed session cookie - no shared state, per Next.js proxy
+ * `/verify` is the landing page for DOI verification emails: the person
+ * opening it is a loyalty member confirming their address, not a signed-in
+ * member or an admin, so it carries no session data - it posts the emailed
+ * id/code pair to the API and shows the answer.
+ *
+ * Only reads the signed session cookies - no shared state, per Next.js proxy
  * guidance. Failed-login lockout is handled in the login Server Action.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const authenticated = verifyToken(request.cookies.get(SESSION_COOKIE)?.value);
 
-  if (!authenticated && !PUBLIC_ROUTES.has(pathname)) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (pathname.startsWith("/admin")) {
+    const adminAuthenticated = verifyToken(request.cookies.get(SESSION_COOKIE)?.value);
+
+    if (!adminAuthenticated && pathname !== "/admin/login") {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+    if (adminAuthenticated && pathname === "/admin/login") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    return NextResponse.next();
   }
 
-  // Only /login is pointless while signed in; an admin may still legitimately
-  // open a member's verification link.
-  if (authenticated && pathname === "/login") {
+  if (pathname === "/verify") {
+    return NextResponse.next();
+  }
+
+  const memberId = verifyMemberToken(request.cookies.get(MEMBER_SESSION_COOKIE)?.value);
+  const memberAuthenticated = memberId !== null;
+
+  // `/` is the sign-in/sign-up landing page - pointless once signed in.
+  if (pathname === "/") {
+    if (memberAuthenticated) {
+      return NextResponse.redirect(new URL("/home", request.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (MEMBER_PROTECTED_ROUTES.has(pathname) && !memberAuthenticated) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 

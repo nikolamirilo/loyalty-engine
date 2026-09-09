@@ -256,6 +256,29 @@ export const CopyIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const HomeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m3 11 9-8 9 8" />
+    <path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10" />
+  </Icon>
+);
+
+export const PackageIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m3.5 8 8.5-5 8.5 5v8l-8.5 5-8.5-5Z" />
+    <path d="M3.5 8 12 13l8.5-5" />
+    <path d="M12 13v8" />
+  </Icon>
+);
+
+export const WalletIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2" />
+    <rect x="3" y="7" width="18" height="13" rx="2" />
+    <path d="M16 13.5h3" />
+  </Icon>
+);
+
 export const MoreVerticalIcon = (p: IconProps) => (
   <Icon {...p} strokeWidth={0}>
     <circle cx="12" cy="5" r="1.75" fill="currentColor" />

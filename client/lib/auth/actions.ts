@@ -57,7 +57,7 @@ export async function login(
   if (usernameOk && passwordOk) {
     clearAttempts(ip);
     await createSession();
-    redirect("/"); // throws NEXT_REDIRECT - keep outside any try/catch
+    redirect("/admin"); // throws NEXT_REDIRECT - keep outside any try/catch
   }
 
   const result = registerFailure(ip);
@@ -76,5 +76,5 @@ export async function login(
 
 export async function logout(): Promise<void> {
   await destroySession();
-  redirect("/login");
+  redirect("/admin/login");
 }

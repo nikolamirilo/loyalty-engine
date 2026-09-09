@@ -22,8 +22,9 @@ function param(value: string | string[] | undefined): string {
  *
  * The email links here as `/verify?memberId=<id>&code=<code>`; the member
  * presses one button and the Server Action posts the pair to the API. It is
- * deliberately outside `(protected)` and exempted in `proxy.ts` - a member
- * confirming their address has no admin session and never will.
+ * deliberately outside `admin/(protected)` and the member route group, and
+ * exempted in `proxy.ts` - a member confirming their address has no admin or
+ * member session and never will.
  */
 export default async function VerifyPage({
   searchParams,

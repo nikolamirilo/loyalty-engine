@@ -22,12 +22,12 @@ import {
 } from "@/components/ui/icons";
 
 const NAV = [
-  { href: "/", label: "Dashboard", Icon: DashboardIcon, exact: true, preload: preloadRoute.dashboard },
-  { href: "/members", label: "Members", Icon: UsersIcon, preload: preloadRoute.members },
-  { href: "/segments", label: "Segments", Icon: TagIcon, preload: preloadRoute.segments },
-  { href: "/rewards", label: "Rewards", Icon: GiftIcon, preload: preloadRoute.rewards },
-  { href: "/challenges", label: "Challenges", Icon: TargetIcon, preload: preloadRoute.challenges },
-  { href: "/tiers", label: "Tiers", Icon: LayersIcon, preload: preloadRoute.tiers },
+  { href: "/admin", label: "Dashboard", Icon: DashboardIcon, exact: true, preload: preloadRoute.dashboard },
+  { href: "/admin/members", label: "Members", Icon: UsersIcon, preload: preloadRoute.members },
+  { href: "/admin/segments", label: "Segments", Icon: TagIcon, preload: preloadRoute.segments },
+  { href: "/admin/rewards", label: "Rewards", Icon: GiftIcon, preload: preloadRoute.rewards },
+  { href: "/admin/challenges", label: "Challenges", Icon: TargetIcon, preload: preloadRoute.challenges },
+  { href: "/admin/tiers", label: "Tiers", Icon: LayersIcon, preload: preloadRoute.tiers },
 ];
 
 function isActive(pathname: string, href: string, exact?: boolean): boolean {
@@ -37,7 +37,7 @@ function isActive(pathname: string, href: string, exact?: boolean): boolean {
 
 function Brand() {
   return (
-    <Link href="/" className="flex items-center gap-2.5">
+    <Link href="/admin" className="flex items-center gap-2.5">
       {/* `unoptimized` skips the Image Optimizer, which rejects SVGs by
           default (returns HTTP 400) - that broken response is what flooded the
           dev console and, together with a briefly-missing `alt`, triggered the

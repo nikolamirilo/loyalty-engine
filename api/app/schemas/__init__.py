@@ -4,6 +4,13 @@ Re-exported here so routers can import from one place, mirroring how
 ``app.models`` works.
 """
 
+from app.schemas.auth import (
+    AuthLoginRequest,
+    AuthSignupRequest,
+    AuthTriggerResponse,
+    AuthVerifyRequest,
+    AuthVerifyResponse,
+)
 from app.schemas.challenge import (
     ChallengeAssignmentOut,
     ChallengeBase,
@@ -55,6 +62,11 @@ from app.schemas.tier import TierBase, TierCreate, TierOut, TierUpdate
 
 __all__ = [
     "AdjustPointsRequest",
+    "AuthLoginRequest",
+    "AuthSignupRequest",
+    "AuthTriggerResponse",
+    "AuthVerifyRequest",
+    "AuthVerifyResponse",
     "BalanceOut",
     "ChallengeAssignmentOut",
     "ChallengeBase",

@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.security import verify_token
 from app.routers import (
+    auth,
     challenges,
     doi,
     member_attributes,
@@ -50,6 +51,7 @@ app.include_router(challenges.router, dependencies=protected)
 app.include_router(tiers.router, dependencies=protected)
 app.include_router(segments.router, dependencies=protected)
 app.include_router(doi.router, dependencies=protected)
+app.include_router(auth.router, dependencies=protected)
 
 
 @app.exception_handler(OperationalError)

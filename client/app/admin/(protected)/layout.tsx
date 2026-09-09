@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/layout/AppShell";
@@ -6,6 +7,12 @@ import { Providers } from "./providers";
 
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = {
+  title: "Loyalty Engine - Admin",
+  description:
+    "Admin console for the Loyalty Engine: members, points, rewards, challenges, and tiers.",
+};
+
 export default async function ProtectedLayout({
   children,
 }: {
@@ -13,7 +20,7 @@ export default async function ProtectedLayout({
 }) {
   // The proxy is the primary gate; this re-check guards the initial render and
   // keeps the console protected even if the proxy matcher ever changes.
-  if (!(await isAuthenticated())) redirect("/login");
+  if (!(await isAuthenticated())) redirect("/admin/login");
 
   return (
     <Providers>

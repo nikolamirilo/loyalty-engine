@@ -21,6 +21,7 @@ from app.models.enums import (
 )
 from app.models.member import Member, MemberSegment
 from app.models.member_attribute import MemberAttribute
+from app.models.member_login_code import MemberLoginCode
 from app.models.points import PointsTransaction
 from app.models.redemption import Redemption
 from app.models.reward import Reward
@@ -37,6 +38,7 @@ __all__ = [
     "Member",
     "MemberAttribute",
     "MemberAttributeType",
+    "MemberLoginCode",
     "MemberSegment",
     "PointsTransaction",
     "Redemption",

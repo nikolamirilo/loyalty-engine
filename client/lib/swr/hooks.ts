@@ -18,7 +18,7 @@ import { keys } from "./keys";
 
 /**
  * Typed read hooks - the single entry point for component data access. The
- * global fetcher is configured once in app/(protected)/providers.tsx
+ * global fetcher is configured once in app/admin/(protected)/providers.tsx
  * (SWRConfig), so hooks only supply the key. Passing `undefined`/empty id
  * yields a `null` key, which tells SWR not to fetch yet.
  */

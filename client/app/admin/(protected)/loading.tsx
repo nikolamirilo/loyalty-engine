@@ -2,8 +2,8 @@ import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 /**
- * Navigation skeleton for the console. Because this lives inside the (protected)
- * segment, Next wraps every protected page in a Suspense boundary *below* the
+ * Navigation skeleton for the console. Because this lives inside the
+ * admin/(protected) segment, Next wraps every protected page in a Suspense boundary *below* the
  * layout - so the AppShell sidebar stays on screen and only the content area
  * shows this skeleton while the page renders on the server and streams in.
  *
