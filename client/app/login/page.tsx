@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 
-import { isAuthenticated } from "@/lib/auth/session";
-import { LoginForm } from "./LoginForm";
+import { getSessionMemberId } from "@/lib/memberAuth/session";
+import { AuthForm } from "./AuthForm";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default async function LoginPage() {
   // The proxy already gates this route; this is defense-in-depth.
-  if (await isAuthenticated()) redirect("/admin/dashboard");
+  if (await getSessionMemberId()) redirect("/home");
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-surface-2 px-4 py-10">
@@ -32,12 +32,12 @@ export default async function LoginPage() {
               Loyalty Engine
             </h1>
             <p className="mt-0.5 text-sm text-muted">
-              Sign in to the admin console
+              Log in or create an account to continue
             </p>
           </div>
         </div>
         <div className="rounded-xl border border-line bg-surface p-6 shadow-sm">
-          <LoginForm />
+          <AuthForm />
         </div>
       </div>
     </main>

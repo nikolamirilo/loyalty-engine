@@ -1,20 +1,42 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { redirect } from "next/navigation";
+import Link from "next/link";
 
-import { getSessionMemberId } from "@/lib/memberAuth/session";
-import { AuthForm } from "./AuthForm";
-
-export const dynamic = "force-dynamic";
+import { DashboardIcon, HomeIcon, ChevronRightIcon } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
   title: "Loyalty Engine",
 };
 
-export default async function EntryPage() {
-  // The proxy already gates this route; this is defense-in-depth.
-  if (await getSessionMemberId()) redirect("/home");
+function EntryTile({
+  href,
+  label,
+  description,
+  icon,
+}: {
+  href: string;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-4 rounded-xl border border-line bg-surface p-5 shadow-sm transition-colors hover:border-primary/40 hover:bg-surface-2/60"
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary-subtle text-xl text-primary-subtle-fg">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-medium text-foreground">{label}</span>
+        <span className="block truncate text-sm text-muted">{description}</span>
+      </span>
+      <ChevronRightIcon className="shrink-0 text-lg text-faint transition-colors group-hover:text-primary" />
+    </Link>
+  );
+}
 
+export default function EntryPage() {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-surface-2 px-4 py-10">
       <div className="w-full max-w-sm">
@@ -29,15 +51,24 @@ export default async function EntryPage() {
           />
           <div>
             <h1 className="text-lg font-semibold tracking-tight text-foreground">
-              Loyalty Engine
+              Welcome to Loyalty Engine
             </h1>
-            <p className="mt-0.5 text-sm text-muted">
-              Log in or create an account to continue
-            </p>
+            <p className="mt-0.5 text-sm text-muted">Choose how you'd like to continue</p>
           </div>
         </div>
-        <div className="rounded-xl border border-line bg-surface p-6 shadow-sm">
-          <AuthForm />
+        <div className="space-y-3">
+          <EntryTile
+            href="/admin/login"
+            label="Continue as admin"
+            description="Manage members, rewards, and tiers"
+            icon={<DashboardIcon />}
+          />
+          <EntryTile
+            href="/login"
+            label="Continue as user"
+            description="Track your points and rewards"
+            icon={<HomeIcon />}
+          />
         </div>
       </div>
     </main>

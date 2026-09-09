@@ -64,6 +64,15 @@ CREATE TYPE "public"."challengestatus" AS ENUM (
 ALTER TYPE "public"."challengestatus" OWNER TO "postgres";
 
 
+CREATE TYPE "public"."doitype" AS ENUM (
+    'code',
+    'link'
+);
+
+
+ALTER TYPE "public"."doitype" OWNER TO "postgres";
+
+
 CREATE TYPE "public"."redemptionsource" AS ENUM (
     'redeemed',
     'assigned'
@@ -129,6 +138,21 @@ CREATE TABLE IF NOT EXISTS "public"."challenges" (
 ALTER TABLE "public"."challenges" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."email_verification_codes" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "member_id" "uuid" NOT NULL,
+    "code_hash" "text" NOT NULL,
+    "expires_at" timestamp without time zone NOT NULL,
+    "attempts" integer DEFAULT 0 NOT NULL,
+    "consumed_at" timestamp without time zone,
+    "created_at" timestamp without time zone DEFAULT ("now"() AT TIME ZONE 'utc'::"text") NOT NULL,
+    "type" "public"."doitype" DEFAULT 'code'::"public"."doitype" NOT NULL
+);
+
+
+ALTER TABLE "public"."email_verification_codes" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."member_attributes" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "key" character varying NOT NULL,
@@ -141,6 +165,20 @@ CREATE TABLE IF NOT EXISTS "public"."member_attributes" (
 
 
 ALTER TABLE "public"."member_attributes" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."member_login_codes" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "member_id" "uuid" NOT NULL,
+    "code_hash" "text" NOT NULL,
+    "expires_at" timestamp without time zone NOT NULL,
+    "attempts" integer DEFAULT 0 NOT NULL,
+    "consumed_at" timestamp without time zone,
+    "created_at" timestamp without time zone DEFAULT ("now"() AT TIME ZONE 'utc'::"text") NOT NULL
+);
+
+
+ALTER TABLE "public"."member_login_codes" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."member_segments" (
@@ -162,7 +200,8 @@ CREATE TABLE IF NOT EXISTS "public"."members" (
     "total_points" integer NOT NULL,
     "tier_id" "uuid",
     "created_at" timestamp without time zone,
-    "custom_attributes" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL
+    "custom_attributes" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "email_verified_at" timestamp without time zone
 );
 
 
@@ -247,6 +286,11 @@ ALTER TABLE ONLY "public"."challenges"
 
 
 
+ALTER TABLE ONLY "public"."email_verification_codes"
+    ADD CONSTRAINT "email_verification_codes_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."member_attributes"
     ADD CONSTRAINT "member_attributes_key_key" UNIQUE ("key");
 
@@ -254,6 +298,11 @@ ALTER TABLE ONLY "public"."member_attributes"
 
 ALTER TABLE ONLY "public"."member_attributes"
     ADD CONSTRAINT "member_attributes_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."member_login_codes"
+    ADD CONSTRAINT "member_login_codes_pkey" PRIMARY KEY ("id");
 
 
 
@@ -325,6 +374,14 @@ CREATE INDEX "ix_challenge_segment_assignments_challenge_id" ON "public"."challe
 
 
 
+CREATE INDEX "ix_email_verification_codes_member_id" ON "public"."email_verification_codes" USING "btree" ("member_id");
+
+
+
+CREATE INDEX "ix_member_login_codes_member_id" ON "public"."member_login_codes" USING "btree" ("member_id");
+
+
+
 CREATE INDEX "ix_member_segments_member_id" ON "public"."member_segments" USING "btree" ("member_id");
 
 
@@ -359,6 +416,16 @@ ALTER TABLE ONLY "public"."challenge_segment_assignments"
 
 ALTER TABLE ONLY "public"."challenges"
     ADD CONSTRAINT "challenges_reward_id_fkey" FOREIGN KEY ("reward_id") REFERENCES "public"."rewards"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."email_verification_codes"
+    ADD CONSTRAINT "email_verification_codes_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "public"."members"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."member_login_codes"
+    ADD CONSTRAINT "member_login_codes_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "public"."members"("id") ON DELETE CASCADE;
 
 
 
@@ -401,7 +468,13 @@ ALTER TABLE "public"."challenge_segment_assignments" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."challenges" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."email_verification_codes" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."member_attributes" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."member_login_codes" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."member_segments" ENABLE ROW LEVEL SECURITY;
@@ -641,7 +714,15 @@ GRANT ALL ON TABLE "public"."challenges" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."email_verification_codes" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."member_attributes" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."member_login_codes" TO "service_role";
 
 
 
@@ -766,6 +847,18 @@ revoke trigger on table "public"."challenges" from "authenticated";
 
 revoke truncate on table "public"."challenges" from "authenticated";
 
+revoke references on table "public"."email_verification_codes" from "anon";
+
+revoke trigger on table "public"."email_verification_codes" from "anon";
+
+revoke truncate on table "public"."email_verification_codes" from "anon";
+
+revoke references on table "public"."email_verification_codes" from "authenticated";
+
+revoke trigger on table "public"."email_verification_codes" from "authenticated";
+
+revoke truncate on table "public"."email_verification_codes" from "authenticated";
+
 revoke references on table "public"."member_attributes" from "anon";
 
 revoke trigger on table "public"."member_attributes" from "anon";
@@ -777,6 +870,18 @@ revoke references on table "public"."member_attributes" from "authenticated";
 revoke trigger on table "public"."member_attributes" from "authenticated";
 
 revoke truncate on table "public"."member_attributes" from "authenticated";
+
+revoke references on table "public"."member_login_codes" from "anon";
+
+revoke trigger on table "public"."member_login_codes" from "anon";
+
+revoke truncate on table "public"."member_login_codes" from "anon";
+
+revoke references on table "public"."member_login_codes" from "authenticated";
+
+revoke trigger on table "public"."member_login_codes" from "authenticated";
+
+revoke truncate on table "public"."member_login_codes" from "authenticated";
 
 revoke references on table "public"."member_segments" from "anon";
 

@@ -12,7 +12,7 @@ export default async function MemberLayout({
 }) {
   // The proxy is the primary gate; this re-check guards the initial render and
   // keeps the tab shell protected even if the proxy matcher ever changes.
-  if (!(await getSessionMemberId())) redirect("/");
+  if (!(await getSessionMemberId())) redirect("/login");
 
   return <MemberShell>{children}</MemberShell>;
 }

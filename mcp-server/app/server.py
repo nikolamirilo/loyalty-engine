@@ -9,6 +9,7 @@ Tools live in ``app/tools/``, one module per resource, imported below purely
 for the side effect of registering onto ``app.mcp_instance.mcp``.
 """
 
+from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
@@ -24,3 +25,12 @@ async def healthz(request):
 app = mcp.streamable_http_app()
 app.routes.append(Route("/healthz", healthz, methods=["GET"]))
 app.add_middleware(BearerAuthMiddleware)
+# Added last so it wraps BearerAuthMiddleware, letting Starlette answer the
+# browser's OPTIONS preflight (sent by claude.ai before its Authorization
+# POST) without that request first hitting the 401 auth check.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://claude.ai"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["authorization", "content-type", "mcp-protocol-version"],
+)

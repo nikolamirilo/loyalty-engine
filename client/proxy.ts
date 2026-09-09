@@ -34,7 +34,7 @@ export function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }
     if (adminAuthenticated && pathname === "/admin/login") {
-      return NextResponse.redirect(new URL("/admin", request.url));
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
     }
     return NextResponse.next();
   }
@@ -46,8 +46,8 @@ export function proxy(request: NextRequest) {
   const memberId = verifyMemberToken(request.cookies.get(MEMBER_SESSION_COOKIE)?.value);
   const memberAuthenticated = memberId !== null;
 
-  // `/` is the sign-in/sign-up landing page - pointless once signed in.
-  if (pathname === "/") {
+  // `/login` is the member sign-in/sign-up page - pointless once signed in.
+  if (pathname === "/login") {
     if (memberAuthenticated) {
       return NextResponse.redirect(new URL("/home", request.url));
     }
@@ -55,7 +55,7 @@ export function proxy(request: NextRequest) {
   }
 
   if (MEMBER_PROTECTED_ROUTES.has(pathname) && !memberAuthenticated) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
