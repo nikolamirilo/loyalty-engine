@@ -10,7 +10,7 @@ import json
 import os
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Dict, FrozenSet
+from typing import Dict, FrozenSet, List
 
 from dotenv import load_dotenv
 
@@ -26,6 +26,28 @@ def _required(name: str, hint: str) -> str:
 
 def _optional(name: str, default: str = "") -> str:
     return (os.getenv(name) or default).strip()
+
+
+def _csv(name: str, default: str = "") -> List[str]:
+    return [item.strip() for item in _optional(name, default).split(",") if item.strip()]
+
+
+# The MCP transport rejects any request whose Host/Origin is not listed here
+# (its DNS-rebinding protection). Localhost stays allowed so the uvicorn
+# workflow in ``app/server.py`` keeps working.
+_LOCALHOST_HOSTS = ["127.0.0.1:*", "localhost:*", "[::1]:*"]
+_LOCALHOST_ORIGINS = ["http://127.0.0.1:*", "http://localhost:*", "http://[::1]:*"]
+
+
+def _allowed_hosts() -> List[str]:
+    """Vercel injects its own deployment domains, so a deploy is trusted
+    without extra config; ``MCP_ALLOWED_HOSTS`` adds any custom domain."""
+    hosts = _LOCALHOST_HOSTS + _csv("MCP_ALLOWED_HOSTS")
+    for var in ("VERCEL_PROJECT_PRODUCTION_URL", "VERCEL_URL"):
+        domain = _optional(var)
+        if domain:
+            hosts.append(domain)
+    return hosts
 
 
 @dataclass(frozen=True)
@@ -51,6 +73,9 @@ class Settings:
     loyalty_api_service_token: str
     # Bearer token -> principal, for callers of *this* server.
     client_tokens: Dict[str, ClientPrincipal]
+    # Host/Origin values the MCP transport will accept - see _allowed_hosts().
+    allowed_hosts: List[str]
+    allowed_origins: List[str]
     request_timeout_seconds: float = 15.0
 
     project_name: str = "Loyalty Engine MCP Server"
@@ -98,6 +123,8 @@ def get_settings() -> Settings:
                 '\'[{"token": "...", "name": "partner-a", "scopes": ["read", "write"]}]\'.',
             )
         ),
+        allowed_hosts=_allowed_hosts(),
+        allowed_origins=_LOCALHOST_ORIGINS + _csv("MCP_ALLOWED_ORIGINS", "https://claude.ai"),
         request_timeout_seconds=float(_optional("LOYALTY_API_TIMEOUT_SECONDS", "15") or 15),
     )
 
