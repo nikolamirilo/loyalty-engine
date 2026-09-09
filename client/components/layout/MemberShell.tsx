@@ -6,12 +6,19 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/format";
 import { memberLogout } from "@/lib/memberAuth/actions";
-import { HomeIcon, LogOutIcon, PackageIcon, WalletIcon } from "@/components/ui/icons";
+import {
+  HomeIcon,
+  LogOutIcon,
+  PackageIcon,
+  UserIcon,
+  WalletIcon,
+} from "@/components/ui/icons";
 
 const TABS = [
   { href: "/home", label: "Home", Icon: HomeIcon },
   { href: "/products", label: "Products", Icon: PackageIcon },
   { href: "/wallet", label: "Wallet", Icon: WalletIcon },
+  { href: "/account", label: "Account", Icon: UserIcon },
 ];
 
 /**
