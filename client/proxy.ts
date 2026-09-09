@@ -7,7 +7,7 @@ import { MEMBER_SESSION_COOKIE } from "@/lib/memberAuth/config";
 import { verifyMemberToken } from "@/lib/memberAuth/token";
 
 /** Routes gated by a member session; anything else under `/` is public. */
-const MEMBER_PROTECTED_ROUTES = new Set(["/home", "/products", "/wallet"]);
+const MEMBER_PROTECTED_ROUTES = new Set(["/home", "/products", "/wallet", "/account"]);
 
 /**
  * Auth gate. Runs before every matched route (see `config.matcher`) and

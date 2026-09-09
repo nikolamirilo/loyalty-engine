@@ -92,9 +92,9 @@ async function parseCustomAttributes(
 }
 
 function revalidateMember(id: string) {
-  revalidatePath("/");
-  revalidatePath("/members");
-  revalidatePath(`/members/${id}`);
+  revalidatePath("/admin/dashboard");
+  revalidatePath("/admin/members");
+  revalidatePath(`/admin/members/${id}`);
 }
 
 // ── Members ──────────────────────────────────────────────────────────────────
@@ -118,8 +118,8 @@ export async function createMember(
         customAttributes: (await parseCustomAttributes(fd)) ?? {},
       },
     });
-    revalidatePath("/");
-    revalidatePath("/members");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/members");
     return { ok: true, message: "Member created." };
   } catch (e) {
     return fail(e);
@@ -159,8 +159,8 @@ export async function updateMember(
 export async function deleteMember(id: string): Promise<ActionState> {
   try {
     await apiRequest(`/members/${id}`, { method: "DELETE" });
-    revalidatePath("/");
-    revalidatePath("/members");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/members");
     return { ok: true, message: "Member deleted." };
   } catch (e) {
     return fail(e);
@@ -240,7 +240,7 @@ export async function redeemReward(
       method: "POST",
     });
     revalidateMember(memberId);
-    revalidatePath("/rewards");
+    revalidatePath("/admin/rewards");
     return { ok: true, message: "Reward redeemed." };
   } catch (e) {
     return fail(e);
@@ -256,7 +256,7 @@ export async function assignPrize(
       method: "POST",
     });
     revalidateMember(memberId);
-    revalidatePath("/rewards");
+    revalidatePath("/admin/rewards");
     return { ok: true, message: "Prize assigned." };
   } catch (e) {
     return fail(e);
@@ -285,8 +285,8 @@ export async function createReward(
     return { ok: false, error: "Points cost must be greater than 0." };
   try {
     await apiRequest("/rewards", { method: "POST", json: body });
-    revalidatePath("/");
-    revalidatePath("/rewards");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/rewards");
     return { ok: true, message: "Reward created." };
   } catch (e) {
     return fail(e);
@@ -305,8 +305,8 @@ export async function updateReward(
     return { ok: false, error: "Points cost must be greater than 0." };
   try {
     await apiRequest(`/rewards/${id}`, { method: "PATCH", json: body });
-    revalidatePath("/");
-    revalidatePath("/rewards");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/rewards");
     return { ok: true, message: "Reward updated." };
   } catch (e) {
     return fail(e);
@@ -322,8 +322,8 @@ export async function setRewardActive(
       method: "PATCH",
       json: { isActive: isActive },
     });
-    revalidatePath("/");
-    revalidatePath("/rewards");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/rewards");
     return { ok: true };
   } catch (e) {
     return fail(e);
@@ -333,8 +333,8 @@ export async function setRewardActive(
 export async function deleteReward(id: string): Promise<ActionState> {
   try {
     await apiRequest(`/rewards/${id}`, { method: "DELETE" });
-    revalidatePath("/");
-    revalidatePath("/rewards");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/rewards");
     return { ok: true, message: "Reward deleted." };
   } catch (e) {
     return fail(e);
@@ -372,8 +372,8 @@ export async function createChallenge(
     return { ok: false, error: "Target value must be greater than 0." };
   try {
     await apiRequest("/challenges", { method: "POST", json: body });
-    revalidatePath("/");
-    revalidatePath("/challenges");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/challenges");
     return { ok: true, message: "Challenge created." };
   } catch (e) {
     return fail(e);
@@ -392,8 +392,8 @@ export async function updateChallenge(
     return { ok: false, error: "Target value must be greater than 0." };
   try {
     await apiRequest(`/challenges/${id}`, { method: "PATCH", json: body });
-    revalidatePath("/");
-    revalidatePath("/challenges");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/challenges");
     return { ok: true, message: "Challenge updated." };
   } catch (e) {
     return fail(e);
@@ -403,8 +403,8 @@ export async function updateChallenge(
 export async function deleteChallenge(id: string): Promise<ActionState> {
   try {
     await apiRequest(`/challenges/${id}`, { method: "DELETE" });
-    revalidatePath("/");
-    revalidatePath("/challenges");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/challenges");
     return { ok: true, message: "Challenge deleted." };
   } catch (e) {
     return fail(e);
@@ -423,8 +423,8 @@ export async function assignChallengeToSegment(
       `/challenges/${id}/assign-segment`,
       { method: "POST", json: { segmentId: segmentId } },
     );
-    revalidatePath("/");
-    revalidatePath("/challenges");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/challenges");
     return {
       ok: true,
       message: `Assigned to ${result.assigned} member(s); ${result.skipped} already had it.`,
@@ -522,8 +522,8 @@ export async function createTier(
       method: "POST",
       json: { name, minPoints: minPoints, multiplier },
     });
-    revalidatePath("/");
-    revalidatePath("/tiers");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/tiers");
     return { ok: true, message: "Tier created." };
   } catch (e) {
     return fail(e);
@@ -549,8 +549,8 @@ export async function updateTier(
       method: "PATCH",
       json: { name, minPoints: minPoints, multiplier },
     });
-    revalidatePath("/");
-    revalidatePath("/tiers");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/tiers");
     return { ok: true, message: "Tier updated." };
   } catch (e) {
     return fail(e);
@@ -560,8 +560,8 @@ export async function updateTier(
 export async function deleteTier(id: string): Promise<ActionState> {
   try {
     await apiRequest(`/tiers/${id}`, { method: "DELETE" });
-    revalidatePath("/");
-    revalidatePath("/tiers");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/tiers");
     return { ok: true, message: "Tier deleted." };
   } catch (e) {
     return fail(e);
@@ -586,8 +586,8 @@ export async function createSegment(
   if (!body.name) return { ok: false, error: "Name is required." };
   try {
     await apiRequest("/segments", { method: "POST", json: body });
-    revalidatePath("/");
-    revalidatePath("/segments");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/segments");
     return { ok: true, message: "Segment created." };
   } catch (e) {
     return fail(e);
@@ -604,8 +604,8 @@ export async function updateSegment(
   if (!body.name) return { ok: false, error: "Name is required." };
   try {
     await apiRequest(`/segments/${id}`, { method: "PATCH", json: body });
-    revalidatePath("/");
-    revalidatePath("/segments");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/segments");
     return { ok: true, message: "Segment updated." };
   } catch (e) {
     return fail(e);
@@ -615,8 +615,8 @@ export async function updateSegment(
 export async function deleteSegment(id: string): Promise<ActionState> {
   try {
     await apiRequest(`/segments/${id}`, { method: "DELETE" });
-    revalidatePath("/");
-    revalidatePath("/segments");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/segments");
     return { ok: true, message: "Segment deleted." };
   } catch (e) {
     return fail(e);
@@ -633,9 +633,9 @@ export async function assignSegmentToMembers(
       `/segments/${segmentId}/assign`,
       { method: "POST", json: { memberIds: memberIds } },
     );
-    revalidatePath("/");
-    revalidatePath("/segments");
-    revalidatePath("/members");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/segments");
+    revalidatePath("/admin/members");
     return {
       ok: true,
       message: `Assigned to ${result.assigned} member(s); ${result.skipped} already had it.`,
@@ -648,8 +648,8 @@ export async function assignSegmentToMembers(
 // ── Member custom attributes ─────────────────────────────────────────────────
 
 function revalidateAttributes() {
-  revalidatePath("/members");
-  revalidatePath("/members/configure");
+  revalidatePath("/admin/members");
+  revalidatePath("/admin/members/configure");
 }
 
 /** Read the type-dependent default-value input. The Configure form renders a

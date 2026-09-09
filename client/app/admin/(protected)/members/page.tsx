@@ -52,7 +52,7 @@ export default function MembersPage() {
             {/* A Link rather than a Button: a <button> nested in an <a> is
                 invalid HTML, so this borrows the button styling instead. */}
             <Link
-              href="/members/configure"
+              href="/admin/members/configure"
               className={buttonClass({ variant: "secondary" })}
             >
               <SlidersIcon /> Configure

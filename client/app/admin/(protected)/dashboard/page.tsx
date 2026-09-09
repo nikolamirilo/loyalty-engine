@@ -108,7 +108,7 @@ export default function DashboardPage() {
             description="Most recent in the program"
             action={
               <Link
-                href="/members"
+                href="/admin/members"
                 className="inline-flex items-center gap-0.5 text-sm font-medium text-primary hover:underline"
               >
                 View all <ChevronRightIcon className="text-base" />
@@ -139,7 +139,7 @@ export default function DashboardPage() {
                     <TR key={member.id} className="group hover:bg-surface-2/60">
                       <TD>
                         <Link
-                          href={`/members/${member.id}`}
+                          href={`/admin/members/${member.id}`}
                           className="flex items-center gap-3"
                         >
                           <Avatar name={member.name} />

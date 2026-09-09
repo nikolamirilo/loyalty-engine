@@ -91,7 +91,7 @@ export function MemberDetail({ id }: { id: string }) {
   return (
     <div className="space-y-6">
       <Link
-        href="/members"
+        href="/admin/members"
         className="inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-foreground"
       >
         <ChevronRightIcon className="rotate-180 text-base" />
@@ -310,7 +310,7 @@ function MessageState({
   return (
     <div className="space-y-6">
       <Link
-        href="/members"
+        href="/admin/members"
         className="inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-foreground"
       >
         <ChevronRightIcon className="rotate-180 text-base" />

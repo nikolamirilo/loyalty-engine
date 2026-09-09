@@ -40,7 +40,7 @@ export function MembersTable({
             <TR key={member.id} className="group hover:bg-surface-2/60">
               <TD>
                 <Link
-                  href={`/members/${member.id}`}
+                  href={`/admin/members/${member.id}`}
                   onMouseEnter={() => preloadMember(member.id)}
                   onFocus={() => preloadMember(member.id)}
                   className="flex items-center gap-3"
@@ -85,7 +85,7 @@ export function MembersTable({
               </TD>
               <TD>
                 <Link
-                  href={`/members/${member.id}`}
+                  href={`/admin/members/${member.id}`}
                   aria-label={`Open ${member.name}`}
                   className="flex justify-end text-faint transition-colors group-hover:text-foreground"
                 >

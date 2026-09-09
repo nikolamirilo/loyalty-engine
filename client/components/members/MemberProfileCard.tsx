@@ -210,7 +210,7 @@ function ProfileCardForm({
                   description="This permanently deletes the member and all of their points, redemptions, and challenge history."
                   confirmLabel="Delete member"
                   action={deleteMember.bind(null, member.id)}
-                  redirectTo="/members"
+                  redirectTo="/admin/members"
                   successMessage="Member deleted."
                   onSuccess={onMutated}
                 />
