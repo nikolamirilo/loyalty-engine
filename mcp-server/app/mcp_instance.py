@@ -10,8 +10,10 @@ serverless HTTP endpoint: each request is handled independently rather than
 relying on sticky server-side session state between calls.
 """
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
 from app.core.config import settings
 
-mcp = FastMCP(name=settings.project_name, stateless_http=True)
+mcp = MCPServer(
+    name=settings.project_name,
+)
