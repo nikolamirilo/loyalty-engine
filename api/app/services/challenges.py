@@ -1,6 +1,7 @@
 """Challenge domain logic: expiry, segment fan-out, and completion rewards."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -28,6 +29,31 @@ def is_expired(challenge: Challenge) -> bool:
         return False
     # expires_at read from the DB may be naive; treat stored values as UTC.
     expires_at = challenge.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    return expires_at < now()
+
+
+def compute_assignment_expiry(
+    challenge: Challenge, assigned_at: datetime
+) -> Optional[datetime]:
+    """The personal deadline for a member assigned to `challenge` at `assigned_at`.
+
+    Prefers the challenge's relative `expiry_days` (resolved to a concrete
+    timestamp so a later edit to `expiry_days` doesn't retroactively shift
+    deadlines already handed out), falling back to its absolute `expires_at`
+    so challenges without `expiry_days` keep today's shared-deadline behavior.
+    """
+    if challenge.expiry_days is not None:
+        return assigned_at + timedelta(days=challenge.expiry_days)
+    return challenge.expires_at
+
+
+def assignment_is_expired(assignment: ChallengeAssignment) -> bool:
+    if assignment.expires_at is None:
+        return False
+    # expires_at read from the DB may be naive; treat stored values as UTC.
+    expires_at = assignment.expires_at
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     return expires_at < now()
@@ -91,11 +117,12 @@ def sync_assignments_for_segments(
     if not challenge_ids:
         return
 
-    eligible_challenge_ids = {
-        c.id
+    challenges_by_id = {
+        c.id: c
         for c in db.query(Challenge).filter(Challenge.id.in_(challenge_ids)).all()
         if c.is_active and not is_expired(c)
     }
+    eligible_challenge_ids = set(challenges_by_id)
     if not eligible_challenge_ids:
         return
 
@@ -114,7 +141,15 @@ def sync_assignments_for_segments(
     for member_id in member_ids:
         for challenge_id in eligible_challenge_ids:
             if (member_id, challenge_id) not in existing:
-                db.add(ChallengeAssignment(member_id=member_id, challenge_id=challenge_id))
+                assigned_at = now()
+                db.add(
+                    ChallengeAssignment(
+                        member_id=member_id,
+                        challenge_id=challenge_id,
+                        assigned_at=assigned_at,
+                        expires_at=compute_assignment_expiry(challenges_by_id[challenge_id], assigned_at),
+                    )
+                )
 
 
 def complete_assignment(db: Session, assignment: ChallengeAssignment) -> None:

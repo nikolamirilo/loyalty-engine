@@ -17,6 +17,10 @@ class ChallengeBase(CamelModel):
     is_active: bool = True
     starts_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
+    # Relative deadline: expires N days after a member is assigned. Nullable
+    # and unset by default, so existing challenges keep expires_at applying
+    # to everyone alike.
+    expiry_days: Optional[int] = Field(default=None, gt=0)
 
 
 class ChallengeCreate(ChallengeBase):
@@ -32,6 +36,7 @@ class ChallengeUpdate(CamelModel):
     is_active: Optional[bool] = None
     starts_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
+    expiry_days: Optional[int] = Field(default=None, gt=0)
 
 
 class ChallengeOut(ChallengeBase):
@@ -47,6 +52,9 @@ class ChallengeAssignmentOut(CamelModel):
     status: ChallengeStatus
     current_value: int
     assigned_at: datetime
+    # This member's personal deadline - distinct from `challenge.expiresAt`,
+    # which stays the campaign-level absolute date.
+    expires_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     challenge: ChallengeOut
 

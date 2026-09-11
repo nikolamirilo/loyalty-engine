@@ -173,6 +173,9 @@ export interface Challenge {
   isActive: boolean;
   startsAt: string | null;
   expiresAt: string | null;
+  /** Expires this many days after a member is assigned, instead of the fixed
+   * `expiresAt` date above. Null means "use `expiresAt` for everyone". */
+  expiryDays: number | null;
   createdAt: string;
   /** Segments this challenge has been bulk-assigned to (via "Assign to segment"). */
   segments: string[];
@@ -185,6 +188,8 @@ export interface ChallengeAssignment {
   status: ChallengeStatus;
   currentValue: number;
   assignedAt: string;
+  /** This member's personal deadline - distinct from `challenge.expiresAt`. */
+  expiresAt: string | null;
   completedAt: string | null;
   challenge: Challenge;
 }

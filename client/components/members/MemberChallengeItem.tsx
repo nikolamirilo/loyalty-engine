@@ -6,7 +6,7 @@ import {
   unassignChallenge,
 } from "@/lib/actions";
 import { useRevalidate } from "@/lib/swr/revalidate";
-import { formatNumber } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import type { ChallengeAssignment } from "@/lib/types";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { Button } from "@/components/ui/Button";
@@ -63,6 +63,11 @@ export function MemberChallengeItem({
           max={challenge.targetValue}
           tone={tone}
         />
+        {!isClosed && status !== "expired" && assignment.expiresAt && (
+          <p className="mt-1.5 text-xs text-muted">
+            Expires {formatDate(assignment.expiresAt)}
+          </p>
+        )}
       </div>
 
       <div className="mt-3 flex items-center gap-1">

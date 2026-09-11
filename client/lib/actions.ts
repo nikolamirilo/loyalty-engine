@@ -433,6 +433,7 @@ function challengeBody(fd: FormData) {
     rewardId: optionalStr(fd, "rewardId"),
     isActive: checkbox(fd, "isActive"),
     expiresAt: toIso(optionalStr(fd, "expiresAt")),
+    expiryDays: parseNumber(fd, "expiryDays") ?? null,
   };
 }
 

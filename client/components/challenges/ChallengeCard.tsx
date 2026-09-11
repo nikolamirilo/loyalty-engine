@@ -90,6 +90,11 @@ export function ChallengeCard({
             <ClockIcon className="text-[13px]" /> Expires {formatDate(challenge.expiresAt)}
           </Badge>
         )}
+        {challenge.expiryDays != null && (
+          <Badge tone="neutral">
+            <ClockIcon className="text-[13px]" /> {challenge.expiryDays}d after assignment
+          </Badge>
+        )}
       </div>
 
       <div className="mt-4">

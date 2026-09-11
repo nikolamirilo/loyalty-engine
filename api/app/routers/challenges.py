@@ -30,10 +30,13 @@ from app.schemas import (
 )
 from app.services.challenges import (
     assert_joinable,
+    assignment_is_expired,
     complete_assignment,
+    compute_assignment_expiry,
     get_assignment_or_404,
     get_challenge_or_404,
     is_expired,
+    now,
 )
 
 router = APIRouter(tags=["Challenges"])
@@ -116,7 +119,13 @@ def assign_challenge(member_id: UUID, challenge_id: UUID, db: Session = Depends(
     if existing:
         raise HTTPException(400, "Challenge already assigned to this member")
 
-    assignment = ChallengeAssignment(member_id=member_id, challenge_id=challenge_id)
+    assigned_at = now()
+    assignment = ChallengeAssignment(
+        member_id=member_id,
+        challenge_id=challenge_id,
+        assigned_at=assigned_at,
+        expires_at=compute_assignment_expiry(challenge, assigned_at),
+    )
     db.add(assignment)
     try:
         db.commit()
@@ -162,10 +171,15 @@ def get_member_challenge_progress(member_id: UUID, challenge_id: UUID, db: Sessi
     """Challenge info + this member's progress on it, combined into one response.
 
     Works whether or not the member has been assigned the challenge yet
-    (`is_assigned` covers that). `is_expired`/`effective_status` are recomputed
-    from `expires_at` rather than trusted from the assignment's stored `status`,
-    since that field is only updated lazily by the write paths (assign/progress)
-    and can lag past the actual deadline.
+    (`is_assigned` covers that). Once assigned, `expires_at`/`is_expired`/
+    `effective_status` describe the member's personal deadline
+    (`assignment.expires_at`, resolved from the challenge's `expiry_days` or
+    absolute `expires_at` at assignment time) rather than the challenge's own
+    campaign window - and are recomputed here rather than trusted from the
+    assignment's stored `status`, since that field is only updated lazily by
+    the write paths (assign/progress) and can lag past the actual deadline.
+    Before assignment there's no personal deadline yet, so this falls back to
+    the challenge's absolute `expires_at`, which is what gates joinability.
     """
     if not db.get(Member, member_id):
         raise HTTPException(404, "Member not found")
@@ -180,7 +194,12 @@ def get_member_challenge_progress(member_id: UUID, challenge_id: UUID, db: Sessi
         .first()
     )
 
-    expired = is_expired(challenge)
+    if assignment:
+        expired = assignment_is_expired(assignment)
+        effective_expires_at = assignment.expires_at
+    else:
+        expired = is_expired(challenge)
+        effective_expires_at = challenge.expires_at
     current_value = assignment.current_value if assignment else 0
     effective_status = assignment.status if assignment else None
     if assignment and expired and effective_status not in (ChallengeStatus.completed, ChallengeStatus.cancelled):
@@ -195,7 +214,7 @@ def get_member_challenge_progress(member_id: UUID, challenge_id: UUID, db: Sessi
         reward_id=challenge.reward_id,
         is_active=challenge.is_active,
         starts_at=challenge.starts_at,
-        expires_at=challenge.expires_at,
+        expires_at=effective_expires_at,
         is_assigned=assignment is not None,
         assignment_id=assignment.id if assignment else None,
         current_value=current_value,
@@ -216,7 +235,7 @@ def add_progress(member_id: UUID, challenge_id: UUID, body: ProgressRequest, db:
         raise HTTPException(400, f"Challenge is already {assignment.status.value}")
 
     challenge = assignment.challenge
-    if assignment.status == ChallengeStatus.expired or is_expired(challenge):
+    if assignment_is_expired(assignment):
         if assignment.status != ChallengeStatus.expired:
             assignment.status = ChallengeStatus.expired
             db.commit()
@@ -284,7 +303,15 @@ def assign_challenge_to_segment(challenge_id: UUID, body: SegmentAssignRequest, 
         if member_id in already:
             skipped += 1
             continue
-        db.add(ChallengeAssignment(member_id=member_id, challenge_id=challenge_id))
+        assigned_at = now()
+        db.add(
+            ChallengeAssignment(
+                member_id=member_id,
+                challenge_id=challenge_id,
+                assigned_at=assigned_at,
+                expires_at=compute_assignment_expiry(challenge, assigned_at),
+            )
+        )
         assigned += 1
 
     # Remember the segment this challenge was pushed to (only when it actually

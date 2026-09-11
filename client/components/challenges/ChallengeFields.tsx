@@ -74,14 +74,34 @@ export function ChallengeFields({
           ))}
         </Select>
       </Field>
-      <Field label="Expires at" htmlFor="challenge-expires" help="Optional deadline">
-        <Input
-          id="challenge-expires"
-          name="expiresAt"
-          type="datetime-local"
-          defaultValue={toDatetimeLocalValue(challenge?.expiresAt)}
-        />
-      </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field
+          label="Expires at"
+          htmlFor="challenge-expires"
+          help="Fixed deadline for everyone / cutoff for new assignments"
+        >
+          <Input
+            id="challenge-expires"
+            name="expiresAt"
+            type="datetime-local"
+            defaultValue={toDatetimeLocalValue(challenge?.expiresAt)}
+          />
+        </Field>
+        <Field
+          label="Expires after (days)"
+          htmlFor="challenge-expiry-days"
+          help="Expires N days after being assigned to a member — leave blank to use the fixed date above for everyone."
+        >
+          <Input
+            id="challenge-expiry-days"
+            name="expiryDays"
+            type="number"
+            min={1}
+            step={1}
+            defaultValue={challenge?.expiryDays ?? ""}
+          />
+        </Field>
+      </div>
       <Checkbox
         name="isActive"
         label="Active (can be assigned)"

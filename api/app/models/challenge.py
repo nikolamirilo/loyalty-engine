@@ -36,6 +36,9 @@ class Challenge(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     starts_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # When set, a member's personal deadline is `assigned_at + expiry_days`
+    # instead of the absolute `expires_at` above (see ChallengeAssignment.expires_at).
+    expiry_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     reward: Mapped[Optional["Reward"]] = relationship("Reward")
@@ -63,6 +66,9 @@ class ChallengeAssignment(Base):
     status: Mapped[ChallengeStatus] = mapped_column(Enum(ChallengeStatus), nullable=False, default=ChallengeStatus.assigned)
     current_value: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     assigned_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    # This member's personal deadline, resolved once at assignment time from
+    # the challenge's expiry_days (or its absolute expires_at as a fallback).
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     __table_args__ = (UniqueConstraint("challenge_id", "member_id", name="uq_challenge_member"),)
