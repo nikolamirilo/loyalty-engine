@@ -345,6 +345,83 @@ export async function deleteReward(id: string): Promise<ActionState> {
   }
 }
 
+// ── Products ─────────────────────────────────────────────────────────────────
+
+/** The form takes a major-unit price ("14.50"); the API stores integer cents
+ * (see api/app/models/product.py), so the conversion happens once here. */
+function productBody(fd: FormData) {
+  const price = parseNumber(fd, "price");
+  return {
+    name: str(fd, "name"),
+    description: optionalStr(fd, "description"),
+    priceCents: price === null ? null : Math.round(price * 100),
+    category: optionalStr(fd, "category"),
+    isActive: checkbox(fd, "isActive"),
+  };
+}
+
+export async function createProduct(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const body = productBody(fd);
+  if (!body.name) return { ok: false, error: "Name is required." };
+  if (!body.priceCents || body.priceCents <= 0)
+    return { ok: false, error: "Price must be greater than 0." };
+  try {
+    await apiRequest("/products", { method: "POST", json: body });
+    revalidatePath("/admin/products");
+    return { ok: true, message: "Product created." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function updateProduct(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const id = str(fd, "id");
+  const body = productBody(fd);
+  if (!id) return { ok: false, error: "Missing product id." };
+  if (!body.name) return { ok: false, error: "Name is required." };
+  if (!body.priceCents || body.priceCents <= 0)
+    return { ok: false, error: "Price must be greater than 0." };
+  try {
+    await apiRequest(`/products/${id}`, { method: "PATCH", json: body });
+    revalidatePath("/admin/products");
+    return { ok: true, message: "Product updated." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function setProductActive(
+  id: string,
+  isActive: boolean,
+): Promise<ActionState> {
+  try {
+    await apiRequest(`/products/${id}`, {
+      method: "PATCH",
+      json: { isActive: isActive },
+    });
+    revalidatePath("/admin/products");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteProduct(id: string): Promise<ActionState> {
+  try {
+    await apiRequest(`/products/${id}`, { method: "DELETE" });
+    revalidatePath("/admin/products");
+    return { ok: true, message: "Product deleted." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 // ── Challenges ───────────────────────────────────────────────────────────────
 
 function challengeBody(fd: FormData) {

@@ -13,6 +13,9 @@ import type {
   ChallengeStatus,
   Member,
   PointsTransaction,
+  Product,
+  Purchase,
+  PurchaseStats,
   Redemption,
   RedemptionSource,
   Reward,
@@ -198,6 +201,23 @@ export const getRewards = (activeOnly = false) =>
   });
 
 export const getReward = (id: string) => apiRequest<Reward>(`/rewards/${id}`);
+
+export const getProducts = (activeOnly = false) =>
+  apiRequest<Product[]>("/products", {
+    query: { limit: 1000, activeOnly },
+  });
+
+export const getProduct = (id: string) => apiRequest<Product>(`/products/${id}`);
+
+export const getMemberPurchases = (id: string) =>
+  apiRequest<Purchase[]>(`/members/${id}/purchases`, {
+    query: { limit: 200 },
+  });
+
+export const getPurchaseStats = (id: string, days?: number) =>
+  apiRequest<PurchaseStats>(`/members/${id}/purchase-stats`, {
+    query: { days },
+  });
 
 export const getChallenges = (activeOnly = false) =>
   apiRequest<Challenge[]>("/challenges", {

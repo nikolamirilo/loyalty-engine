@@ -286,6 +286,13 @@ export const UserIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const ShoppingBagIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M6 8V6a6 6 0 0 1 12 0v2" />
+    <path d="M4.5 8h15l1 12.5a1.5 1.5 0 0 1-1.5 1.5h-14a1.5 1.5 0 0 1-1.5-1.5Z" />
+  </Icon>
+);
+
 export const MoreVerticalIcon = (p: IconProps) => (
   <Icon {...p} strokeWidth={0}>
     <circle cx="12" cy="5" r="1.75" fill="currentColor" />

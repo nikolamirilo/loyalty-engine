@@ -11,14 +11,15 @@ import { memberLogout } from "@/lib/memberAuth/actions";
 import {
   HomeIcon,
   LogOutIcon,
-  PackageIcon,
+  ShoppingBagIcon,
   UserIcon,
   WalletIcon,
 } from "@/components/ui/icons";
 
 const TABS = [
   { href: "/home", label: "Home", Icon: HomeIcon },
-  { href: "/products", label: "Products", Icon: PackageIcon },
+  // Same icon as the admin console's Products nav item (AppShell.tsx).
+  { href: "/products", label: "Products", Icon: ShoppingBagIcon },
   { href: "/wallet", label: "Wallet", Icon: WalletIcon },
   { href: "/account", label: "Account", Icon: UserIcon },
 ];
@@ -56,7 +57,7 @@ export function MemberShell({
       <div className="min-h-dvh md:grid md:place-items-center md:bg-surface-2 md:p-6">
         <div className="md:relative md:h-[844px] md:max-h-[calc(100dvh-3rem)] md:w-[390px] md:overflow-hidden md:rounded-[2.25rem] md:border md:border-line md:bg-background md:shadow-2xl">
           <div className="flex min-h-dvh flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:h-full md:min-h-0 md:overflow-y-auto md:pb-[4.5rem]">
-            <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line/70 bg-surface px-4 pt-[env(safe-area-inset-top)]">
+            <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-line/70 bg-surface px-4 pt-[env(safe-area-inset-top)]">
               {/* Both side slots are `flex-1`, so the title sits on the true
                   center of the bar even though the logo and the button are not
                   the same width. */}

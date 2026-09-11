@@ -39,7 +39,7 @@ export default async function WalletPage() {
 
       <Card>
         <CardHeader
-          title="Products"
+          title="Rewards"
           description="Rewards you have that aren't redeemed yet."
         />
         {prizes.length === 0 ? (

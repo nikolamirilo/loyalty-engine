@@ -32,11 +32,17 @@ export const keys = {
     `/members/${id}/transactions${qs({ limit: 200 })}`,
   redemptions: (id: string) =>
     `/members/${id}/redemptions${qs({ limit: 200 })}`,
+  memberPurchases: (id: string) =>
+    `/members/${id}/purchases${qs({ limit: 200 })}`,
+  purchaseStats: (id: string, days?: number) =>
+    `/members/${id}/purchase-stats${qs({ days })}`,
   memberChallenges: (id: string) =>
     `/members/${id}/challenges${qs({ limit: 200 })}`,
   tiers: () => `/tiers`,
   rewards: (activeOnly = false) =>
     `/rewards${qs({ limit: 1000, activeOnly })}`,
+  products: (activeOnly = false) =>
+    `/products${qs({ limit: 1000, activeOnly })}`,
   challenges: (activeOnly = false) =>
     `/challenges${qs({ limit: 1000, activeOnly })}`,
   segments: () => `/segments`,

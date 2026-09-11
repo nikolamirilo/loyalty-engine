@@ -111,6 +111,48 @@ export interface Reward {
   createdAt: string;
 }
 
+export interface Product {
+  id: UUID;
+  name: string;
+  description: string | null;
+  priceCents: number;
+  currency: string;
+  category: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Purchase {
+  id: UUID;
+  memberId: UUID;
+  /** Null if the product was later deleted; `productName` still holds. */
+  productId: UUID | null;
+  productName: string;
+  quantity: number;
+  unitPriceCents: number;
+  totalCents: number;
+  currency: string;
+  createdAt: string;
+}
+
+/** Spend and frequency signals for one member, from
+ * `GET /members/{id}/purchase-stats?days=`. `period*` covers the trailing
+ * `periodDays` window; the rest are lifetime totals. This is the input
+ * gamification campaigns personalise on. */
+export interface PurchaseStats {
+  memberId: UUID;
+  currency: string;
+  purchaseCount: number;
+  totalSpendCents: number;
+  averageOrderValueCents: number;
+  firstPurchaseAt: string | null;
+  lastPurchaseAt: string | null;
+  daysSinceLastPurchase: number | null;
+  periodDays: number;
+  periodPurchaseCount: number;
+  periodSpendCents: number;
+}
+
 export interface Redemption {
   id: UUID;
   memberId: UUID;

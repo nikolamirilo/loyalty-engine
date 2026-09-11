@@ -47,6 +47,8 @@ from app.schemas.points import (
     PointsTransactionOut,
     SpendPointsRequest,
 )
+from app.schemas.product import ProductCreate, ProductOut, ProductUpdate
+from app.schemas.purchase import PurchaseCreate, PurchaseOut, PurchaseStatsOut
 from app.schemas.redemption import RedemptionOut
 from app.schemas.reward import RewardCreate, RewardOut, RewardUpdate
 from app.schemas.segment import (
@@ -90,7 +92,13 @@ __all__ = [
     "MemberStatsOut",
     "MemberUpdate",
     "PointsTransactionOut",
+    "ProductCreate",
+    "ProductOut",
+    "ProductUpdate",
     "ProgressRequest",
+    "PurchaseCreate",
+    "PurchaseOut",
+    "PurchaseStatsOut",
     "RedemptionOut",
     "RewardCreate",
     "RewardOut",

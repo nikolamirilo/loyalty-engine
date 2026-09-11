@@ -4,7 +4,7 @@ import { cn } from "@/lib/format";
 import { Spinner } from "./Spinner";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "success";
-type Size = "sm" | "md" | "icon";
+type Size = "xs" | "sm" | "md" | "icon";
 
 const VARIANTS: Record<Variant, string> = {
   primary:
@@ -18,6 +18,9 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 const SIZES: Record<Size, string> = {
+  // Narrower than `sm` - for a compact action that sits inline next to
+  // content (e.g. a catalog tile's Buy button), where `sm`'s px-3 reads wide.
+  xs: "h-7 px-2 text-xs gap-1 rounded-md",
   sm: "h-8 px-3 text-[13px] gap-1.5 rounded-lg",
   md: "h-10 px-4 text-sm gap-2 rounded-lg",
   icon: "h-9 w-9 rounded-lg justify-center",

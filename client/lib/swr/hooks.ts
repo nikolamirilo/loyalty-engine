@@ -9,6 +9,9 @@ import type {
   MemberAttribute,
   MemberStats,
   PointsTransaction,
+  Product,
+  Purchase,
+  PurchaseStats,
   Redemption,
   Reward,
   Segment,
@@ -49,6 +52,10 @@ export function useRewards(activeOnly = false) {
   return useSWR<Reward[]>(keys.rewards(activeOnly));
 }
 
+export function useProducts(activeOnly = false) {
+  return useSWR<Product[]>(keys.products(activeOnly));
+}
+
 export function useChallenges(activeOnly = false) {
   return useSWR<Challenge[]>(keys.challenges(activeOnly));
 }
@@ -59,6 +66,14 @@ export function useTransactions(id: string | undefined) {
 
 export function useRedemptions(id: string | undefined) {
   return useSWR<Redemption[]>(id ? keys.redemptions(id) : null);
+}
+
+export function useMemberPurchases(id: string | undefined) {
+  return useSWR<Purchase[]>(id ? keys.memberPurchases(id) : null);
+}
+
+export function usePurchaseStats(id: string | undefined, days?: number) {
+  return useSWR<PurchaseStats>(id ? keys.purchaseStats(id, days) : null);
 }
 
 export function useMemberChallenges(id: string | undefined) {

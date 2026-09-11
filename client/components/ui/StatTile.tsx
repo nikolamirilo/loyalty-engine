@@ -12,6 +12,26 @@ const ACCENT_CHIP: Record<Accent, string> = {
   yellow: "bg-accent-yellow/15 text-accent-yellow",
 };
 
+type Size = "md" | "sm";
+
+const VALUE_SIZE: Record<Size, string> = {
+  md: "mt-2 text-3xl",
+  // Used where two tiles sit side by side with a longer value (e.g. a
+  // currency amount) - the default text-3xl wraps or overflows the card at
+  // that width.
+  sm: "mt-1.5 text-xl",
+};
+
+const ICON_CHIP_SIZE: Record<Size, string> = {
+  md: "h-10 w-10 text-xl",
+  sm: "h-8 w-8 text-base",
+};
+
+const PADDING_SIZE: Record<Size, string> = {
+  md: "p-5",
+  sm: "p-4",
+};
+
 /**
  * Stat tile per the data-viz figure contract: sentence-case label, a semibold
  * value (auto-compact, proportional figures), and an accent icon chip. The
@@ -24,26 +44,34 @@ export function StatTile({
   sub,
   icon,
   accent = "blue",
+  size = "md",
 }: {
   label: string;
   value: number | string;
   sub?: string;
   icon: React.ReactNode;
   accent?: Accent;
+  size?: Size;
 }) {
   return (
-    <Card className="p-5">
+    <Card className={PADDING_SIZE[size]}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[13px] font-medium text-muted">{label}</p>
-          <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
+          <p
+            className={cn(
+              "font-semibold tracking-tight text-foreground",
+              VALUE_SIZE[size],
+            )}
+          >
             {typeof value === "number" ? compactNumber(value) : value}
           </p>
           {sub && <p className="mt-1 text-xs text-faint">{sub}</p>}
         </div>
         <div
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl",
+            "flex shrink-0 items-center justify-center rounded-lg",
+            ICON_CHIP_SIZE[size],
             ACCENT_CHIP[accent],
           )}
         >

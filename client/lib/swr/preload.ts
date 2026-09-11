@@ -38,6 +38,9 @@ export const preloadRoute = {
   rewards: () => {
     warm(keys.rewards());
   },
+  products: () => {
+    warm(keys.products());
+  },
   challenges: () => {
     warm(keys.challenges());
     warm(keys.rewards());

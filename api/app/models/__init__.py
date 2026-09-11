@@ -23,6 +23,8 @@ from app.models.member import Member, MemberSegment
 from app.models.member_attribute import MemberAttribute
 from app.models.member_login_code import MemberLoginCode
 from app.models.points import PointsTransaction
+from app.models.product import Product
+from app.models.purchase import Purchase
 from app.models.redemption import Redemption
 from app.models.reward import Reward
 from app.models.segment import Segment
@@ -41,6 +43,8 @@ __all__ = [
     "MemberLoginCode",
     "MemberSegment",
     "PointsTransaction",
+    "Product",
+    "Purchase",
     "Redemption",
     "RedemptionSource",
     "Reward",

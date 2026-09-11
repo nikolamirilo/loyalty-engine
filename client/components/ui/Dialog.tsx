@@ -19,6 +19,7 @@ export function Dialog({
   description,
   children,
   size = "md",
+  align = "start",
 }: {
   open: boolean;
   onClose: () => void;
@@ -26,6 +27,10 @@ export function Dialog({
   description?: string;
   children: React.ReactNode;
   size?: keyof typeof SIZES;
+  /** `start` (default) hangs the panel from the top, which keeps a long admin
+   *  form scrollable from its first field. `center` puts it on the middle of
+   *  the screen - what a phone-sized sheet wants. */
+  align?: "start" | "center";
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -47,7 +52,12 @@ export function Dialog({
   if (!mounted || !open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6">
+    <div
+      className={cn(
+        "fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 sm:p-6",
+        align === "center" ? "items-center" : "items-start",
+      )}
+    >
       <div
         className="fixed inset-0 animate-fade-in bg-black/40 backdrop-blur-[2px]"
         onClick={onClose}

@@ -7,6 +7,8 @@ import {
   useChallenges,
   useMember,
   useMemberChallenges,
+  useMemberPurchases,
+  usePurchaseStats,
   useRedemptions,
   useRewards,
   useTiers,
@@ -14,7 +16,14 @@ import {
 } from "@/lib/swr/hooks";
 import { useRevalidate } from "@/lib/swr/revalidate";
 import { ApiError } from "@/lib/swr/error";
-import { cn, formatDateTime, formatNumber, memberTier, signedNumber } from "@/lib/format";
+import {
+  cn,
+  formatDateTime,
+  formatNumber,
+  formatPrice,
+  memberTier,
+  signedNumber,
+} from "@/lib/format";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -28,6 +37,7 @@ import {
   ChevronRightIcon,
   CoinsIcon,
   GiftIcon,
+  ShoppingBagIcon,
   TargetIcon,
   UsersIcon,
 } from "@/components/ui/icons";
@@ -59,6 +69,8 @@ export function MemberDetail({ id }: { id: string }) {
   const { data: memberChallenges } = useMemberChallenges(id);
   const { data: rewards } = useRewards(true);
   const { data: challenges } = useChallenges(true);
+  const { data: purchases } = useMemberPurchases(id);
+  const { data: purchaseStats } = usePurchaseStats(id);
 
   if (memberError instanceof ApiError && memberError.status === 404) {
     return (
@@ -108,7 +120,7 @@ export function MemberDetail({ id }: { id: string }) {
       />
 
       {/* 2 — Stat tiles */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {member ? (
           <StatTile
             label="Points balance"
@@ -145,6 +157,17 @@ export function MemberDetail({ id }: { id: string }) {
             value={redemptions.length}
             icon={<GiftIcon />}
             accent="orange"
+          />
+        ) : (
+          <StatTileSkeleton />
+        )}
+        {purchaseStats ? (
+          <StatTile
+            label="Total spent"
+            value={formatPrice(purchaseStats.totalSpendCents, purchaseStats.currency)}
+            sub={`${purchaseStats.purchaseCount} purchase${purchaseStats.purchaseCount === 1 ? "" : "s"}`}
+            icon={<ShoppingBagIcon />}
+            accent="aqua"
           />
         ) : (
           <StatTileSkeleton />
@@ -249,6 +272,48 @@ export function MemberDetail({ id }: { id: string }) {
                       </TD>
                       <TD className="text-right whitespace-nowrap text-muted">
                         {formatDateTime(r.createdAt)}
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            )}
+          </Card>
+
+          {/* 4b — Purchases */}
+          <Card className="overflow-hidden">
+            <CardHeader
+              title="Purchases"
+              description="Simulated buys, used to track spend and frequency"
+            />
+            {purchases === undefined ? (
+              <TableSkeleton />
+            ) : purchases.length === 0 ? (
+              <EmptyState
+                icon={<ShoppingBagIcon />}
+                title="No purchases yet"
+                description="Products this member buys will appear here."
+              />
+            ) : (
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Product</TH>
+                    <TH className="text-right">Qty</TH>
+                    <TH className="text-right">Total</TH>
+                    <TH className="text-right">When</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {purchases.map((p) => (
+                    <TR key={p.id} className="hover:bg-surface-2/60">
+                      <TD className="font-medium">{p.productName}</TD>
+                      <TD className="text-right tabular-nums">{p.quantity}</TD>
+                      <TD className="text-right font-medium tabular-nums">
+                        {formatPrice(p.totalCents, p.currency)}
+                      </TD>
+                      <TD className="text-right whitespace-nowrap text-muted">
+                        {formatDateTime(p.createdAt)}
                       </TD>
                     </TR>
                   ))}

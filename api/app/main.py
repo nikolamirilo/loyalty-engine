@@ -15,6 +15,8 @@ from app.routers import (
     member_attributes,
     members,
     points,
+    products,
+    purchases,
     redemptions,
     rewards,
     segments,
@@ -47,6 +49,8 @@ app.include_router(member_attributes.router, dependencies=protected)
 app.include_router(points.router, dependencies=protected)
 app.include_router(rewards.router, dependencies=protected)
 app.include_router(redemptions.router, dependencies=protected)
+app.include_router(products.router, dependencies=protected)
+app.include_router(purchases.router, dependencies=protected)
 app.include_router(challenges.router, dependencies=protected)
 app.include_router(tiers.router, dependencies=protected)
 app.include_router(segments.router, dependencies=protected)

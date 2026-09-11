@@ -23,6 +23,7 @@ export function FormDialog({
   action,
   submitLabel = "Save",
   size = "md",
+  align,
   onSuccess,
   children,
 }: {
@@ -32,6 +33,7 @@ export function FormDialog({
   action: FormAction;
   submitLabel?: string;
   size?: "sm" | "md" | "lg";
+  align?: "start" | "center";
   /** Called after the action succeeds — e.g. to revalidate SWR caches. */
   onSuccess?: () => void;
   children: React.ReactNode;
@@ -54,6 +56,7 @@ export function FormDialog({
         title={title}
         description={description}
         size={size}
+        align={align}
       >
         <FormBody
           action={action}

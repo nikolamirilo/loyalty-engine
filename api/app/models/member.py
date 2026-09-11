@@ -11,6 +11,7 @@ from app.core.database import Base
 if TYPE_CHECKING:  # relationship targets, resolved by SQLAlchemy's class registry
     from app.models.challenge import ChallengeAssignment
     from app.models.points import PointsTransaction
+    from app.models.purchase import Purchase
     from app.models.redemption import Redemption
     from app.models.segment import Segment
     from app.models.tier import Tier
@@ -39,6 +40,7 @@ class Member(Base):
     tier: Mapped[Optional["Tier"]] = relationship("Tier", back_populates="members")
     transactions: Mapped[List["PointsTransaction"]] = relationship("PointsTransaction", back_populates="member", order_by="PointsTransaction.created_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
     redemptions: Mapped[List["Redemption"]] = relationship("Redemption", back_populates="member", order_by="Redemption.created_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
+    purchases: Mapped[List["Purchase"]] = relationship("Purchase", back_populates="member", order_by="Purchase.created_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
     challenge_assignments: Mapped[List["ChallengeAssignment"]] = relationship("ChallengeAssignment", back_populates="member", order_by="ChallengeAssignment.assigned_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
     segment_assignments: Mapped[List["MemberSegment"]] = relationship("MemberSegment", back_populates="member", cascade="all, delete-orphan", passive_deletes=True)
 

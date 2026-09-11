@@ -15,6 +15,7 @@ import {
   LayersIcon,
   LogOutIcon,
   MenuIcon,
+  ShoppingBagIcon,
   TagIcon,
   TargetIcon,
   UsersIcon,
@@ -26,6 +27,7 @@ const NAV = [
   { href: "/admin/members", label: "Members", Icon: UsersIcon, preload: preloadRoute.members },
   { href: "/admin/segments", label: "Segments", Icon: TagIcon, preload: preloadRoute.segments },
   { href: "/admin/rewards", label: "Rewards", Icon: GiftIcon, preload: preloadRoute.rewards },
+  { href: "/admin/products", label: "Products", Icon: ShoppingBagIcon, preload: preloadRoute.products },
   { href: "/admin/challenges", label: "Challenges", Icon: TargetIcon, preload: preloadRoute.challenges },
   { href: "/admin/tiers", label: "Tiers", Icon: LayersIcon, preload: preloadRoute.tiers },
 ];

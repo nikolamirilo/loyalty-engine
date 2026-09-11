@@ -6,6 +6,7 @@ import { getSessionMemberId } from "@/lib/memberAuth/session";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CopyIdButton } from "@/components/account/CopyIdButton";
+import { EditProfileButton } from "@/components/account/EditProfileButton";
 
 export const metadata: Metadata = { title: "Account - Loyalty App" };
 export const dynamic = "force-dynamic";
@@ -16,6 +17,9 @@ export default async function AccountPage() {
   if (!memberId) redirect("/login");
 
   const member = await getMember(memberId);
+  // A cleared phone comes back as "" rather than null (the API can't unset the
+  // column), so treat both as "no number on file".
+  const phone = member.phone?.trim() ? member.phone : null;
 
   return (
     <div className="space-y-6">
@@ -28,12 +32,17 @@ export default async function AccountPage() {
             </h2>
             <p className="truncate text-sm text-muted">{member.email}</p>
           </div>
-          <div className="sm:ml-auto sm:shrink-0">
+          <div className="flex items-center gap-2 sm:ml-auto sm:shrink-0">
             <CopyIdButton id={member.id} />
+            <EditProfileButton member={member} />
           </div>
         </div>
 
         <dl className="mt-5 space-y-5 border-t border-line pt-5">
+          <div>
+            <dt className="text-xs text-faint">Name</dt>
+            <dd className="mt-1 text-sm text-foreground">{member.name}</dd>
+          </div>
           <div>
             <dt className="text-xs text-faint">Email</dt>
             <dd className="mt-1 text-sm text-foreground">{member.email}</dd>
@@ -41,7 +50,7 @@ export default async function AccountPage() {
           <div>
             <dt className="text-xs text-faint">Phone</dt>
             <dd className="mt-1 text-sm text-foreground">
-              {member.phone ?? <span className="text-faint">-</span>}
+              {phone ?? <span className="text-faint">-</span>}
             </dd>
           </div>
         </dl>

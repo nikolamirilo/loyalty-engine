@@ -24,6 +24,16 @@ export function signedNumber(n: number): string {
   return `${n > 0 ? "+" : ""}${formatNumber(n)}`;
 }
 
+/** Minor units (cents) + ISO currency -> "14.50 EUR". Cents stay integers on
+ * the wire (see api/app/models/product.py); this is the one place they turn
+ * into a display string. */
+export function formatPrice(cents: number, currency: string): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  }).format(cents / 100);
+}
+
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "-";
   const d = parseUtc(iso);

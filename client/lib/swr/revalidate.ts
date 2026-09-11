@@ -18,6 +18,7 @@ export function useRevalidate() {
   return {
     members: () => byPrefix("/members"),
     rewards: () => byPrefix("/rewards"),
+    products: () => byPrefix("/products"),
     challenges: () => byPrefix("/challenges"),
     tiers: () => byPrefix("/tiers"),
     segments: () => byPrefix("/segments"),
