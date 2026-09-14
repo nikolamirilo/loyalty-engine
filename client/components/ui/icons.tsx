@@ -300,3 +300,29 @@ export const MoreVerticalIcon = (p: IconProps) => (
     <circle cx="12" cy="19" r="1.75" fill="currentColor" />
   </Icon>
 );
+
+export const SignalIcon = (p: IconProps) => (
+  <Icon {...p} strokeWidth={0}>
+    <rect x="1.5" y="14" width="3" height="7" rx="0.75" fill="currentColor" />
+    <rect x="7.5" y="10" width="3" height="11" rx="0.75" fill="currentColor" />
+    <rect x="13.5" y="6" width="3" height="15" rx="0.75" fill="currentColor" />
+    <rect x="19.5" y="2" width="3" height="19" rx="0.75" fill="currentColor" />
+  </Icon>
+);
+
+export const WifiIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M2 8.5a16 16 0 0 1 20 0" />
+    <path d="M5.5 12.5a11 11 0 0 1 13 0" />
+    <path d="M9 16.5a6 6 0 0 1 6 0" />
+    <circle cx="12" cy="20" r="1" fill="currentColor" stroke="none" />
+  </Icon>
+);
+
+export const BatteryIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="1.5" y="7" width="18" height="10" rx="2.5" />
+    <rect x="4" y="9.5" width="13" height="5" rx="1" fill="currentColor" stroke="none" />
+    <path d="M21.5 10.5v3" />
+  </Icon>
+);
