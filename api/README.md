@@ -358,8 +358,57 @@ curl -X POST http://localhost:8000/members/<member-id>/challenges/<challenge-id>
 
 ## Testing
 
-There is no pytest suite. `tests/` holds standalone regression scripts for past
-production incidents, each runnable on its own:
+Two kinds of tests live under `tests/`.
+
+### The flow suite
+
+`tests/integration/` is a pytest suite that drives one member and one reward
+through the routes a real client uses: create the member, read it, update it,
+check the balance, earn, burn, create a reward, grant it as a prize, redeem it,
+then delete both. It runs against a real Postgres, not a mock, so constraints
+and cascades are exercised too.
+
+These tests write and delete rows, so they refuse to start unless
+`TEST_DATABASE_URL` is set. They never fall back to `DATABASE_URL`, which means
+a stray `.env` cannot point them at anything you care about.
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+
+# Any throwaway Postgres. sslmode=disable because a local one serves no TLS.
+export TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/loyalty_test?sslmode=disable"
+pytest
+```
+
+Tables are created on connect, so an empty database is all you need.
+
+Every request is timed, and the run ends with a table of route, status and
+latency:
+
+```
+Step           Method  Route                      Status  Latency  Result
+-------------  ------  -------------------------  ------  -------  ------
+create_member  POST    /members                      201  35.8 ms  ok
+get_member     GET     /members/{id}                 200  12.4 ms  ok
+earn_points    POST    /members/{id}/points/earn     201  22.4 ms  ok
+...
+```
+
+That is server side handling time: routing, auth, the handler and the database
+round trip. The app is called in process, so no network transfer is included,
+which is the point. Localhost network time would only add noise.
+
+In CI the same table is written to the GitHub Actions run summary, so you can
+read it without opening the log. The workflow is
+[`.github/workflows/api-tests.yml`](../.github/workflows/api-tests.yml), which
+starts a Postgres service container and runs the suite on any push or pull
+request touching `api/`.
+
+### Incident regression scripts
+
+The scripts directly under `tests/` are standalone programs guarding against
+past production incidents, each runnable on its own. They are not pytest tests,
+which is why `pytest.ini` points `testpaths` at `tests/integration` only:
 
 ```bash
 ./venv/bin/python -m tests.test_database_pool          # NullPool must be in use

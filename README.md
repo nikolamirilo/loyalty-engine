@@ -77,6 +77,23 @@ uvicorn app.server:app --reload --port 8100
 Swagger UI lives at `http://localhost:8000/docs`. Press **Authorize**, paste your
 `API_TOKEN`, and you can try every endpoint from the browser.
 
+## Tests
+
+The API has a pytest suite that drives one member and one reward through the
+main routes against a real Postgres, and reports the latency of every call. It
+runs in GitHub Actions on any change under `api/`, and prints the same table
+into the run summary.
+
+```bash
+cd api
+pip install -r requirements.txt -r requirements-dev.txt
+export TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/loyalty_test?sslmode=disable"
+pytest
+```
+
+The suite refuses to run without `TEST_DATABASE_URL`, since it creates and
+deletes rows. See [api/README.md](api/README.md#testing) for the details.
+
 ## House rules
 
 These hold across all three services:
