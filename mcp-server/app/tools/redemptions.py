@@ -11,14 +11,14 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool()
+@mcp.tool(title="Redemptions: Redeem a reward")
 async def redeem_reward(member_id: str, reward_id: str) -> Dict[str, Any]:
     """Redeem a reward for a member, debiting its points cost from their balance."""
     require_scope("write")
     return await api.post(f"/members/{member_id}/redeem/{reward_id}")
 
 
-@mcp.tool()
+@mcp.tool(title="Redemptions: List for member")
 async def list_member_redemptions(
     member_id: str, skip: int = 0, limit: int = 50
 ) -> List[Dict[str, Any]]:
@@ -29,7 +29,7 @@ async def list_member_redemptions(
     )
 
 
-@mcp.tool()
+@mcp.tool(title="Redemptions: Grant a prize")
 async def assign_prize(member_id: str, reward_id: str) -> Dict[str, Any]:
     """Grant a reward to a member at no points cost (source "assigned"), e.g.
     as a goodwill gesture or a manual campaign prize. Still subject to the
@@ -40,7 +40,7 @@ async def assign_prize(member_id: str, reward_id: str) -> Dict[str, Any]:
     return await api.post(f"/members/{member_id}/prizes/{reward_id}")
 
 
-@mcp.tool()
+@mcp.tool(title="Redemptions: List prizes for member")
 async def list_member_prizes(
     member_id: str, source: Optional[str] = None, skip: int = 0, limit: int = 50
 ) -> List[Dict[str, Any]]:

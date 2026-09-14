@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
+  <defs>
+    <linearGradient id="logo-bg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6d5ef0" />
+      <stop offset="1" stop-color="#4c3fbf" />
+    </linearGradient>
+    <linearGradient id="logo-hl" x1="0" y1="0" x2="0" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.20" />
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Tile: indigo-violet plane, soft top highlight, hairline inner edge -->
+  <rect width="40" height="40" rx="11" fill="url(#logo-bg)" />
+  <rect width="40" height="40" rx="11" fill="url(#logo-hl)" />
+  <rect x="0.7" y="0.7" width="38.6" height="38.6" rx="10.3" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.2" />
+
+  <!-- Mark: a medal - the reward for loyalty. Ribbon tails tuck behind the medallion;
+       the star is a cutout showing the tile gradient through, like enamel on a medal face. -->
+  <path d="M15.5,14 L19,14 L19,33 L17.25,30.5 L15.5,33 Z" fill="#ffffff" />
+  <path d="M21,14 L24.5,14 L24.5,33 L22.75,30.5 L21,33 Z" fill="#ffffff" />
+  <circle cx="20" cy="16.5" r="8.3" fill="#ffffff" />
+  <path d="M20,11.5 L21.411,14.558 L24.755,14.955 L22.283,17.242 L22.939,20.545 L20,18.9 L17.061,20.545 L17.717,17.242 L15.245,14.955 L18.589,14.558 Z" fill="url(#logo-bg)" />
+</svg>

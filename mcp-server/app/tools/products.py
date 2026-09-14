@@ -10,7 +10,7 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool()
+@mcp.tool(title="Products: Create")
 async def create_product(
     name: str,
     price_cents: int,
@@ -34,7 +34,7 @@ async def create_product(
     return await api.post("/products", body)
 
 
-@mcp.tool()
+@mcp.tool(title="Products: List")
 async def list_products(
     active_only: bool = False, skip: int = 0, limit: int = 100
 ) -> List[Dict[str, Any]]:
@@ -45,14 +45,14 @@ async def list_products(
     )
 
 
-@mcp.tool()
+@mcp.tool(title="Products: Get")
 async def get_product(product_id: str) -> Dict[str, Any]:
     """Get a single product by id."""
     require_scope("read")
     return await api.get(f"/products/{product_id}")
 
 
-@mcp.tool()
+@mcp.tool(title="Products: Update")
 async def update_product(
     product_id: str,
     name: Optional[str] = None,
@@ -75,7 +75,7 @@ async def update_product(
     return await api.patch(f"/products/{product_id}", body)
 
 
-@mcp.tool()
+@mcp.tool(title="Products: Delete")
 async def delete_product(product_id: str) -> None:
     """Delete a product from the catalog."""
     require_scope("write")

@@ -70,7 +70,11 @@ mcp-server/
     ├── core/
     │   ├── config.py       # env vars, read in one place
     │   ├── auth.py         # token to principal, require_scope()
+    │   ├── branding.py     # the icons sent in the initialize response
     │   └── middleware.py   # ASGI bearer auth
+    ├── assets/
+    │   ├── logo.svg        # copy of client/public/logo.svg
+    │   └── logo-64.png     # rendered from that SVG
     ├── client/
     │   └── loyalty_api_client.py   # the only module that knows the API
     └── tools/              # one module per resource, mirrors api/app/routers/
@@ -116,7 +120,8 @@ Point a client at `/mcp` with `Authorization: Bearer <one of MCP_CLIENT_TOKENS>`
 ## Tool reference
 
 40 tools. Inputs use snake_case field names, outputs pass the API response
-straight through, already camelCase.
+straight through, already camelCase. The headings below match each tool's
+display title, see [Why the titles look like that](#why-the-titles-look-like-that).
 
 **Members**
 
@@ -192,10 +197,12 @@ straight through, already camelCase.
 
 1. Add the function to the matching module in `app/tools/`, or create a new
    module and import it in `app/tools/__init__.py`.
-2. Call `require_scope("read")` or `require_scope("write")` first.
-3. Call the API through `app.client.loyalty_api_client`, never `httpx` directly.
+2. Give it a `title` in the `"<Group>: <action>"` shape, matching the group
+   headings above. See [Why the titles look like that](#why-the-titles-look-like-that).
+3. Call `require_scope("read")` or `require_scope("write")` first.
+4. Call the API through `app.client.loyalty_api_client`, never `httpx` directly.
    That keeps the transport mockable and the service token in one place.
-4. Add a row to the table above.
+5. Add a row to the table above.
 
 ## Error handling
 
@@ -203,11 +210,60 @@ A non 2xx answer from the loyalty API raises `LoyaltyAPIError` inside the tool.
 MCP turns that into a tool error carrying the API's own `detail` message, for
 example `404: Member not found`.
 
-## A note on how tools appear in clients
+## Why the titles look like that
+
+Every tool carries a `title` such as `Challenges: Update progress`, and the
+prefix is doing real work.
 
 MCP has no concept of tool groups. A `Tool` carries a name, a title, a
-description and its schemas, and nothing else, so a client cannot render the
-domain headings used above. In the Claude connector settings all 40 land under
-**Other tools**. Server icons are part of the spec but Claude does not render
-them for custom connectors yet, which is why the connector shows a generic
-avatar.
+description, its schemas and icons, and nothing else. There is no tag or
+category field, so a server cannot ask a client to draw the headings used in the
+table above. In the Claude connector settings all 40 tools land in one flat
+**Other tools** list, and no server side change moves them out of it.
+
+What a client does use is the title, with display precedence `title`, then
+`annotations.title`, then `name`. Lists are ordered by that display name, so a
+shared prefix is the one way to make related tools sit together:
+
+```
+Challenges: Assign to member
+Challenges: Assign to segment
+Challenges: Complete for member
+Challenges: Create
+...
+Points: Burn
+Points: Earn
+```
+
+Grouping by convention rather than by protocol. Keep the prefix identical inside
+a group, otherwise the group splits in the list.
+
+## Branding
+
+The server sends its logo in the `initialize` response, as `icons` on
+`serverInfo`. Two entries go out, together about 6.5 KB:
+
+| File | Type | Sizes | Why |
+|---|---|---|---|
+| `app/assets/logo-64.png` | `image/png` | `64x64` | Every client that draws icons has to support PNG. Listed first. |
+| `app/assets/logo.svg` | `image/svg+xml` | `any` | Scales cleanly for clients that support it. |
+
+Both are inlined as `data:` URIs rather than https links, so drawing the icon
+never depends on another deployment being reachable.
+
+`app/assets/logo.svg` is a copy of the admin console's `client/public/logo.svg`,
+which keeps this service deployable on its own. Change one and change the other,
+then re-render the PNG:
+
+```bash
+pip install cairosvg
+python -c "import cairosvg; cairosvg.svg2png(url='app/assets/logo.svg', write_to='app/assets/logo-64.png', output_width=64, output_height=64)"
+```
+
+`cairosvg` is a one off tool for that command, not a runtime dependency, so it
+stays out of `requirements.txt`.
+
+Worth knowing: Claude does not yet render icons for custom connectors, so the
+connector still shows a generic avatar today. The spec has supported server
+icons since 2025-11-25, and this is the correct shape, so it will appear
+whenever client support lands.

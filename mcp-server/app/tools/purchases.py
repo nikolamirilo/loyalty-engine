@@ -12,7 +12,7 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool()
+@mcp.tool(title="Purchases: Record a purchase")
 async def purchase_product(member_id: str, product_id: str, quantity: int = 1) -> Dict[str, Any]:
     """Record a member purchasing a product. Fails if the product doesn't
     exist or isn't currently purchasable (inactive).
@@ -23,7 +23,7 @@ async def purchase_product(member_id: str, product_id: str, quantity: int = 1) -
     )
 
 
-@mcp.tool()
+@mcp.tool(title="Purchases: List for member")
 async def list_member_purchases(
     member_id: str, skip: int = 0, limit: int = 50
 ) -> List[Dict[str, Any]]:
@@ -34,7 +34,7 @@ async def list_member_purchases(
     )
 
 
-@mcp.tool()
+@mcp.tool(title="Purchases: Get member stats")
 async def get_member_purchase_stats(member_id: str, days: int = 7) -> Dict[str, Any]:
     """Get a member's purchase/spend stats: lifetime totals plus a trailing
     `days`-day window (purchase count, total spend, average order value,
