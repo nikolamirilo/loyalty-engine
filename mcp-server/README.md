@@ -8,17 +8,23 @@ would.
 
 ## Status
 
-Implements phases 1-3 of the rollout plan:
+Implements phases 1-4 of the rollout plan:
 
 1. **Scaffold** - config, auth, HTTP client, server entrypoint.
 2. **Read-only tools** - members, segments, rewards, tiers, balances,
    transactions, redemptions.
 3. **Write tools** - create/update a member, earn/burn points, redeem a
    reward, trigger/verify DOI email.
+4. **Challenges, prizes, products & purchases** - full challenge lifecycle
+   (definitions, assignment, progress, force-complete, segment bulk-assign),
+   admin-granted prizes, and the product/purchase catalog behind
+   purchase-based gamification flows.
 
 Not yet implemented (a later, `admin`-scoped phase): deleting
 members/rewards/tiers/segments, admin point adjustments, reward/tier/segment
-CRUD, member custom-attribute definitions, and challenge assignment.
+CRUD, and member custom-attribute definitions. Member self-serve auth
+(signup/login) is intentionally left off this server - it's a credential
+flow, not something an external agent should broker.
 
 ## Auth model
 
@@ -66,6 +72,9 @@ mcp-server/
         ├── tiers.py
         ├── points.py
         ├── redemptions.py
+        ├── challenges.py
+        ├── products.py
+        ├── purchases.py
         └── doi.py
 ```
 
@@ -114,6 +123,28 @@ Point an MCP client at the `/mcp` endpoint with
 | `write` | `burn_points(member_id, points, description?)` | `POST /members/{id}/points/burn` |
 | `write` | `redeem_reward(member_id, reward_id)` | `POST /members/{id}/redeem/{reward_id}` |
 | `read` | `list_member_redemptions(member_id, skip?, limit?)` | `GET /members/{id}/redemptions` |
+| `write` | `assign_prize(member_id, reward_id)` | `POST /members/{id}/prizes/{reward_id}` |
+| `read` | `list_member_prizes(member_id, source?, skip?, limit?)` | `GET /members/{id}/prizes` |
+| `write` | `create_challenge(name, target_value?, reward_points?, reward_id?, ...)` | `POST /challenges` |
+| `read` | `list_challenges(active_only?, skip?, limit?)` | `GET /challenges` |
+| `read` | `get_challenge(challenge_id)` | `GET /challenges/{id}` |
+| `write` | `update_challenge(challenge_id, ...)` | `PATCH /challenges/{id}` |
+| `write` | `delete_challenge(challenge_id)` | `DELETE /challenges/{id}` |
+| `write` | `assign_challenge_to_member(member_id, challenge_id)` | `POST /members/{id}/challenges/{id}` |
+| `read` | `list_member_challenges(member_id, status?, skip?, limit?)` | `GET /members/{id}/challenges` |
+| `read` | `get_member_challenge_progress(member_id, challenge_id)` | `GET /members/{id}/challenges/{id}` |
+| `write` | `update_challenge_progress(member_id, challenge_id, amount?, description?)` | `POST /members/{id}/challenges/{id}/progress` |
+| `write` | `complete_challenge(member_id, challenge_id)` | `POST /members/{id}/challenges/{id}/complete` |
+| `write` | `unassign_challenge(member_id, challenge_id)` | `DELETE /members/{id}/challenges/{id}` |
+| `write` | `assign_challenge_to_segment(challenge_id, segment_id)` | `POST /challenges/{id}/assign-segment` |
+| `write` | `create_product(name, price_cents, ...)` | `POST /products` |
+| `read` | `list_products(active_only?, skip?, limit?)` | `GET /products` |
+| `read` | `get_product(product_id)` | `GET /products/{id}` |
+| `write` | `update_product(product_id, ...)` | `PATCH /products/{id}` |
+| `write` | `delete_product(product_id)` | `DELETE /products/{id}` |
+| `write` | `purchase_product(member_id, product_id, quantity?)` | `POST /members/{id}/purchases` |
+| `read` | `list_member_purchases(member_id, skip?, limit?)` | `GET /members/{id}/purchases` |
+| `read` | `get_member_purchase_stats(member_id, days?)` | `GET /members/{id}/purchase-stats` |
 | `write` | `trigger_doi(email?, member_id?, type?)` | `POST /doi/trigger` |
 | `write` | `verify_doi(code, email?, member_id?)` | `POST /doi/verify` |
 

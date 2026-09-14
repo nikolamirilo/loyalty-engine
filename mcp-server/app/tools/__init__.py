@@ -4,4 +4,15 @@ imports this package for that side effect - nothing here is meant to be
 imported directly by name.
 """
 
-from app.tools import doi, members, points, redemptions, rewards, segments, tiers  # noqa: F401
+from app.tools import (  # noqa: F401
+    challenges,
+    doi,
+    members,
+    points,
+    products,
+    purchases,
+    redemptions,
+    rewards,
+    segments,
+    tiers,
+)
