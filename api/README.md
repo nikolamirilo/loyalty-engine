@@ -1,174 +1,134 @@
-# Loyalty Engine
+# Loyalty API
 
-A simple loyalty API built with **FastAPI** and **Supabase** (Postgres) via
-SQLAlchemy. All API routes are protected by a bearer token.
+The service that owns the loyalty program. FastAPI, SQLAlchemy, and a Supabase
+Postgres database. Everything else in the platform, the [admin console](../client)
+and the [MCP server](../mcp-server), talks to this API over HTTP. Nothing else
+opens a database connection.
 
-> Tables are created automatically on first run via SQLAlchemy `create_all`.
-> `DATABASE_URL` is required - the app will not start without it.
+Every route except `/health` and the docs requires a bearer token.
 
-## Features
+## What it does
 
-- **Members** - full name, email, phone, segment memberships and a points balance.
-- **Segments** - named member cohorts (e.g. "VIP", "Newsletter") with a description; members belong to any number of segments, picked from the segments list.
-- **Points** - earn, burn (spend) and admin adjustments, with a full transaction history.
-- **Rewards** - a catalog of redeemable rewards with optional stock limits.
-- **Redemptions** - members redeem rewards by spending points.
-- **Challenges** - can be bulk-assigned to every member of a segment.
-- **Tiers** - optional point thresholds that apply an earn-rate multiplier.
-- **Bearer token auth** - every API route requires `Authorization: Bearer <token>`.
+| Area | Summary |
+|---|---|
+| **Members** | Name, email, phone, segment memberships, points balance, custom attributes. |
+| **Segments** | Named groups such as "VIP". A member belongs to any number of them, and members can be bulk assigned. |
+| **Points** | Earn, spend, and admin adjustments, each written to a transaction history. |
+| **Tiers** | Point thresholds that apply an earn rate multiplier, assigned automatically as a balance moves. |
+| **Rewards** | The redeemable catalog, with optional stock limits. |
+| **Redemptions and prizes** | Members spend points on a reward, or staff grant one for free. |
+| **Challenges** | Goals with a target value. Progress accrues, and completion pays out points, a reward, or both. Can be pushed to a whole segment at once. |
+| **Products and purchases** | A catalog members buy from on unlimited credit. Purchases are a spend signal, not a points transaction. |
+| **DOI** | Double opt in email verification, by 6 digit code or by link. |
+| **Member auth** | Passwordless sign in for the member app, by emailed code. |
+| **Member attributes** | Admin defined custom fields, with type validation. |
 
 ## Project layout
 
-Layered by responsibility: **routers** only translate HTTP <-> ORM (validate the
-request via `schemas`, call a `service` for anything beyond a plain CRUD
-read/write, shape the response); **services** hold the business logic that's
-shared across routers or too involved for a route function; **models** are the
-SQLAlchemy ORM classes; **schemas** are the Pydantic request/response shapes. A
-router never imports another router - shared logic (e.g. `apply_tier`, called
-from points/redemptions/challenges/members) lives in `app/services` instead.
+Code is layered by job. A router never imports another router. Anything shared,
+such as `apply_tier`, lives in `app/services` instead.
+
+```mermaid
+flowchart LR
+    HTTP["HTTP request"] --> R["routers/<br/>validate and shape"]
+    R --> S["services/<br/>business logic"]
+    S --> M["models/<br/>SQLAlchemy ORM"]
+    M --> DB[("Postgres")]
+    R -.->|"plain CRUD"| M
+    R --> Sch["schemas/<br/>request and response"]
+```
+
+- **routers** translate HTTP to ORM and back. Plain reads and writes may touch a
+  model directly. Anything more goes to a service.
+- **services** hold logic shared between routers, or logic too involved for a
+  route function.
+- **models** are the ORM classes, **schemas** the Pydantic shapes, mirrored one
+  to one.
 
 ```
-loyalty-engine/
-├── main.py                       # Thin compat shim: `from app.main import app`
+api/
+├── main.py                       # Shim: `from app.main import app`, kept for old deploy config
 ├── requirements.txt
-├── .env.example                  # Sample environment config
-├── supabase/migrations/          # Hand-written SQL migrations (no Alembic - see below)
-├── tests/                        # Standalone regression scripts (see Testing below)
+├── .env.example
+├── tests/                        # Standalone regression scripts, see Testing
+├── scripts/                      # One off data migrations
 └── app/
-    ├── main.py                   # App entry point: creates the FastAPI app, wires routers
+    ├── main.py                   # Creates the app, wires routers, handles DB errors
     ├── core/
-    │   ├── config.py             # Settings - the only place env vars are read
-    │   ├── database.py           # SQLAlchemy engine + session + Base + get_db
+    │   ├── config.py             # Settings, the only place env vars are read
+    │   ├── database.py           # Engine, session, Base, get_db
     │   └── security.py           # Bearer token dependency
-    ├── models/                   # SQLAlchemy ORM models, one module per resource
-    │   ├── enums.py
-    │   ├── member.py             # Member, MemberSegment
-    │   ├── member_attribute.py   # Admin-defined custom fields on members
-    │   ├── segment.py
-    │   ├── tier.py
-    │   ├── points.py             # PointsTransaction
-    │   ├── reward.py
-    │   ├── redemption.py
-    │   └── challenge.py          # Challenge, ChallengeAssignment, ChallengeSegmentAssignment
-    ├── schemas/                  # Pydantic request/response schemas, mirrored 1:1 with models/
-    ├── services/                 # Business logic shared across routers
-    │   ├── tiers.py              # apply_tier - re-applied on every balance change
-    │   ├── points.py             # record_transaction - the one path that mutates total_points
-    │   ├── rewards.py            # availability checks + prize granting
+    ├── models/                   # One module per resource
+    ├── schemas/                  # Pydantic shapes, mirrored with models/
+    ├── services/
+    │   ├── tiers.py              # apply_tier, re-applied on every balance change
+    │   ├── points.py             # record_transaction, the only path that moves total_points
+    │   ├── rewards.py            # availability checks and prize granting
+    │   ├── challenges.py         # expiry, segment fan out, completion rewards
+    │   ├── products.py           # purchase recording and spend stats
+    │   ├── member_auth.py        # passwordless member login codes
+    │   ├── email_verification.py # DOI codes and links
+    │   ├── email_sending.py      # Resend transport
     │   ├── segments.py
-    │   ├── challenges.py         # expiry, segment fan-out, completion rewards
     │   └── custom_attributes.py  # type validation for member custom attributes
-    └── routers/
-        ├── members.py            # CRUD for members
-        ├── member_attributes.py  # CRUD for member custom-attribute definitions
-        ├── points.py             # earn / burn / adjust / transactions / balance
-        ├── rewards.py            # CRUD for rewards
-        ├── redemptions.py        # redeem a reward + history
-        ├── challenges.py         # CRUD for challenges + member/segment assignment
-        ├── segments.py           # CRUD for segments
-        └── tiers.py              # CRUD for tiers
+    └── routers/                  # members, member_attributes, points, rewards,
+                                  # redemptions, products, purchases, challenges,
+                                  # segments, tiers, doi, auth
 ```
+
+SQL migrations live in [`../supabase/migrations`](../supabase), not in this folder.
+
+> A few files still sit at the top of `api/`: `models.py`, `schemas.py`,
+> `database.py`, `auth.py`, `custom_attributes.py` and a `routers/` folder. They
+> are leftovers from before the move into `app/` and nothing imports them. Read
+> `app/` instead.
 
 ## Setup
 
 ```bash
-# 1. (Recommended) create a virtual environment
 python3 -m venv venv
 source venv/bin/activate
-
-# 2. Install dependencies
 pip install -r requirements.txt
-
-# 3. Configure environment
-cp .env.example .env        # then set DATABASE_URL + API_TOKEN (see below)
+cp .env.example .env
 ```
+
+Four variables are required. The app refuses to start without them, which is on
+purpose: a missing value fails loudly at import rather than at the first request
+that happens to need it.
+
+| Variable | Required | What it is for |
+|---|---|---|
+| `DATABASE_URL` | Yes | Supabase Postgres connection string, transaction pooler. |
+| `API_TOKEN` | Yes | The bearer token every route checks. |
+| `RESEND_API_KEY` | Yes | Sends DOI and login emails through [Resend](https://resend.com). |
+| `DOI_FROM_EMAIL` | Yes | Sender address, on a domain verified in Resend. |
+| `CLIENT_BASE_URL` | Only for DOI links | Public base URL of the client app, used to build the emailed link. |
 
 ### Connecting to Supabase
 
-1. In the Supabase dashboard, go to **Project Settings → Database → Connection string**.
-2. Copy the **Connection pooling** URI (Transaction mode, port `6543`) - recommended for apps.
-3. Replace `[YOUR-PASSWORD]` with your database password and paste it into `.env` as `DATABASE_URL`.
+1. In the Supabase dashboard, open **Project Settings, Database, Connection string**.
+2. Copy the **Connection pooling** URI in **Transaction mode**, port `6543`.
+3. Replace `[YOUR-PASSWORD]` with your database password.
 
 ```
 DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
 ```
 
-Use **Transaction mode (port `6543`)**, not Session mode (`5432`). Session mode gives
-each client its own Postgres backend out of a budget of ~15, which a serverless
-deployment exhausts almost immediately:
+Use transaction mode. Session mode on port `5432` gives each client its own
+Postgres backend out of a budget of about 15, which a serverless deployment
+exhausts almost at once:
 
 ```
 FATAL: (EMAXCONNSESSION) max clients reached in session mode - max clients are limited to pool_size: 15
 ```
 
-A session-mode Supabase pooler URL is redirected to port `6543` at startup with a
-warning in the logs (`app/core/database.py`), but fix `DATABASE_URL` rather than
-relying on that. If the database is unreachable anyway, the API answers `503` with
-a JSON body instead of crashing the request.
+A session mode URL is rewritten to `6543` at startup with a warning in the logs,
+but fix `DATABASE_URL` rather than leaning on that. If the database is
+unreachable, the API answers `503` with a JSON body instead of crashing the
+request.
 
-SSL is enabled automatically. Tables are created on first run - no SQL migration step needed
-(the DOI feature's `members.email_verified_at` column is the one exception - see
-`supabase/migrations/20260820095328_doi_email_verification.sql` and
-`supabase/migrations/20260820121500_doi_verification_type.sql`, which must be run
-by hand since `create_all` never alters an existing table).
-
-### DOI email verification
-
-Sending verification codes (`/doi/trigger`) uses [Resend](https://resend.com).
-Set:
-
-```
-RESEND_API_KEY=<your Resend API key>
-DOI_FROM_EMAIL=<a verified Resend sender address>
-```
-
-`DOI_FROM_EMAIL` must be on a domain you have verified in Resend. Until it is,
-Resend rejects every send and `/doi/trigger` answers `500` quoting the provider's
-reason (e.g. `Resend 403 validation_error: The <domain> domain is not verified`);
-the same reason is written to the logs. Rate limits, provider outages and network
-failures answer `502` instead, since those are worth retrying.
-
-#### Trigger types
-
-`/doi/trigger` takes a `type` deciding which email the member gets:
-
-| `type` | Email | Member does |
-|--------|-------|-------------|
-| `code` (default) | A 6-digit code | Types it back into whatever screen started the flow, which posts it to `/doi/verify` |
-| `link` | A **Verify my email** button linking to `{CLIENT_BASE_URL}/verify?memberId=<id>&code=<code>` | Presses the button; that page posts to `/doi/verify` for them |
-
-```jsonc
-{ "memberId": "b3f1...", "type": "link" }   // or "email": "ada@example.com"
-```
-
-Both types issue the same kind of single-use code with the same 10-minute
-lifetime and 5-attempt limit, and both end at `POST /doi/verify` - the link flow
-just spares the member the typing. `type` is optional and defaults to `code`, so
-callers written before the link flow keep working unchanged.
-
-The link flow needs the client's public base URL:
-
-```
-CLIENT_BASE_URL=https://your-client-app.example.com
-```
-
-Without it a `type: "link"` trigger answers `500` rather than mailing a button
-that goes nowhere. The `code` flow never reads it, so an install that only sends
-codes can leave it unset.
-
-#### Idempotency
-
-`/doi/trigger` is idempotent while a code is live. If the member's previous code
-hasn't expired (10 minutes) or been used up yet, the endpoint answers `200` with
-the same body and sends nothing - the request is already satisfied by the code
-sitting in their inbox, and a second email would silently invalidate the first.
-A new code is issued once the old one expires, is verified, or is burned through
-5 wrong guesses. Nothing is written to the database unless the email was
-accepted, so a failed send can't suppress the next attempt.
-
-Asking for the *other* `type` while a code is live does issue a new code: the
-live one was delivered in a shape this caller isn't asking for, and since only
-its hash is stored the link behind it can never be rebuilt to re-send.
+SSL is on automatically. Tables are created on first run. Changes to tables that
+already exist need a migration, see [supabase/README.md](../supabase/README.md).
 
 ## Running
 
@@ -176,58 +136,142 @@ its hash is stored the link behind it can never be rebuilt to re-send.
 uvicorn app.main:app --reload
 ```
 
-(`uvicorn main:app --reload` also still works - `api/main.py` is a thin
-`from app.main import app` shim kept for any external process that points at
-it directly.)
+- API: `http://localhost:8000`
+- Swagger UI: `http://localhost:8000/docs`, press **Authorize** and paste your
+  token to try endpoints from the browser.
 
-- API base URL: `http://localhost:8000`
-- Interactive docs (Swagger UI): `http://localhost:8000/docs` - click **Authorize**
-  and paste your token to try endpoints from the browser.
-- Tables are created automatically in your Supabase database on first run.
+`uvicorn main:app --reload` still works too. `api/main.py` is a thin shim kept for
+deploy config that points at it.
 
 ## Authentication
-
-Every route except `/health` and the docs requires a bearer token:
 
 ```
 Authorization: Bearer <API_TOKEN>
 ```
 
-The token is read from the `API_TOKEN` environment variable (or `.env`) and
-defaults to `dev-secret-token` for local development. Requests with a missing or
-invalid token receive `401`/`403`.
+Everything except `/health` and the docs requires it. A missing or wrong token
+gets `401` or `403`.
+
+Note that this is the *service* token, proving a trusted backend is calling. It
+is separate from member sign in under `/auth`, which identifies a person in the
+program and returns their record.
 
 ## JSON casing
 
-Every response is camelCase (`pointsBalance`, `createdAt`, `isActive`, ...), via
-a shared `CamelModel` base (`app/schemas/base.py`) that generates aliases from
-the snake_case Python/ORM field names - see that file for details. Request
-bodies accept snake_case *or* camelCase keys, so existing snake_case payloads
-keep working.
+Responses are always camelCase (`pointsBalance`, `createdAt`, `isActive`), built
+from snake_case Python fields by a shared `CamelModel` base in
+`app/schemas/base.py`. Request bodies accept either casing, so older snake_case
+payloads keep working.
+
+## How points and tiers stay in sync
+
+Every change to a balance funnels through one function. That is what keeps the
+tier correct without each caller remembering to recalculate it.
+
+```mermaid
+flowchart TB
+    Earn["Earn points"]
+    Burn["Burn points"]
+    Adjust["Admin adjustment"]
+    Redeem["Reward redeemed"]
+    Challenge["Challenge completed"]
+
+    RT["services.points.record_transaction()<br/>writes the transaction<br/>and moves total_points"]
+    AT["services.tiers.apply_tier()<br/>picks the tier for the new balance"]
+
+    Earn --> RT
+    Burn --> RT
+    Adjust --> RT
+    Redeem --> RT
+    Challenge --> RT
+    RT --> AT
+```
+
+Earning applies the member's tier multiplier, so the points credited can be more
+than the points asked for. Tiers are picked automatically when the balance
+crosses `minPoints`.
+
+Completing a challenge is the one action that can pay out twice: `rewardPoints`
+become an `earn` transaction, and `rewardId`, if set, becomes a redemption with
+source `assigned`. Progress reaching `targetValue` completes a challenge on its
+own, and `POST /complete` forces it regardless of progress or deadline.
 
 ## API reference
 
+`/health` is open. Everything below needs the bearer token.
+
+**Members**
+
 | Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | Health check (no auth) |
-| `POST` / `GET` | `/members` | Create / list members |
-| `GET` / `PATCH` / `DELETE` | `/members/{id}` | Get / update / delete a member |
-| `GET` | `/members/{id}/balance` | Current points balance |
-| `POST` | `/members/{id}/points/earn` | Earn points - `{"points": 100}` |
-| `POST` | `/members/{id}/points/burn` | Burn (spend) points - `{"points": 30}` |
-| `POST` | `/members/{id}/points/adjust` | Admin adjustment (+/-) |
-| `GET` | `/members/{id}/transactions` | Points transaction history |
-| `POST` / `GET` | `/rewards` | Create / list rewards |
-| `GET` / `PATCH` / `DELETE` | `/rewards/{id}` | Get / update / delete a reward |
-| `POST` | `/members/{id}/redeem/{reward_id}` | Redeem a reward |
+|---|---|---|
+| `POST` `GET` | `/members` | Create, list and search members |
+| `GET` | `/members/count` | Member count |
+| `GET` | `/members/stats` | Dashboard stats: points in circulation, tier spread |
+| `GET` `PATCH` `DELETE` | `/members/{id}` | Get, update, delete a member |
+| `POST` `GET` `GET` `PATCH` `DELETE` | `/member-attributes` | Custom field definitions |
+
+**Points**
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/members/{id}/balance` | Current balance |
+| `POST` | `/members/{id}/points/earn` | Earn points, `{"points": 100}` |
+| `POST` | `/members/{id}/points/burn` | Spend points, `{"points": 30}` |
+| `POST` | `/members/{id}/points/adjust` | Admin adjustment, signed |
+| `GET` | `/members/{id}/transactions` | Transaction history |
+
+**Rewards, redemptions and prizes**
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` `GET` | `/rewards` | Create, list rewards |
+| `GET` `PATCH` `DELETE` | `/rewards/{id}` | Get, update, delete a reward |
+| `POST` | `/members/{id}/redeem/{rewardId}` | Redeem, debits the points cost |
+| `POST` | `/members/{id}/prizes/{rewardId}` | Grant for free, no points debited |
+| `GET` | `/members/{id}/prizes` | History, filter with `?source=redeemed\|assigned` |
 | `GET` | `/members/{id}/redemptions` | Redemption history |
-| `POST` / `GET` | `/tiers` | Create / list tiers |
-| `GET` / `DELETE` | `/tiers/{id}` | Get / delete a tier |
-| `POST` / `GET` | `/segments` | Create / list segments |
-| `GET` / `PATCH` / `DELETE` | `/segments/{id}` | Get / update / delete a segment |
-| `POST` | `/challenges/{id}/assign-segment` | Assign a challenge to every member of a segment - `{"segment_id": "..."}` |
-| `POST` | `/doi/trigger` | Send a DOI verification email - `{"email": "..."}` or `{"member_id": "..."}`, plus optional `"type": "code" \| "link"` |
-| `POST` | `/doi/verify` | Confirm a DOI code - add `"code": "123456"` to the same identifier |
+
+**Challenges**
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` `GET` | `/challenges` | Create, list challenges |
+| `GET` `PATCH` `DELETE` | `/challenges/{id}` | Get, update, delete a challenge |
+| `POST` `DELETE` | `/members/{id}/challenges/{challengeId}` | Assign to, remove from a member |
+| `GET` | `/members/{id}/challenges` | A member's challenges, filter with `?status=` |
+| `GET` | `/members/{id}/challenges/{challengeId}` | Definition plus that member's progress |
+| `POST` | `/members/{id}/challenges/{challengeId}/progress` | Add progress, `{"amount": 1}` |
+| `POST` | `/members/{id}/challenges/{challengeId}/complete` | Force complete and pay out |
+| `POST` | `/challenges/{id}/assign-segment` | Assign to a whole segment, `{"segmentId": "..."}` |
+
+**Products and purchases**
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` `GET` | `/products` | Create, list products |
+| `GET` `PATCH` `DELETE` | `/products/{id}` | Get, update, delete a product |
+| `POST` `GET` | `/members/{id}/purchases` | Record a purchase, list history |
+| `GET` | `/members/{id}/purchase-stats` | Spend stats, `?days=` sets the window |
+
+**Segments and tiers**
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` `GET` | `/segments` | Create, list segments |
+| `GET` `PATCH` `DELETE` | `/segments/{id}` | Get, update, delete a segment |
+| `POST` | `/segments/{id}/assign` | Add members in bulk, `{"memberIds": [...]}` |
+| `POST` `GET` | `/tiers` | Create, list tiers |
+| `GET` `PATCH` `DELETE` | `/tiers/{id}` | Get, update, delete a tier |
+
+**Email and member sign in**
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/doi/trigger` | Send a verification email |
+| `POST` | `/doi/verify` | Confirm a verification code |
+| `POST` | `/auth/signup` | Create a member and mail a login code |
+| `POST` | `/auth/login` | Mail a login code to an existing member |
+| `POST` | `/auth/verify` | Exchange the code for the member record |
 
 ### Member object
 
@@ -246,79 +290,87 @@ keep working.
 }
 ```
 
-### Segment object
+Members join segments by id. `MemberCreate` and `MemberUpdate` take
+`segmentIds: [UUID]`, picked from the segment list rather than typed free.
 
-Members are assigned to segments by id (`MemberCreate`/`MemberUpdate` take `segment_ids: [UUID]`) - pick from the existing list rather than typing free text.
+## DOI email verification
 
-```json
-{
-  "id": "a1c2...",
-  "name": "vip",
-  "description": "Top-spending members",
-  "color": "#f59e0b",
-  "createdAt": "2026-01-01T00:00:00Z",
-  "memberCount": 12
-}
-```
+`/doi/trigger` takes a `type` that decides which email the member gets:
+
+| `type` | Email | What the member does |
+|---|---|---|
+| `code` (default) | A 6 digit code | Types it back into the screen that started the flow, which posts to `/doi/verify` |
+| `link` | A **Verify my email** button pointing at `{CLIENT_BASE_URL}/verify?memberId=<id>&code=<code>` | Presses the button, and that page posts to `/doi/verify` for them |
+
+Both issue the same kind of single use code, good for 10 minutes and 5 attempts,
+and both finish at `POST /doi/verify`. The link flow only spares the typing.
+`type` is optional, so callers written before it keep working.
+
+A `type: "link"` trigger without `CLIENT_BASE_URL` set answers `500` rather than
+mailing a button that goes nowhere. The `code` flow never reads it.
+
+**Idempotency.** While a code is live, `/doi/trigger` answers `200` and sends
+nothing. The request is already satisfied by the code sitting in the member's
+inbox, and a second email would quietly invalidate the first. A new code is
+issued once the old one expires, is verified, or is burned through 5 wrong
+guesses. Nothing is written unless the email was accepted, so a failed send does
+not block the next attempt.
+
+Asking for the *other* `type` while a code is live does issue a new one. The live
+code went out in a shape this caller is not asking for, and only its hash is
+stored, so the link behind it cannot be rebuilt.
+
+**Failures.** `DOI_FROM_EMAIL` must sit on a domain verified in Resend. Until it
+does, every send is rejected and `/doi/trigger` answers `500` quoting the
+provider, for example `Resend 403 validation_error: The <domain> domain is not
+verified`. Rate limits, provider outages and network failures answer `502`
+instead, since those are worth retrying.
 
 ## Example requests
 
 ```bash
-TOKEN=dev-secret-token
+TOKEN=your-api-token
 
 # Create a segment
 curl -X POST http://localhost:8000/segments \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name":"vip","description":"Top-spending members"}'
+  -d '{"name":"vip","description":"Top spending members"}'
 
-# Create a member in that segment (segment_ids from the response above)
+# Create a member in that segment
 curl -X POST http://localhost:8000/members \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Ada Lovelace","email":"ada@example.com","phone":"+155501","segment_ids":["<segment-id>"]}'
+  -d '{"name":"Ada Lovelace","email":"ada@example.com","segmentIds":["<segment-id>"]}'
 
 # Earn points
-curl -X POST http://localhost:8000/members/1/points/earn \
+curl -X POST http://localhost:8000/members/<member-id>/points/earn \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"points":100}'
 
-# Burn points
-curl -X POST http://localhost:8000/members/1/points/burn \
+# Move a member along a challenge
+curl -X POST http://localhost:8000/members/<member-id>/challenges/<challenge-id>/progress \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"points":30}'
-
-# Get member data
-curl http://localhost:8000/members/1 -H "Authorization: Bearer $TOKEN"
+  -d '{"amount":1,"description":"Scanned a receipt"}'
 ```
-
-## Notes
-
-- Earning points applies the member's tier multiplier (if any tiers are defined);
-  tiers are assigned automatically based on the balance crossing `min_points`.
-- This app uses SQLAlchemy `create_all` for *new* tables, which is fine for
-  greenfield tables but never alters existing ones. Schema changes to existing
-  tables (new/dropped/retyped columns) need a hand-written SQL script run
-  against Supabase first - see `supabase/migrations/`. After that, `create_all`
-  picks up any brand-new tables on the next app start.
 
 ## Testing
 
-There's no pytest suite yet - `tests/` holds standalone regression scripts for
-past production incidents, each runnable directly:
+There is no pytest suite. `tests/` holds standalone regression scripts for past
+production incidents, each runnable on its own:
 
 ```bash
 ./venv/bin/python -m tests.test_database_pool          # NullPool must be in use
-./venv/bin/python -m tests.test_database_pooler_port   # session pooler -> transaction pooler
-./venv/bin/python -m tests.test_doi_email_errors       # DOI send failures are classified, not swallowed
+./venv/bin/python -m tests.test_database_pooler_port   # session pooler is rewritten to transaction pooler
+./venv/bin/python -m tests.test_doi_email_errors       # send failures are classified, not swallowed
 ./venv/bin/python -m tests.test_doi_trigger_flow       # /doi/trigger is idempotent while a code is live
 ./venv/bin/python -m tests.test_doi_link_flow          # type="link" mails a working /verify link
 ./venv/bin/python -m tests.test_database_url           # DATABASE_URL driver normalization
 ```
 
-`test_database_url.py` currently fails with an `ImportError` - it imports a
-`_normalize_database_url` helper that doesn't exist in `app/core/database.py`.
-This predates the `app/` restructure (the old flat `database.py` didn't have it
-either); it's left failing rather than silently patched over.
+`test_database_url.py` fails with an `ImportError`. It imports a
+`_normalize_database_url` helper that does not exist in `app/core/database.py`,
+and did not exist in the old flat `database.py` either. It is left failing rather
+than quietly patched over.
