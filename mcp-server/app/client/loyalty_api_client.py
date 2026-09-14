@@ -82,3 +82,7 @@ async def post(path: str, json_body: Optional[dict] = None) -> Any:
 
 async def patch(path: str, json_body: Optional[dict] = None) -> Any:
     return await _request("PATCH", path, json_body=_drop_none(json_body or {}))
+
+
+async def delete(path: str) -> Any:
+    return await _request("DELETE", path)
