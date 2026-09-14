@@ -8,6 +8,7 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatTile } from "@/components/ui/StatTile";
+import { BalanceAutoRefresh } from "@/components/wallet/BalanceAutoRefresh";
 import { CoinsIcon, GiftIcon, WalletIcon } from "@/components/ui/icons";
 
 export const metadata: Metadata = { title: "Wallet - Loyalty App" };
@@ -28,6 +29,7 @@ export default async function WalletPage() {
 
   return (
     <div className="space-y-6">
+      <BalanceAutoRefresh />
       <PageHeader title="Wallet" description="Your points and unredeemed products." />
 
       <StatTile
