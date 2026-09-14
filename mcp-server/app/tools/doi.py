@@ -9,7 +9,7 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool()
+@mcp.tool(title="Email verification: Send")
 async def trigger_doi(
     email: Optional[str] = None,
     member_id: Optional[str] = None,
@@ -26,7 +26,7 @@ async def trigger_doi(
     )
 
 
-@mcp.tool()
+@mcp.tool(title="Email verification: Confirm")
 async def verify_doi(
     code: str, email: Optional[str] = None, member_id: Optional[str] = None
 ) -> Dict[str, Any]:

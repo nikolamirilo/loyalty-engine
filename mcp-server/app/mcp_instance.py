@@ -8,8 +8,11 @@ circular import.
 
 from mcp.server import MCPServer
 
+from app.core.branding import SERVER_ICONS
 from app.core.config import settings
 
 mcp = MCPServer(
     name=settings.project_name,
+    version=settings.version,
+    icons=SERVER_ICONS,
 )

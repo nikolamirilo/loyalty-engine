@@ -15,7 +15,7 @@ from app.mcp_instance import mcp
 # ── challenge definitions (admin CRUD) ───────────────────────────────────────
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: Create")
 async def create_challenge(
     name: str,
     description: Optional[str] = None,
@@ -48,7 +48,7 @@ async def create_challenge(
     return await api.post("/challenges", body)
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: List")
 async def list_challenges(
     active_only: bool = False, skip: int = 0, limit: int = 100
 ) -> List[Dict[str, Any]]:
@@ -59,14 +59,14 @@ async def list_challenges(
     )
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: Get")
 async def get_challenge(challenge_id: str) -> Dict[str, Any]:
     """Get a single challenge definition by id."""
     require_scope("read")
     return await api.get(f"/challenges/{challenge_id}")
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: Update")
 async def update_challenge(
     challenge_id: str,
     name: Optional[str] = None,
@@ -97,7 +97,7 @@ async def update_challenge(
     return await api.patch(f"/challenges/{challenge_id}", body)
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: Delete")
 async def delete_challenge(challenge_id: str) -> None:
     """Delete a challenge definition, along with any member assignments on it."""
     require_scope("write")
@@ -107,7 +107,7 @@ async def delete_challenge(challenge_id: str) -> None:
 # ── assignment & progress (member-centric) ───────────────────────────────────
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: Assign to member")
 async def assign_challenge_to_member(member_id: str, challenge_id: str) -> Dict[str, Any]:
     """Assign a challenge to a member, starting their progress at 0. Fails if
     already assigned, or if the challenge is inactive/expired.
@@ -116,7 +116,7 @@ async def assign_challenge_to_member(member_id: str, challenge_id: str) -> Dict[
     return await api.post(f"/members/{member_id}/challenges/{challenge_id}")
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: List for member")
 async def list_member_challenges(
     member_id: str, status: Optional[str] = None, skip: int = 0, limit: int = 50
 ) -> List[Dict[str, Any]]:
@@ -131,7 +131,7 @@ async def list_member_challenges(
     )
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: Get member progress")
 async def get_member_challenge_progress(member_id: str, challenge_id: str) -> Dict[str, Any]:
     """Get a challenge's definition merged with one member's progress on it
     (`currentValue`, `progressPercent`, `remaining`, `effectiveStatus`, ...).
@@ -141,7 +141,7 @@ async def get_member_challenge_progress(member_id: str, challenge_id: str) -> Di
     return await api.get(f"/members/{member_id}/challenges/{challenge_id}")
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: Update progress")
 async def update_challenge_progress(
     member_id: str, challenge_id: str, amount: int = 1, description: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -157,7 +157,7 @@ async def update_challenge_progress(
     )
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: Complete for member")
 async def complete_challenge(member_id: str, challenge_id: str) -> Dict[str, Any]:
     """Admin force-complete: grants the challenge's reward to the member
     regardless of their current progress or the deadline. Fails if the
@@ -167,7 +167,7 @@ async def complete_challenge(member_id: str, challenge_id: str) -> Dict[str, Any
     return await api.post(f"/members/{member_id}/challenges/{challenge_id}/complete")
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: Remove from member")
 async def unassign_challenge(member_id: str, challenge_id: str) -> None:
     """Remove a challenge assignment from a member, discarding their progress."""
     require_scope("write")
@@ -177,7 +177,7 @@ async def unassign_challenge(member_id: str, challenge_id: str) -> None:
 # ── bulk assignment by segment ───────────────────────────────────────────────
 
 
-@mcp.tool()
+@mcp.tool(title="Challenges: Assign to segment")
 async def assign_challenge_to_segment(challenge_id: str, segment_id: str) -> Dict[str, Any]:
     """Assign a challenge to every member currently in a segment (see
     `list_segments`). Members already assigned the challenge are skipped, not

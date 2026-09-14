@@ -10,7 +10,7 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool()
+@mcp.tool(title="Members: List")
 async def list_members(
     q: Optional[str] = None, skip: int = 0, limit: int = 100
 ) -> List[Dict[str, Any]]:
@@ -19,14 +19,14 @@ async def list_members(
     return await api.get("/members", params={"q": q, "skip": skip, "limit": limit})
 
 
-@mcp.tool()
+@mcp.tool(title="Members: Get")
 async def get_member(member_id: str) -> Dict[str, Any]:
     """Get a single member by id, including their segments and points balance."""
     require_scope("read")
     return await api.get(f"/members/{member_id}")
 
 
-@mcp.tool()
+@mcp.tool(title="Members: Create")
 async def create_member(
     name: str,
     email: str,
@@ -48,7 +48,7 @@ async def create_member(
     return await api.post("/members", body)
 
 
-@mcp.tool()
+@mcp.tool(title="Members: Update")
 async def update_member(
     member_id: str,
     name: Optional[str] = None,

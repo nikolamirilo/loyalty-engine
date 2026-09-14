@@ -10,14 +10,14 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool()
+@mcp.tool(title="Segments: List")
 async def list_segments() -> List[Dict[str, Any]]:
     """List all member segments (e.g. "VIP", "Newsletter") with member counts."""
     require_scope("read")
     return await api.get("/segments")
 
 
-@mcp.tool()
+@mcp.tool(title="Segments: Get")
 async def get_segment(segment_id: str) -> Dict[str, Any]:
     """Get a single segment by id."""
     require_scope("read")
