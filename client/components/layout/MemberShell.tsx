@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 import { cn } from "@/lib/format";
 import { CampaignProvider } from "@/components/campaigns/CampaignContext";
@@ -27,6 +27,18 @@ import {
 // state below) so the header, tab bar, icons, and text all grow together
 // instead of only the container stretching around fixed-size children.
 const FRAME_HEIGHT = 844;
+
+/**
+ * The scale has to be applied before the browser paints, otherwise a remount
+ * shows one frame at the raw 844px size and then visibly shrinks. That remount
+ * is not hypothetical: `app/loading.tsx` is a root-level fallback sitting above
+ * this shell, so any navigation that has to refetch the `(member)` layout
+ * segment swaps the whole shell out and back in.
+ *
+ * Falls back to `useEffect` on the server, where a layout effect only warns.
+ */
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 const TABS = [
   { href: "/home", label: "Home", Icon: HomeIcon },
@@ -78,7 +90,7 @@ export function MemberShell({
   // ancestor into a containing block for fixed descendants).
   const [scale, setScale] = useState<number | null>(null);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const mql = window.matchMedia("(min-width: 768px)");
     const updateScale = () => {
       setScale(mql.matches ? (window.innerHeight * 0.9) / FRAME_HEIGHT : null);

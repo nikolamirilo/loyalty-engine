@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, or_
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.database import get_db
 from app.models import Member, MemberSegment, Segment, Tier
@@ -22,6 +22,9 @@ from app.services.tiers import apply_tier
 router = APIRouter(prefix="/members", tags=["Members"])
 
 _SEGMENTS_OPT = selectinload(Member.segment_assignments).selectinload(MemberSegment.segment)
+# `MemberOut` serializes the member's tier, so eager-load it here too - without
+# this, listing members lazy-loads one tier per row (a classic N+1).
+_TIER_OPT = joinedload(Member.tier)
 
 
 def _sync_member_segments(db: Session, member: Member, segment_ids: list[UUID]) -> None:
@@ -90,7 +93,7 @@ def list_members(
     # Stable ordering is required for correct offset/limit pagination.
     return (
         _members_query(db, q)
-        .options(_SEGMENTS_OPT)
+        .options(_SEGMENTS_OPT, _TIER_OPT)
         .order_by(Member.created_at.desc())
         .offset(skip)
         .limit(limit)
@@ -149,7 +152,7 @@ def member_stats(db: Session = Depends(get_db)):
 @router.get("/{member_id}", response_model=MemberOut)
 def get_member(member_id: UUID, db: Session = Depends(get_db)):
     member = (
-        db.query(Member).options(_SEGMENTS_OPT).filter(Member.id == member_id).first()
+        db.query(Member).options(_SEGMENTS_OPT, _TIER_OPT).filter(Member.id == member_id).first()
     )
     if not member:
         raise HTTPException(404, "Member not found")

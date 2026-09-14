@@ -62,6 +62,10 @@ export interface Member {
   email: string;
   phone: string | null;
   segments: SegmentSummary[];
+  /** The tier the API last assigned (`apply_tier`), or null when the member
+   * hasn't met the lowest threshold / no tiers are defined. Authoritative -
+   * prefer this over recomputing with `tierForBalance`. */
+  tier: Tier | null;
   /** Serialized by the API as `pointsBalance` (aliased from `total_points`). */
   pointsBalance: number;
   /** Values for the fields defined in `MemberAttribute`, keyed by their `key`.

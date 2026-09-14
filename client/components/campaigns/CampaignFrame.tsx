@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/format";
 import { useCampaign } from "./CampaignContext";
-import { XIcon } from "@/components/ui/icons";
+import { RefreshIcon, XIcon } from "@/components/ui/icons";
 
 /**
  * The campaign iframe, mounted by MemberShell rather than by the Home page.
@@ -16,13 +17,22 @@ import { XIcon } from "@/components/ui/icons";
  * to a different parent) is what forces a browser to reload an iframe, and a
  * reload is exactly what we are avoiding here.
  *
+ * The reload button turns that same rule around deliberately. The campaign is
+ * cross-origin, so we cannot reach into it and call `location.reload()`;
+ * changing the React `key` instead throws the old iframe element away and
+ * mounts a fresh one, which re-requests the URL from scratch.
+ *
  * It fills MemberShell's `relative` `<main>` edge to edge, covering that
  * element's padding, so the campaign gets the whole content region. The header
  * and tab bar sit outside `<main>` and stay usable.
  */
+const CONTROL_BUTTON =
+  "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-line bg-surface/90 text-lg text-muted shadow-sm backdrop-blur transition-colors hover:bg-surface hover:text-foreground";
+
 export function CampaignFrame() {
   const { loadedUrl, close } = useCampaign();
   const pathname = usePathname();
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   if (!loadedUrl) return null;
 
@@ -35,19 +45,31 @@ export function CampaignFrame() {
       inert={pathname !== "/home" ? true : undefined}
     >
       <iframe
-        key={loadedUrl}
+        key={`${loadedUrl}#${reloadNonce}`}
         src={loadedUrl}
         title="Campaign"
         className="h-full w-full border-0"
       />
-      <button
-        type="button"
-        onClick={close}
-        aria-label="Close campaign"
-        className="absolute right-3 top-3 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-line bg-surface/90 text-lg text-muted shadow-sm backdrop-blur transition-colors hover:bg-surface hover:text-foreground"
-      >
-        <XIcon />
-      </button>
+      <div className="absolute right-3 top-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setReloadNonce((n) => n + 1)}
+          aria-label="Reload campaign"
+          title="Reload campaign"
+          className={CONTROL_BUTTON}
+        >
+          <RefreshIcon />
+        </button>
+        <button
+          type="button"
+          onClick={close}
+          aria-label="Close campaign"
+          title="Close campaign"
+          className={CONTROL_BUTTON}
+        >
+          <XIcon />
+        </button>
+      </div>
     </div>
   );
 }

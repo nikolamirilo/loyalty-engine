@@ -6,6 +6,7 @@ from pydantic import EmailStr, Field, computed_field
 
 from app.schemas.base import CamelModel
 from app.schemas.segment import SegmentSummary
+from app.schemas.tier import TierOut
 
 
 class MemberCreate(CamelModel):
@@ -37,6 +38,9 @@ class MemberOut(CamelModel):
     email: str
     phone: Optional[str] = None
     segments: List[SegmentSummary] = Field(default_factory=list)
+    # The tier `apply_tier` last assigned; null until the member earns enough
+    # points to meet the lowest tier's threshold (or when no tiers are defined).
+    tier: Optional[TierOut] = None
     points_balance: int = Field(validation_alias="total_points")
     custom_attributes: Dict[str, Any] = Field(default_factory=dict)
     email_verified_at: Optional[datetime] = None
