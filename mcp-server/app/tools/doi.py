@@ -14,26 +14,40 @@ async def trigger_doi(
     email: Optional[str] = None,
     member_id: Optional[str] = None,
     type: str = "code",
+    program: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Send a double opt-in verification email to a member, identified by
     `email` or `member_id` (exactly one is required). `type` is "code" (a
     6-digit code the member types back in) or "link" (a verify-my-email
     button); defaults to "code".
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
     """
     require_scope("write")
     return await api.post(
-        "/doi/trigger", {"email": email, "member_id": member_id, "type": type}
+        "/doi/trigger",
+        {"email": email, "member_id": member_id, "type": type},
+        program=program,
     )
 
 
 @mcp.tool()
 async def verify_doi(
-    code: str, email: Optional[str] = None, member_id: Optional[str] = None
+    code: str,
+    email: Optional[str] = None,
+    member_id: Optional[str] = None,
+    program: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Confirm a DOI verification code for a member, identified by `email` or
     `member_id` (exactly one is required).
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
     """
     require_scope("write")
     return await api.post(
-        "/doi/verify", {"email": email, "member_id": member_id, "code": code}
+        "/doi/verify",
+        {"email": email, "member_id": member_id, "code": code},
+        program=program,
     )

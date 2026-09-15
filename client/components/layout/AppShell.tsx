@@ -105,7 +105,14 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  programSwitcher,
+  children,
+}: {
+  /** Rendered above the nav. Built on the server, so it arrives as a node. */
+  programSwitcher?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -116,6 +123,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Brand />
         </div>
         <nav className="flex-1 overflow-y-auto p-3">
+          {programSwitcher}
           <NavList />
         </nav>
         <SignOut />
@@ -154,6 +162,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto p-3">
+              {programSwitcher}
               <NavList onNavigate={() => setOpen(false)} />
             </nav>
             <SignOut />

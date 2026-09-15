@@ -14,6 +14,7 @@ import type {
   Member,
   PointsTransaction,
   Product,
+  Program,
   Purchase,
   PurchaseStats,
   Redemption,
@@ -23,6 +24,7 @@ import type {
   Tier,
 } from "./types";
 import { UPSTREAM_BASE_URL as BASE_URL, UPSTREAM_TOKEN as TOKEN } from "@/lib/server/upstream";
+import { activeProgramId } from "@/lib/server/program";
 
 /** Max attempts (initial + retries). 3 = up to 2 retries on transient failure. */
 const MAX_ATTEMPTS = 3;
@@ -46,6 +48,14 @@ interface RequestOptions {
   json?: unknown;
   /** Extra query params (undefined/null values are dropped). */
   query?: Record<string, string | number | boolean | undefined | null>;
+  /**
+   * Program (slug or id) to scope this call to. Defaults to the active one for
+   * the request, so the ~50 call sites in `lib/actions.ts` need not pass it.
+   * Set it explicitly for calls that run before any session exists, and pass
+   * `null` for the handful of endpoints that are not program-scoped
+   * (`/programs` itself).
+   */
+  programId?: string | null;
 }
 
 function buildUrl(path: string, query?: RequestOptions["query"]): string {
@@ -84,11 +94,15 @@ export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { method = "GET", json, query } = options;
+  const { method = "GET", json, query, programId } = options;
   const url = buildUrl(path, query);
+  // `null` means "deliberately unscoped"; `undefined` means "use the active
+  // program", which is the common case.
+  const program = programId === null ? undefined : programId ?? (await activeProgramId());
   const headers: Record<string, string> = {
     Accept: "application/json",
     Authorization: `Bearer ${TOKEN}`,
+    ...(program ? { "X-Program-Id": program } : {}),
     ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
   };
   const body = json !== undefined ? JSON.stringify(json) : undefined;
@@ -166,6 +180,10 @@ function extractError(data: unknown, status: number): string {
 }
 
 // ── Read helpers (used by Server Components) ─────────────────────────────────
+
+/** Not program-scoped: this is how the console discovers which programs exist. */
+export const getPrograms = () =>
+  apiRequest<Program[]>("/programs", { programId: null });
 
 export const getMembers = () =>
   apiRequest<Member[]>("/members", { query: { limit: 1000 } });
