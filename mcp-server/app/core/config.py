@@ -77,6 +77,9 @@ class Settings:
     allowed_hosts: List[str]
     allowed_origins: List[str]
     request_timeout_seconds: float = 15.0
+    # Program (slug or id) every outbound call addresses unless a tool names
+    # another one. Empty means the loyalty API picks its default program.
+    default_program: str = ""
 
     project_name: str = "Loyalty Engine MCP Server"
     version: str = "0.1.0"
@@ -126,6 +129,7 @@ def get_settings() -> Settings:
         allowed_hosts=_allowed_hosts(),
         allowed_origins=_LOCALHOST_ORIGINS + _csv("MCP_ALLOWED_ORIGINS", "https://claude.ai"),
         request_timeout_seconds=float(_optional("LOYALTY_API_TIMEOUT_SECONDS", "15") or 15),
+        default_program=_optional("LOYALTY_DEFAULT_PROGRAM"),
     )
 
 

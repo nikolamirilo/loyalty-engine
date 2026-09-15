@@ -28,6 +28,9 @@ class Challenge(Base):
     __tablename__ = "challenges"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    program_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     target_value: Mapped[int] = mapped_column(Integer, nullable=False, default=1)   # progress needed to complete

@@ -13,6 +13,7 @@ from app.models import (
     ChallengeSegmentAssignment,
     ChallengeStatus,
     Member,
+    Program,
     Reward,
     TransactionType,
 )
@@ -59,8 +60,12 @@ def assignment_is_expired(assignment: ChallengeAssignment) -> bool:
     return expires_at < now()
 
 
-def get_challenge_or_404(db: Session, challenge_id: UUID, lock: bool = False) -> Challenge:
-    q = db.query(Challenge).filter(Challenge.id == challenge_id)
+def get_challenge_or_404(
+    db: Session, challenge_id: UUID, program: Program, lock: bool = False
+) -> Challenge:
+    q = db.query(Challenge).filter(
+        Challenge.id == challenge_id, Challenge.program_id == program.id
+    )
     if lock:
         q = q.with_for_update()
     challenge = q.first()
@@ -93,7 +98,7 @@ def assert_joinable(challenge: Challenge) -> None:
 
 
 def sync_assignments_for_segments(
-    db: Session, segment_ids: set[UUID], member_ids: set[UUID]
+    db: Session, program: Program, segment_ids: set[UUID], member_ids: set[UUID]
 ) -> None:
     """Assign any active, non-expired challenges bulk-assigned to `segment_ids`
     to each member in `member_ids`, skipping (member, challenge) pairs that
@@ -119,7 +124,9 @@ def sync_assignments_for_segments(
 
     challenges_by_id = {
         c.id: c
-        for c in db.query(Challenge).filter(Challenge.id.in_(challenge_ids)).all()
+        for c in db.query(Challenge)
+        .filter(Challenge.id.in_(challenge_ids), Challenge.program_id == program.id)
+        .all()
         if c.is_active and not is_expired(c)
     }
     eligible_challenge_ids = set(challenges_by_id)
@@ -187,7 +194,13 @@ def complete_assignment(db: Session, assignment: ChallengeAssignment) -> None:
     # Prize reward - best effort, so an unavailable reward doesn't block completion.
     if challenge.reward_id is not None:
         reward = (
-            db.query(Reward).filter(Reward.id == challenge.reward_id).with_for_update().first()
+            db.query(Reward)
+            .filter(
+                Reward.id == challenge.reward_id,
+                Reward.program_id == challenge.program_id,
+            )
+            .with_for_update()
+            .first()
         )
         if reward is not None and is_available(reward):
             grant_prize(db, member.id, reward)

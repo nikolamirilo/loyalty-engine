@@ -2,6 +2,7 @@
 
 import type { ActionState } from "@/lib/action-state";
 import { ApiError, apiRequest } from "@/lib/api";
+import { memberProgramId } from "@/lib/server/program";
 
 /**
  * Server Action behind the public /verify page (the DOI `type: "link"` flow).
@@ -27,6 +28,7 @@ export async function verifyMemberEmail(
     await apiRequest("/doi/verify", {
       method: "POST",
       json: { memberId, code },
+      programId: await memberProgramId(),
     });
     return { ok: true, message: "Your email address is verified." };
   } catch (e) {

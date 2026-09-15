@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { getMember } from "@/lib/api";
+import { getMember, getMemberPrograms } from "@/lib/api";
 import { getSessionMemberId } from "@/lib/memberAuth/session";
+import { memberProgramId } from "@/lib/server/program";
+import type { MemberProgram } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CopyIdButton } from "@/components/account/CopyIdButton";
 import { EditProfileButton } from "@/components/account/EditProfileButton";
+import { ProgramSwitcher } from "@/components/account/ProgramSwitcher";
 import { TierBadge } from "@/components/account/TierBadge";
 
 export const metadata: Metadata = { title: "Account - Loyalty App" };
@@ -17,7 +20,13 @@ export default async function AccountPage() {
   const memberId = await getSessionMemberId();
   if (!memberId) redirect("/login");
 
-  const member = await getMember(memberId);
+  const programId = await memberProgramId();
+  const member = await getMember(memberId, programId);
+  // The switcher is a convenience: if the list cannot be fetched the rest of
+  // the page is still worth rendering.
+  const programs = await getMemberPrograms(memberId, programId).catch(
+    () => [] as MemberProgram[],
+  );
   // A cleared phone comes back as "" rather than null (the API can't unset the
   // column), so treat both as "no number on file".
   const phone = member.phone?.trim() ? member.phone : null;
@@ -62,6 +71,8 @@ export default async function AccountPage() {
             </dd>
           </div>
         </dl>
+
+        <ProgramSwitcher programs={programs} currentMemberId={member.id} />
       </Card>
     </div>
   );

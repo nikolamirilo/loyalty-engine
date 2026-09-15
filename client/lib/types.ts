@@ -11,6 +11,28 @@ export type ChallengeStatus =
   | "expired"
   | "cancelled";
 
+/**
+ * One isolated dataset: its own rewards, products, challenges, tiers, segments
+ * and members. Every API call carries the selected program in an
+ * `X-Program-Id` header, so nothing below ever crosses between two of them.
+ */
+export interface Program {
+  id: UUID;
+  name: string;
+  slug: string;
+  description: string | null;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+/**
+ * A program as seen by one person: `memberId` is their membership in it, or
+ * null when they have not joined it yet.
+ */
+export interface MemberProgram extends Program {
+  memberId: UUID | null;
+}
+
 export interface Tier {
   id: UUID;
   name: string;
@@ -58,6 +80,9 @@ export interface MemberAttribute {
 
 export interface Member {
   id: UUID;
+  /** The program this membership belongs to. The id above is only addressable
+   * from within it, so the two always travel together. */
+  programId: UUID;
   name: string;
   email: string;
   phone: string | null;

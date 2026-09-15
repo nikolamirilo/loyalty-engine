@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import type { ActionState } from "@/lib/action-state";
+import { clearProgramSelection, selectDefaultProgram } from "@/lib/programs/actions";
 import { ADMIN_PASSWORD, ADMIN_USERNAME, LOCKOUT_MS } from "./config";
 import { clearAttempts, lockRemainingMs, registerFailure } from "./attempts";
 import { createSession, destroySession } from "./session";
@@ -57,6 +58,9 @@ export async function login(
   if (usernameOk && passwordOk) {
     clearAttempts(ip);
     await createSession();
+    // Start the session pointed at a program, so every request states which
+    // dataset it means instead of relying on the API's fallback.
+    await selectDefaultProgram();
     redirect("/admin/dashboard"); // throws NEXT_REDIRECT - keep outside any try/catch
   }
 
@@ -76,5 +80,6 @@ export async function login(
 
 export async function logout(): Promise<void> {
   await destroySession();
+  await clearProgramSelection();
   redirect("/admin/login");
 }

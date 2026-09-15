@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { SESSION_COOKIE } from "@/lib/auth/config";
 import { verifyToken } from "@/lib/auth/token";
+import { PROGRAM_COOKIE } from "@/lib/server/program";
 import { UPSTREAM_BASE_URL, UPSTREAM_TOKEN } from "@/lib/server/upstream";
 
 /**
@@ -43,9 +44,17 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
   const hasBody = method !== "GET" && method !== "HEAD";
   const body = hasBody ? await request.text() : undefined;
 
+  // Read from the cookie rather than forwarded from the browser: this header
+  // map is built fresh per request and never copies the incoming one, so a
+  // caller cannot point the proxy at a program the console has not selected.
+  // Only the console's cookie counts here - this route is gated on the admin
+  // session above, so a member's selection is never what it means.
+  const program = request.cookies.get(PROGRAM_COOKIE)?.value;
+
   const headers: Record<string, string> = {
     Accept: "application/json",
     Authorization: `Bearer ${UPSTREAM_TOKEN}`,
+    ...(program ? { "X-Program-Id": program } : {}),
   };
   const contentType = request.headers.get("content-type");
   if (hasBody && contentType) headers["Content-Type"] = contentType;

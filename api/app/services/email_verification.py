@@ -20,7 +20,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models import DOIType, EmailVerificationCode, Member
+from app.models import DOIType, EmailVerificationCode, Member, MemberIdentity, Program
 from app.services.email_sending import (
     CODE_FG,
     EmailDeliveryError,
@@ -49,26 +49,41 @@ def _as_aware(value: datetime) -> datetime:
     return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
 
 
-def resolve_member(db: Session, email: Optional[str], member_id: Optional[UUID]) -> Member:
-    """Look up the member a DOI request refers to.
+def resolve_member(
+    db: Session, email: Optional[str], member_id: Optional[UUID], program: Program
+) -> Member:
+    """Look up the member a DOI request refers to, inside `program`.
 
     Exactly one of `email`/`member_id` is required; if both are given they
     must resolve to the same member, so a caller can't be misdirected by a
     stale/mismatched pair.
+
+    Verification state itself is identity level (one email, verified once for
+    the person), but the request still resolves through a membership: it is
+    what scopes the lookup to this program, and what gives the `link` email a
+    member id to address the client's /verify page with.
     """
     if email is None and member_id is None:
         raise HTTPException(400, "Provide either email or member_id")
 
-    member: Optional[Member] = None
     if member_id is not None:
-        member = db.get(Member, member_id)
+        member = (
+            db.query(Member)
+            .filter(Member.id == member_id, Member.program_id == program.id)
+            .first()
+        )
         if not member:
             raise HTTPException(404, "Member not found")
         if email is not None and member.email.lower() != email.lower():
             raise HTTPException(400, "email and member_id do not refer to the same member")
         return member
 
-    member = db.query(Member).filter(Member.email == email).first()
+    member = (
+        db.query(Member)
+        .join(Member.identity)
+        .filter(MemberIdentity.email == email, Member.program_id == program.id)
+        .first()
+    )
     if not member:
         raise HTTPException(404, "Member not found")
     return member
@@ -78,19 +93,19 @@ def _generate_code() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
-def _hash_code(member_id: UUID, code: str) -> str:
-    # Salted with member_id (via HMAC key = the existing shared API_TOKEN
-    # secret) so the same code never hashes the same way across members.
+def _hash_code(identity_id: UUID, code: str) -> str:
+    # Salted with identity_id (via HMAC key = the existing shared API_TOKEN
+    # secret) so the same code never hashes the same way across people.
     return hmac.new(
-        settings.api_token.encode(), f"{member_id}:{code}".encode(), hashlib.sha256
+        settings.api_token.encode(), f"{identity_id}:{code}".encode(), hashlib.sha256
     ).hexdigest()
 
 
-def _latest_active_code(db: Session, member_id: UUID) -> Optional[EmailVerificationCode]:
+def _latest_active_code(db: Session, identity_id: UUID) -> Optional[EmailVerificationCode]:
     return (
         db.query(EmailVerificationCode)
         .filter(
-            EmailVerificationCode.member_id == member_id,
+            EmailVerificationCode.identity_id == identity_id,
             EmailVerificationCode.consumed_at.is_(None),
         )
         .order_by(EmailVerificationCode.created_at.desc())
@@ -195,10 +210,11 @@ def trigger_verification(
     A new code is also issued once the previous one expires (CODE_TTL) or is
     used up (verified, or MAX_ATTEMPTS wrong guesses).
     """
-    if member.email_verified_at is not None:
+    identity = member.identity
+    if identity.email_verified_at is not None:
         raise HTTPException(409, "Member email is already verified")
 
-    latest = _latest_active_code(db, member.id)
+    latest = _latest_active_code(db, identity.id)
     now = _now()
     if (
         latest is not None
@@ -234,15 +250,15 @@ def trigger_verification(
             f"misconfigured. {exc.reason}",
         ) from exc
 
-    # A member should only ever have one outstanding code at a time.
+    # A person should only ever have one outstanding code at a time.
     db.query(EmailVerificationCode).filter(
-        EmailVerificationCode.member_id == member.id,
+        EmailVerificationCode.identity_id == identity.id,
         EmailVerificationCode.consumed_at.is_(None),
     ).delete()
     db.add(
         EmailVerificationCode(
-            member_id=member.id,
-            code_hash=_hash_code(member.id, code),
+            identity_id=identity.id,
+            code_hash=_hash_code(identity.id, code),
             type=doi_type,
             expires_at=now + CODE_TTL,
         )
@@ -251,16 +267,17 @@ def trigger_verification(
 
 
 def verify_code(db: Session, member: Member, code: str) -> Member:
-    if member.email_verified_at is not None:
+    identity = member.identity
+    if identity.email_verified_at is not None:
         return member
 
-    row = _latest_active_code(db, member.id)
+    row = _latest_active_code(db, identity.id)
     if row is None:
         raise HTTPException(400, "No active verification code for this member")
     if _now() > _as_aware(row.expires_at):
         raise HTTPException(400, "Verification code has expired")
 
-    if not secrets.compare_digest(row.code_hash, _hash_code(member.id, code)):
+    if not secrets.compare_digest(row.code_hash, _hash_code(identity.id, code)):
         row.attempts += 1
         if row.attempts >= MAX_ATTEMPTS:
             row.consumed_at = _now()
@@ -268,7 +285,9 @@ def verify_code(db: Session, member: Member, code: str) -> Member:
         raise HTTPException(400, "Invalid verification code")
 
     row.consumed_at = _now()
-    member.email_verified_at = _now()
+    # Stamped on the identity, so the person counts as verified in every
+    # program they have joined, not just the one this request addressed.
+    identity.email_verified_at = _now()
     db.commit()
-    db.refresh(member)
+    db.refresh(identity)
     return member

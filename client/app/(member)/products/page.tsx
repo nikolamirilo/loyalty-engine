@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getMemberPurchases, getProducts, getPurchaseStats } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { getSessionMemberId } from "@/lib/memberAuth/session";
+import { memberProgramId } from "@/lib/server/program";
 import { ProductCatalog } from "@/components/products/ProductCatalog";
 import { PurchaseHistory } from "@/components/products/PurchaseHistory";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -23,10 +24,11 @@ export default async function ProductsPage() {
   const memberId = await getSessionMemberId();
   if (!memberId) redirect("/login");
 
+  const programId = await memberProgramId();
   const [products, purchases, stats] = await Promise.all([
-    getProducts(true),
-    getMemberPurchases(memberId),
-    getPurchaseStats(memberId, STATS_PERIOD_DAYS),
+    getProducts(true, programId),
+    getMemberPurchases(memberId, programId),
+    getPurchaseStats(memberId, STATS_PERIOD_DAYS, programId),
   ]);
 
   return (

@@ -10,16 +10,20 @@ from app.models.enums import DOIType
 
 
 class EmailVerificationCode(Base):
-    """A single-use DOI verification code issued for a member's email.
+    """A single-use DOI verification code issued for a person's email.
 
     Stores only a hash of the code (see app/services/email_verification.py),
     never the raw value.
+
+    Keyed to the identity rather than to a membership: an email address
+    belongs to the person, so verifying it once counts in every program they
+    have joined.
     """
 
     __tablename__ = "email_verification_codes"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    member_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("members.id", ondelete="CASCADE"), nullable=False, index=True)
+    identity_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("member_identities.id", ondelete="CASCADE"), nullable=False, index=True)
     code_hash: Mapped[str] = mapped_column(String, nullable=False)
     # Which email the member was sent for this code (a typed code vs. a link
     # that verifies for them). Only the hash of the code is stored, so the link

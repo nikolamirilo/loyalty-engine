@@ -34,6 +34,11 @@ class MemberUpdate(CamelModel):
 
 class MemberOut(CamelModel):
     id: UUID
+    # Which program this membership is in. The id is per program, so a client
+    # holding one needs to know which program it is addressable from - without
+    # it, a stored member id and a separately stored program can drift apart
+    # and every scoped read 404s.
+    program_id: UUID
     name: str
     email: str
     phone: Optional[str] = None

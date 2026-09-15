@@ -57,9 +57,20 @@ def _drop_none(values: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def _request(
-    method: str, path: str, *, json_body: Optional[dict] = None, params: Optional[dict] = None
+    method: str,
+    path: str,
+    *,
+    json_body: Optional[dict] = None,
+    params: Optional[dict] = None,
+    program: Optional[str] = None,
 ) -> Any:
-    response = await _get_client().request(method, path, json=json_body, params=params)
+    program = program or settings.default_program
+    # httpx merges request headers into the client's, so the Authorization
+    # header set once in _get_client() survives.
+    headers = {"X-Program-Id": program} if program else None
+    response = await _get_client().request(
+        method, path, json=json_body, params=params, headers=headers
+    )
     if response.status_code >= 400:
         detail = response.text
         try:
@@ -72,17 +83,29 @@ async def _request(
     return response.json()
 
 
-async def get(path: str, params: Optional[dict] = None) -> Any:
-    return await _request("GET", path, params=_drop_none(params or {}))
+async def get(
+    path: str, params: Optional[dict] = None, *, program: Optional[str] = None
+) -> Any:
+    return await _request(
+        "GET", path, params=_drop_none(params or {}), program=program
+    )
 
 
-async def post(path: str, json_body: Optional[dict] = None) -> Any:
-    return await _request("POST", path, json_body=_drop_none(json_body or {}))
+async def post(
+    path: str, json_body: Optional[dict] = None, *, program: Optional[str] = None
+) -> Any:
+    return await _request(
+        "POST", path, json_body=_drop_none(json_body or {}), program=program
+    )
 
 
-async def patch(path: str, json_body: Optional[dict] = None) -> Any:
-    return await _request("PATCH", path, json_body=_drop_none(json_body or {}))
+async def patch(
+    path: str, json_body: Optional[dict] = None, *, program: Optional[str] = None
+) -> Any:
+    return await _request(
+        "PATCH", path, json_body=_drop_none(json_body or {}), program=program
+    )
 
 
-async def delete(path: str) -> Any:
-    return await _request("DELETE", path)
+async def delete(path: str, *, program: Optional[str] = None) -> Any:
+    return await _request("DELETE", path, program=program)

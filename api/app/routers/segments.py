@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.database import get_db
-from app.models import Member, MemberSegment, Segment
+from app.core.program import get_program
+from app.models import Member, MemberSegment, Program, Segment
 from app.schemas import (
     MemberAssignRequest,
     MemberAssignResult,
@@ -19,10 +20,18 @@ router = APIRouter(prefix="/segments", tags=["Segments"])
 
 
 @router.post("", response_model=SegmentOut, status_code=201)
-def create_segment(body: SegmentCreate, db: Session = Depends(get_db)):
-    if db.query(Segment).filter(Segment.name == body.name).first():
+def create_segment(
+    body: SegmentCreate,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    if (
+        db.query(Segment)
+        .filter(Segment.program_id == program.id, Segment.name == body.name)
+        .first()
+    ):
         raise HTTPException(400, "Segment name already exists")
-    segment = Segment(**body.model_dump())
+    segment = Segment(**body.model_dump(), program_id=program.id)
     db.add(segment)
     db.commit()
     db.refresh(segment)
@@ -30,11 +39,15 @@ def create_segment(body: SegmentCreate, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=list[SegmentOut])
-def list_segments(db: Session = Depends(get_db)):
+def list_segments(
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
     # selectinload the member assignments so serializing SegmentOut.member_count
     # doesn't lazy-load one query per segment (N+1).
     return (
         db.query(Segment)
+        .filter(Segment.program_id == program.id)
         .options(selectinload(Segment.member_assignments))
         .order_by(Segment.name)
         .all()
@@ -42,16 +55,29 @@ def list_segments(db: Session = Depends(get_db)):
 
 
 @router.get("/{segment_id}", response_model=SegmentOut)
-def get_segment(segment_id: UUID, db: Session = Depends(get_db)):
-    return get_segment_or_404(db, segment_id)
+def get_segment(
+    segment_id: UUID,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    return get_segment_or_404(db, segment_id, program)
 
 
 @router.patch("/{segment_id}", response_model=SegmentOut)
-def update_segment(segment_id: UUID, body: SegmentUpdate, db: Session = Depends(get_db)):
-    segment = get_segment_or_404(db, segment_id)
+def update_segment(
+    segment_id: UUID,
+    body: SegmentUpdate,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    segment = get_segment_or_404(db, segment_id, program)
     data = body.model_dump(exclude_none=True)
     if "name" in data and data["name"] != segment.name:
-        if db.query(Segment).filter(Segment.name == data["name"]).first():
+        if (
+            db.query(Segment)
+            .filter(Segment.program_id == program.id, Segment.name == data["name"])
+            .first()
+        ):
             raise HTTPException(400, "Segment name already exists")
     for field, value in data.items():
         setattr(segment, field, value)
@@ -61,19 +87,35 @@ def update_segment(segment_id: UUID, body: SegmentUpdate, db: Session = Depends(
 
 
 @router.delete("/{segment_id}", status_code=204)
-def delete_segment(segment_id: UUID, db: Session = Depends(get_db)):
-    segment = get_segment_or_404(db, segment_id)
+def delete_segment(
+    segment_id: UUID,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    segment = get_segment_or_404(db, segment_id, program)
     db.delete(segment)
     db.commit()
 
 
 @router.post("/{segment_id}/assign", response_model=MemberAssignResult)
-def assign_segment_to_members(segment_id: UUID, body: MemberAssignRequest, db: Session = Depends(get_db)):
-    get_segment_or_404(db, segment_id)
+def assign_segment_to_members(
+    segment_id: UUID,
+    body: MemberAssignRequest,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    get_segment_or_404(db, segment_id, program)
 
     member_ids = set(body.member_ids)
     if member_ids:
-        found = {m for (m,) in db.query(Member.id).filter(Member.id.in_(member_ids)).all()}
+        # Scoped to the program, so a member id from another program reads as
+        # missing rather than being pulled into this program's segment.
+        found = {
+            m
+            for (m,) in db.query(Member.id)
+            .filter(Member.id.in_(member_ids), Member.program_id == program.id)
+            .all()
+        }
         missing = member_ids - found
         if missing:
             raise HTTPException(404, f"Member(s) not found: {', '.join(str(i) for i in missing)}")
@@ -97,7 +139,7 @@ def assign_segment_to_members(segment_id: UUID, body: MemberAssignRequest, db: S
     # Covers both newly-assigned members and pre-existing ones, so it also
     # backfills any challenge that was bulk-assigned to this segment before
     # this endpoint carried the sync.
-    sync_assignments_for_segments(db, {segment_id}, member_ids)
+    sync_assignments_for_segments(db, program, {segment_id}, member_ids)
 
     db.commit()
     return MemberAssignResult(segment_id=segment_id, assigned=assigned, skipped=skipped)

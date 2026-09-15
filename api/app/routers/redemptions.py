@@ -5,21 +5,33 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
-from app.models import Member, Redemption, RedemptionSource, TransactionType
+from app.core.program import get_program
+from app.models import Member, Program, Redemption, RedemptionSource, TransactionType
 from app.schemas import RedemptionOut
 from app.services.points import record_transaction
 from app.services.rewards import assert_available, consume_stock, get_reward_or_404, grant_prize
+from app.services.scoping import get_scoped_or_404
 
 router = APIRouter(tags=["Redemptions"])
 
 
 @router.post("/members/{member_id}/redeem/{reward_id}", response_model=RedemptionOut, status_code=201)
-def redeem_reward(member_id: UUID, reward_id: UUID, db: Session = Depends(get_db)):
-    member = db.query(Member).filter(Member.id == member_id).with_for_update().first()
+def redeem_reward(
+    member_id: UUID,
+    reward_id: UUID,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    member = (
+        db.query(Member)
+        .filter(Member.id == member_id, Member.program_id == program.id)
+        .with_for_update()
+        .first()
+    )
     if not member:
         raise HTTPException(404, "Member not found")
 
-    reward = get_reward_or_404(db, reward_id, lock=True)
+    reward = get_reward_or_404(db, reward_id, program, lock=True)
     assert_available(reward)
     if member.total_points < reward.points_cost:
         raise HTTPException(400, f"Insufficient points: has {member.total_points}, needs {reward.points_cost}")
@@ -43,12 +55,15 @@ def redeem_reward(member_id: UUID, reward_id: UUID, db: Session = Depends(get_db
 
 
 @router.post("/members/{member_id}/prizes/{reward_id}", response_model=RedemptionOut, status_code=201)
-def assign_prize(member_id: UUID, reward_id: UUID, db: Session = Depends(get_db)):
-    member = db.get(Member, member_id)
-    if not member:
-        raise HTTPException(404, "Member not found")
+def assign_prize(
+    member_id: UUID,
+    reward_id: UUID,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    member = get_scoped_or_404(db, Member, member_id, program, "Member")
 
-    reward = get_reward_or_404(db, reward_id, lock=True)
+    reward = get_reward_or_404(db, reward_id, program, lock=True)
     assert_available(reward)
 
     redemption = grant_prize(db, member.id, reward)
@@ -64,9 +79,11 @@ def list_member_prizes(
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
 ):
-    if not db.get(Member, member_id):
-        raise HTTPException(404, "Member not found")
+    # Resolving the member inside the program scopes the rows below: a
+    # redemption hangs off the membership, so it cannot belong to another one.
+    get_scoped_or_404(db, Member, member_id, program, "Member")
     # joinedload the reward so serializing RedemptionOut.reward doesn't lazy-load
     # one query per row (N+1).
     q = (
@@ -85,9 +102,9 @@ def list_member_redemptions(
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
 ):
-    if not db.get(Member, member_id):
-        raise HTTPException(404, "Member not found")
+    get_scoped_or_404(db, Member, member_id, program, "Member")
     # joinedload the reward so serializing RedemptionOut.reward doesn't lazy-load
     # one query per row (N+1).
     return (

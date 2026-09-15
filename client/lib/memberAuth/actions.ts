@@ -1,9 +1,11 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import type { ActionState } from "@/lib/action-state";
 import { ApiError, apiRequest } from "@/lib/api";
+import { MEMBER_PROGRAM_COOKIE, memberProgramId } from "@/lib/server/program";
 import type { Member } from "@/lib/types";
 import { createMemberSession, destroySession } from "./session";
 
@@ -21,7 +23,11 @@ export async function requestLoginCode(
   if (!email) return { ok: false, error: "Enter your email address." };
 
   try {
-    await apiRequest("/auth/login", { method: "POST", json: { email } });
+    await apiRequest("/auth/login", {
+      method: "POST",
+      json: { email },
+      programId: await memberProgramId(),
+    });
     return { ok: true };
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message };
@@ -45,6 +51,7 @@ export async function requestSignupCode(
     await apiRequest("/auth/signup", {
       method: "POST",
       json: { email, name, phone: phone || undefined },
+      programId: await memberProgramId(),
     });
     return { ok: true };
   } catch (e) {
@@ -74,6 +81,7 @@ export async function verifyLoginCode(
     const result = await apiRequest<{ member: Member }>("/auth/verify", {
       method: "POST",
       json: { email, code },
+      programId: await memberProgramId(),
     });
     member = result.member;
   } catch (e) {
@@ -82,11 +90,17 @@ export async function verifyLoginCode(
     return { ok: false, error: "Something went wrong. Please try again." };
   }
 
-  await createMemberSession(member.id);
+  // The program comes back on the membership rather than being assumed from
+  // the cookie: a login with no cookie resolves to the API's default program,
+  // and the session has to record where the member actually landed.
+  await createMemberSession(member.id, member.programId);
   redirect("/home"); // throws NEXT_REDIRECT - keep outside any try/catch
 }
 
 export async function memberLogout(): Promise<void> {
   await destroySession();
+  // Forget the program too: the next person to sign in on this browser should
+  // land in the deployment's own program, not wherever the last one wandered.
+  (await cookies()).delete(MEMBER_PROGRAM_COOKIE);
   redirect("/");
 }

@@ -23,13 +23,19 @@ import uuid
 import resend
 from resend.exceptions import ResendError
 
-from app.models import DOIType, Member
+from app.models import DOIType, Member, MemberIdentity
 from app.services.email_verification import (EmailDeliveryError,
                                              _send_verification_email)
 
 # Never persisted - the send path only reads the address and (for link emails)
-# the id off it.
-MEMBER = Member(id=uuid.uuid4(), name="Test Member", email="member@example.com")
+# the id off it. The address lives on the identity, which the membership reads
+# through, so both objects are needed even detached.
+MEMBER = Member(
+    id=uuid.uuid4(),
+    identity=MemberIdentity(
+        id=uuid.uuid4(), name="Test Member", email="member@example.com"
+    ),
+)
 
 # (label, exception raised by the SDK, expected `transient`, text expected in reason)
 CASES = [
