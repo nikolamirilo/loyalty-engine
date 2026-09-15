@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import type { ActionState } from "@/lib/action-state";
 import { ApiError, apiRequest } from "@/lib/api";
+import { memberProgramId } from "@/lib/server/program";
 import { getSessionMemberId } from "@/lib/memberAuth/session";
 
 /**
@@ -35,6 +36,7 @@ export async function updateProfile(
       // update with `exclude_none`, so a null would be dropped and the old
       // number would stay on the record.
       json: { name, email, phone },
+      programId: await memberProgramId(),
     });
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message };
@@ -64,6 +66,7 @@ export async function purchaseProduct(productId: string): Promise<ActionState> {
     await apiRequest(`/members/${memberId}/purchases`, {
       method: "POST",
       json: { productId, quantity: 1 },
+      programId: await memberProgramId(),
     });
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message };

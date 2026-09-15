@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getBalance, getPrizes } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { getSessionMemberId } from "@/lib/memberAuth/session";
+import { memberProgramId } from "@/lib/server/program";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -19,12 +20,13 @@ export default async function WalletPage() {
   const memberId = await getSessionMemberId();
   if (!memberId) redirect("/login");
 
+  const programId = await memberProgramId();
   const [balance, prizes] = await Promise.all([
-    getBalance(memberId),
+    getBalance(memberId, programId),
     // "assigned" prizes are the ones granted to the member that they haven't
     // paid points for ("redeemed" is the other `RedemptionSource`) - i.e. the
     // products they have that aren't redeemed yet.
-    getPrizes(memberId, "assigned"),
+    getPrizes(memberId, "assigned", programId),
   ]);
 
   return (

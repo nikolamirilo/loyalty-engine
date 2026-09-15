@@ -140,6 +140,52 @@ def main() -> None:
     crossed = get(f"/members/{retail_member}/balance", "airline-demo")
     check(crossed.status_code == 404, f"cross-program balance answered {crossed.status_code}, expected 404")
 
+    # 6b. A member can see where else they are a member, which is what the
+    # member app's program switcher is built on.
+    listed = get(f"/members/{retail_member}/programs", "retail-demo")
+    check(listed.status_code == 200, f"listing a member's programs answered {listed.status_code}")
+    by_slug = {p["slug"]: p for p in listed.json()}
+    check(
+        by_slug["retail-demo"]["memberId"] == retail_member
+        and by_slug["airline-demo"]["memberId"] == airline_member,
+        f"a member's programs did not carry their two membership ids: {listed.json()}",
+    )
+
+    # Switching to a program they already belong to returns that same
+    # membership rather than creating a second one.
+    switched = post(f"/members/{retail_member}/programs/{airline}", {}, "retail-demo")
+    check(switched.status_code == 200, f"switching program answered {switched.status_code}: {switched.text}")
+    check(
+        switched.json()["id"] == airline_member,
+        "switching to a joined program created a duplicate membership",
+    )
+    check(
+        switched.json()["pointsBalance"] == 50,
+        "switching lost the balance the member already had there",
+    )
+
+    # Switching to one they have never joined enrols them, from zero.
+    newcomer = post("/members", {"name": "Retail Only", "email": "solo@example.com"}, "retail-demo")
+    solo = newcomer.json()["id"]
+    post(f"/members/{solo}/points/earn", {"points": 30}, "retail-demo")
+    unjoined = {
+        p["slug"]: p for p in get(f"/members/{solo}/programs", "retail-demo").json()
+    }
+    check(
+        unjoined["airline-demo"]["memberId"] is None,
+        "a program the member never joined reported a membership",
+    )
+    joined = post(f"/members/{solo}/programs/{airline}", {}, "retail-demo")
+    check(joined.status_code == 200, f"joining a new program answered {joined.status_code}: {joined.text}")
+    check(
+        joined.json()["id"] != solo and joined.json()["pointsBalance"] == 0,
+        f"joining a program did not start from zero: {joined.json()}",
+    )
+    check(
+        joined.json()["email"] == "solo@example.com",
+        "the new membership lost the person behind it",
+    )
+
     # 7. No header resolves to the default program.
     default_rewards = get("/rewards").json()
     check(

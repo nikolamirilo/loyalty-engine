@@ -33,3 +33,14 @@ class ProgramOut(CamelModel):
     description: Optional[str] = None
     is_default: bool
     created_at: datetime
+
+
+class MemberProgramOut(ProgramOut):
+    """A program as seen by one person.
+
+    ``member_id`` is their membership in it, or null when they have not joined
+    it yet - which is what lets the member app offer every program in one list
+    and enrol them on the way in.
+    """
+
+    member_id: Optional[UUID] = None

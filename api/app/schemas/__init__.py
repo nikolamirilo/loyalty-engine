@@ -48,7 +48,12 @@ from app.schemas.points import (
     SpendPointsRequest,
 )
 from app.schemas.product import ProductCreate, ProductOut, ProductUpdate
-from app.schemas.program import ProgramCreate, ProgramOut, ProgramUpdate
+from app.schemas.program import (
+    MemberProgramOut,
+    ProgramCreate,
+    ProgramOut,
+    ProgramUpdate,
+)
 from app.schemas.purchase import PurchaseCreate, PurchaseOut, PurchaseStatsOut
 from app.schemas.redemption import RedemptionOut
 from app.schemas.reward import RewardCreate, RewardOut, RewardUpdate
@@ -89,6 +94,7 @@ __all__ = [
     "MemberAttributeUpdate",
     "MemberCountOut",
     "MemberCreate",
+    "MemberProgramOut",
     "MemberOut",
     "MemberStatsOut",
     "MemberUpdate",

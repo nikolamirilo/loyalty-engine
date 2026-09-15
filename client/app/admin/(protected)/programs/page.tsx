@@ -2,8 +2,11 @@ import { getPrograms } from "@/lib/api";
 import { activeProgramId } from "@/lib/server/program";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { switchProgram } from "@/lib/programs/actions";
+import { Button } from "@/components/ui/Button";
 import {
   DeleteProgramButton,
+  EditProgramButton,
   NewProgramButton,
 } from "@/components/programs/ProgramActions";
 
@@ -64,11 +67,22 @@ export default async function ProgramsPage() {
                       </p>
                     )}
                   </div>
-                  {/* The default program is what a request with no program
-                      header falls back to, so the API refuses to delete it. */}
-                  {!program.isDefault && (
-                    <DeleteProgramButton program={program} />
-                  )}
+                  <div className="flex shrink-0 items-center gap-1">
+                    {!active && (
+                      <form action={switchProgram}>
+                        <input type="hidden" name="slug" value={program.slug} />
+                        <Button type="submit" variant="secondary" size="sm">
+                          Switch to
+                        </Button>
+                      </form>
+                    )}
+                    <EditProgramButton program={program} />
+                    {/* The default program is what a request with no program
+                        header falls back to, so the API refuses to delete it. */}
+                    {!program.isDefault && (
+                      <DeleteProgramButton program={program} />
+                    )}
+                  </div>
                 </Card>
               </li>
             );

@@ -19,9 +19,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models import Member, MemberIdentity, MemberLoginCode, Program
-from app.services.custom_attributes import defaults_for_new_member
 from app.services.email_sending import EmailDeliveryError, code_email_html, send_email
-from app.services.tiers import apply_tier
+from app.services.memberships import enrol, find_membership, join
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -39,32 +38,6 @@ def _as_aware(value: datetime) -> datetime:
 
 def find_identity_by_email(db: Session, email: str) -> Optional[MemberIdentity]:
     return db.query(MemberIdentity).filter(MemberIdentity.email == email).first()
-
-
-def find_membership(db: Session, program: Program, identity: MemberIdentity) -> Optional[Member]:
-    return (
-        db.query(Member)
-        .filter(Member.identity_id == identity.id, Member.program_id == program.id)
-        .first()
-    )
-
-
-def enrol(db: Session, program: Program, identity: MemberIdentity) -> Member:
-    """Give `identity` a membership in `program`, seeded like a new member.
-
-    Signing in with an email that exists but has never joined this program
-    enrols the person rather than rejecting them: one test account is then
-    usable across every demo without being recreated in each.
-    """
-    member = Member(
-        program_id=program.id,
-        identity_id=identity.id,
-        custom_attributes=defaults_for_new_member(db, program.id),
-    )
-    db.add(member)
-    db.flush()
-    apply_tier(db, member)
-    return member
 
 
 def _generate_code() -> str:
@@ -205,7 +178,7 @@ def verify_login_code(db: Session, program: Program, email: str, code: str) -> M
     row.consumed_at = _now()
     # The code proves who they are; the program comes from the request, so a
     # member signing into a program they have not joined is enrolled here.
-    member = find_membership(db, program, identity) or enrol(db, program, identity)
+    member = join(db, program, identity)
     db.commit()
     db.refresh(member)
     return member

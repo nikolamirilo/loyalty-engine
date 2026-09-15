@@ -12,6 +12,7 @@ import type {
   ChallengeProgress,
   ChallengeStatus,
   Member,
+  MemberProgram,
   PointsTransaction,
   Product,
   Program,
@@ -188,10 +189,19 @@ export const getPrograms = () =>
 export const getMembers = () =>
   apiRequest<Member[]>("/members", { query: { limit: 1000 } });
 
-export const getMember = (id: string) => apiRequest<Member>(`/members/${id}`);
+/**
+ * The member-facing app passes `programId` explicitly on these, because the
+ * member and the console each select their own program and one person can be
+ * signed into both at once (see lib/server/program.ts).
+ */
+export const getMember = (id: string, programId?: string) =>
+  apiRequest<Member>(`/members/${id}`, { programId });
 
-export const getBalance = (id: string) =>
-  apiRequest<Balance>(`/members/${id}/balance`);
+export const getMemberPrograms = (id: string, programId?: string) =>
+  apiRequest<MemberProgram[]>(`/members/${id}/programs`, { programId });
+
+export const getBalance = (id: string, programId?: string) =>
+  apiRequest<Balance>(`/members/${id}/balance`, { programId });
 
 export const getTransactions = (id: string) =>
   apiRequest<PointsTransaction[]>(`/members/${id}/transactions`, {
@@ -203,9 +213,14 @@ export const getRedemptions = (id: string) =>
     query: { limit: 200 },
   });
 
-export const getPrizes = (id: string, source?: RedemptionSource) =>
+export const getPrizes = (
+  id: string,
+  source?: RedemptionSource,
+  programId?: string,
+) =>
   apiRequest<Redemption[]>(`/members/${id}/prizes`, {
     query: { limit: 200, source },
+    programId,
   });
 
 export const getMemberChallenges = (id: string, status?: ChallengeStatus) =>
@@ -220,21 +235,28 @@ export const getRewards = (activeOnly = false) =>
 
 export const getReward = (id: string) => apiRequest<Reward>(`/rewards/${id}`);
 
-export const getProducts = (activeOnly = false) =>
+export const getProducts = (activeOnly = false, programId?: string) =>
   apiRequest<Product[]>("/products", {
     query: { limit: 1000, activeOnly },
+    programId,
   });
 
 export const getProduct = (id: string) => apiRequest<Product>(`/products/${id}`);
 
-export const getMemberPurchases = (id: string) =>
+export const getMemberPurchases = (id: string, programId?: string) =>
   apiRequest<Purchase[]>(`/members/${id}/purchases`, {
     query: { limit: 200 },
+    programId,
   });
 
-export const getPurchaseStats = (id: string, days?: number) =>
+export const getPurchaseStats = (
+  id: string,
+  days?: number,
+  programId?: string,
+) =>
   apiRequest<PurchaseStats>(`/members/${id}/purchase-stats`, {
     query: { days },
+    programId,
   });
 
 export const getChallenges = (activeOnly = false) =>

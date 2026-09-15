@@ -25,6 +25,14 @@ export interface Program {
   createdAt: string;
 }
 
+/**
+ * A program as seen by one person: `memberId` is their membership in it, or
+ * null when they have not joined it yet.
+ */
+export interface MemberProgram extends Program {
+  memberId: UUID | null;
+}
+
 export interface Tier {
   id: UUID;
   name: string;

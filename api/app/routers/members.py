@@ -13,11 +13,13 @@ from app.schemas import (
     MemberCountOut,
     MemberCreate,
     MemberOut,
+    MemberProgramOut,
     MemberStatsOut,
     MemberUpdate,
 )
 from app.services.challenges import sync_assignments_for_segments
 from app.services.custom_attributes import defaults_for_new_member, validate_payload
+from app.services.memberships import join
 from app.services.tiers import apply_tier
 
 router = APIRouter(prefix="/members", tags=["Members"])
@@ -218,6 +220,64 @@ def get_member(
     program: Program = Depends(get_program),
 ):
     return _get_member_or_404(db, member_id, program)
+
+
+@router.get("/{member_id}/programs", response_model=list[MemberProgramOut])
+def list_member_programs(
+    member_id: UUID,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    """Every program, marked with this person's membership in each.
+
+    Deliberately spans programs: it answers "where else am I a member", which
+    is what the member app's program switcher and the console's cross-program
+    view are both asking. Only the person behind `member_id` is exposed, never
+    another program's data.
+    """
+    member = _get_member_or_404(db, member_id, program)
+    joined = {
+        m.program_id: m.id
+        for m in db.query(Member).filter(Member.identity_id == member.identity_id).all()
+    }
+    return [
+        MemberProgramOut(
+            id=p.id,
+            name=p.name,
+            slug=p.slug,
+            description=p.description,
+            is_default=p.is_default,
+            created_at=p.created_at,
+            member_id=joined.get(p.id),
+        )
+        for p in db.query(Program).order_by(Program.created_at.asc()).all()
+    ]
+
+
+@router.post("/{member_id}/programs/{program_id}", response_model=MemberOut)
+def join_program(
+    member_id: UUID,
+    program_id: UUID,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    """This person's membership in `program_id`, joining them if it is new.
+
+    Switching program is the one operation that has to reach across the
+    boundary, so `program_id` is looked up unscoped on purpose. The caller is
+    still proving who they are with a `member_id` inside the program the
+    request addresses; all this returns is the same person's membership
+    elsewhere, starting from zero points if they had none.
+    """
+    member = _get_member_or_404(db, member_id, program)
+    target = db.get(Program, program_id)
+    if not target:
+        raise HTTPException(404, "Program not found")
+
+    membership = join(db, target, member.identity)
+    db.commit()
+    db.refresh(membership)
+    return membership
 
 
 @router.patch("/{member_id}", response_model=MemberOut)

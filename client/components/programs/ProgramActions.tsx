@@ -1,12 +1,51 @@
 "use client";
 
-import { createProgram, removeProgram } from "@/lib/programs/actions";
+import { createProgram, removeProgram, updateProgram } from "@/lib/programs/actions";
 import type { Program } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { Field, Input } from "@/components/ui/Field";
 import { FormDialog } from "@/components/ui/FormDialog";
-import { PlusIcon, TrashIcon } from "@/components/ui/icons";
+import { PencilIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
+
+/** Shared between the create and edit dialogs. */
+function ProgramFields({ program }: { program?: Program }) {
+  return (
+    <>
+      <Field label="Name" htmlFor="program-name">
+        <Input
+          id="program-name"
+          name="name"
+          placeholder="e.g. Retail Demo"
+          defaultValue={program?.name}
+          required
+        />
+      </Field>
+      <Field
+        label="Slug"
+        htmlFor="program-slug"
+        hint="Lowercase letters, numbers and hyphens. Used to address the program in API calls."
+      >
+        <Input
+          id="program-slug"
+          name="slug"
+          placeholder="e.g. retail-demo"
+          pattern="[a-z0-9]+(-[a-z0-9]+)*"
+          defaultValue={program?.slug}
+          required
+        />
+      </Field>
+      <Field label="Description" htmlFor="program-description">
+        <Input
+          id="program-description"
+          name="description"
+          placeholder="What this demo is for"
+          defaultValue={program?.description ?? ""}
+        />
+      </Field>
+    </>
+  );
+}
 
 export function NewProgramButton() {
   return (
@@ -21,34 +60,37 @@ export function NewProgramButton() {
       action={createProgram}
       submitLabel="Create program"
     >
-      <Field label="Name" htmlFor="program-name">
-        <Input
-          id="program-name"
-          name="name"
-          placeholder="e.g. Retail Demo"
-          required
+      <ProgramFields />
+    </FormDialog>
+  );
+}
+
+export function EditProgramButton({ program }: { program: Program }) {
+  return (
+    <FormDialog
+      trigger={
+        <Button variant="ghost" size="icon" aria-label={`Edit ${program.name}`}>
+          <PencilIcon />
+        </Button>
+      }
+      title={`Edit ${program.name}`}
+      action={updateProgram}
+      submitLabel="Save changes"
+    >
+      <input type="hidden" name="id" value={program.id} />
+      <ProgramFields program={program} />
+      <label className="flex items-center gap-2 text-sm text-foreground">
+        <input
+          type="checkbox"
+          name="isDefault"
+          defaultChecked={program.isDefault}
+          // Already the default: unchecking it here would leave no program for
+          // a request without a header to land on, so promote another instead.
+          disabled={program.isDefault}
+          className="h-4 w-4 cursor-pointer rounded border-line"
         />
-      </Field>
-      <Field
-        label="Slug"
-        htmlFor="program-slug"
-        hint="Lowercase letters, numbers and hyphens. Used to address the program in API calls."
-      >
-        <Input
-          id="program-slug"
-          name="slug"
-          placeholder="e.g. retail-demo"
-          pattern="[a-z0-9]+(-[a-z0-9]+)*"
-          required
-        />
-      </Field>
-      <Field label="Description" htmlFor="program-description">
-        <Input
-          id="program-description"
-          name="description"
-          placeholder="What this demo is for"
-        />
-      </Field>
+        Use as the default program
+      </label>
     </FormDialog>
   );
 }

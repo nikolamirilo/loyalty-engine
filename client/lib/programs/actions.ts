@@ -96,6 +96,40 @@ export async function createProgram(
   }
 }
 
+export async function updateProgram(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const id = String(fd.get("id") ?? "").trim();
+  const name = String(fd.get("name") ?? "").trim();
+  const slug = String(fd.get("slug") ?? "").trim();
+  const description = String(fd.get("description") ?? "").trim();
+  const isDefault = fd.get("isDefault") === "on";
+  if (!id) return { ok: false, error: "No program selected." };
+  if (!name || !slug) return { ok: false, error: "Enter a name and a slug." };
+
+  try {
+    const before = await apiRequest<Program>(`/programs/${id}`, { programId: null });
+    await apiRequest<Program>(`/programs/${id}`, {
+      method: "PATCH",
+      json: { name, slug, description: description || null, isDefault },
+      programId: null,
+    });
+
+    // The cookie holds a slug, so renaming the program you are viewing would
+    // otherwise point it at nothing.
+    const selected = (await cookies()).get(PROGRAM_COOKIE)?.value;
+    if (slug !== before.slug && (selected === before.slug || selected === before.id)) {
+      await setProgramCookie(slug);
+    }
+
+    refreshConsole();
+    return { ok: true, message: "Program updated." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 export async function removeProgram(id: string): Promise<ActionState> {
   if (!id) return { ok: false, error: "No program selected." };
 

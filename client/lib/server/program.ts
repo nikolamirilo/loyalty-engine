@@ -3,35 +3,40 @@ import "server-only";
 import { cookies } from "next/headers";
 
 /**
- * Which program the current request addresses — SERVER ONLY.
+ * Which program a request addresses — SERVER ONLY.
  *
  * The API isolates every dataset by program and picks one from the
- * `X-Program-Id` header (a program slug or id). This resolves what that header
- * should say:
+ * `X-Program-Id` header (a program slug or id). The two surfaces choose it
+ * independently, and each has its own cookie, because one person can be signed
+ * into both at once while looking at different programs:
  *
- *  - the admin console sends whichever program the switcher last selected,
- *    stored in a cookie;
- *  - the member app has no switcher, so it serves the one program its
- *    deployment is pointed at (`MEMBER_PROGRAM`), which is how one demo gets
- *    its own URL;
- *  - when neither applies the header is omitted and the API falls back to its
- *    default program, which is what keeps a fresh install working.
+ *  - the console sends whatever its sidebar switcher last selected;
+ *  - the member app sends whatever the account page last selected, falling
+ *    back to `MEMBER_PROGRAM` so a deployment can be pinned to one demo.
  *
- * The cookie is not signed. The single admin credential may select any program
- * through the switcher anyway, so forging it grants nothing that clicking does
- * not. If per-program access control is ever added, this has to move into the
- * signed session token instead.
+ * Neither cookie is signed. Both surfaces let you pick any program through the
+ * UI anyway, so forging one grants nothing that clicking does not. If
+ * per-program access control is ever added, these have to move into the signed
+ * session tokens instead.
  */
 
 export const PROGRAM_COOKIE = "admin_program";
+export const MEMBER_PROGRAM_COOKIE = "member_program";
 
-/** The program a member-app deployment serves, if it is pointed at one. */
+/** The program a member-app deployment is pinned to, if any. */
 export function memberProgram(): string | undefined {
   const raw = process.env.MEMBER_PROGRAM?.trim();
   return raw ? raw : undefined;
 }
 
+/** The console's selected program. */
 export async function activeProgramId(): Promise<string | undefined> {
   const cookieStore = await cookies();
   return cookieStore.get(PROGRAM_COOKIE)?.value ?? memberProgram();
+}
+
+/** The signed-in member's selected program. */
+export async function memberProgramId(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get(MEMBER_PROGRAM_COOKIE)?.value ?? memberProgram();
 }
