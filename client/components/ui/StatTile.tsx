@@ -57,7 +57,7 @@ export function StatTile({
     <Card className={PADDING_SIZE[size]}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[13px] font-medium text-muted">{label}</p>
+          <p className="text-[0.8125rem] font-medium text-muted">{label}</p>
           <p
             className={cn(
               "font-semibold tracking-tight text-foreground",

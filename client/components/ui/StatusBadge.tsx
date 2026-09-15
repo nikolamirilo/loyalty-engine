@@ -28,7 +28,7 @@ export function ChallengeStatusBadge({ status }: { status: ChallengeStatus }) {
   const { tone, label, Icon } = CHALLENGE[status];
   return (
     <Badge tone={tone}>
-      <Icon className="text-[13px]" />
+      <Icon className="text-[0.8125rem]" />
       {label}
     </Badge>
   );
@@ -47,7 +47,7 @@ export function TransactionBadge({ type }: { type: TransactionType }) {
   const { tone, label, Icon } = TRANSACTION[type];
   return (
     <Badge tone={tone}>
-      <Icon className="text-[13px]" />
+      <Icon className="text-[0.8125rem]" />
       {label}
     </Badge>
   );
@@ -56,12 +56,12 @@ export function TransactionBadge({ type }: { type: TransactionType }) {
 export function ActiveBadge({ active }: { active: boolean }) {
   return active ? (
     <Badge tone="success">
-      <CheckCircleIcon className="text-[13px]" />
+      <CheckCircleIcon className="text-[0.8125rem]" />
       Active
     </Badge>
   ) : (
     <Badge tone="neutral">
-      <BanIcon className="text-[13px]" />
+      <BanIcon className="text-[0.8125rem]" />
       Inactive
     </Badge>
   );
@@ -70,12 +70,12 @@ export function ActiveBadge({ active }: { active: boolean }) {
 export function VerifiedBadge({ verified }: { verified: boolean }) {
   return verified ? (
     <Badge tone="success">
-      <CheckCircleIcon className="text-[13px]" />
+      <CheckCircleIcon className="text-[0.8125rem]" />
       Verified
     </Badge>
   ) : (
     <Badge tone="neutral">
-      <BanIcon className="text-[13px]" />
+      <BanIcon className="text-[0.8125rem]" />
       Unverified
     </Badge>
   );

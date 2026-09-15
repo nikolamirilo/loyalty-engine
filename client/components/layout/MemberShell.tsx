@@ -106,7 +106,14 @@ export function MemberShell({
 
   return (
     <CampaignProvider memberId={memberId}>
-      <div className="min-h-dvh md:grid md:h-dvh md:place-items-center md:overflow-hidden md:bg-surface-2 md:p-6">
+      {/* Opts this subtree out of the viewport-driven root font size (see
+          globals.css): the frame below is sized in literal pixels while its
+          contents are rem, so a larger root would overflow it. Big screens are
+          already handled here by scaling the whole frame. */}
+      <div
+        data-app="member"
+        className="min-h-dvh md:grid md:h-dvh md:place-items-center md:overflow-hidden md:bg-surface-2 md:p-6"
+      >
         {/* The phone body: a 390x844 black slab that the scale transform
             sizes to 90dvh. It deliberately does not clip its overflow, so the
             side buttons can protrude past its edge. Centering it against a
@@ -136,7 +143,7 @@ export function MemberShell({
 
             {/* Android status bar - sits outside the scrolling wrapper so it
                 stays put while app content scrolls beneath it. */}
-            <div className="hidden h-7 shrink-0 items-center justify-between px-5 text-[11px] font-semibold text-foreground md:flex">
+            <div className="hidden h-7 shrink-0 items-center justify-between px-5 text-[0.6875rem] font-semibold text-foreground md:flex">
               <span>9:41</span>
               <div className="flex items-center gap-1.5">
                 <SignalIcon className="text-xs" />

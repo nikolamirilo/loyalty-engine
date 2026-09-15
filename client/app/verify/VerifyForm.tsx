@@ -30,7 +30,7 @@ export function VerifyForm({
         <p className="text-sm font-medium text-foreground">
           {state.message ?? "Your email address is verified."}
         </p>
-        <p className="text-[13px] text-muted">You can close this page.</p>
+        <p className="text-[0.8125rem] text-muted">You can close this page.</p>
       </div>
     );
   }

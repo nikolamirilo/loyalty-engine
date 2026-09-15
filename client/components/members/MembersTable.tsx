@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { preloadMember } from "@/lib/swr/preload";
+import { usePreload } from "@/lib/swr/preload";
 import { formatNumber, memberTier } from "@/lib/format";
 import type { Member, Tier } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
@@ -22,6 +22,7 @@ export function MembersTable({
   members: Member[];
   tiers: Tier[];
 }) {
+  const preload = usePreload();
   return (
     <Table>
       <THead>
@@ -41,8 +42,8 @@ export function MembersTable({
               <TD>
                 <Link
                   href={`/admin/members/${member.id}`}
-                  onMouseEnter={() => preloadMember(member.id)}
-                  onFocus={() => preloadMember(member.id)}
+                  onMouseEnter={() => preload.member(member.id)}
+                  onFocus={() => preload.member(member.id)}
                   className="flex items-center gap-3"
                 >
                   <Avatar name={member.name} />

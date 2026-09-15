@@ -1,70 +1,98 @@
 "use client";
 
-import { preload } from "swr";
+import { useCallback, useMemo } from "react";
+import { useSWRConfig } from "swr";
 
 import { fetcher } from "./fetcher";
 import { keys } from "./keys";
-
-const warm = (key: string) => {
-  // Best-effort: this only warms the cache ahead of navigation, and the page's
-  // own useSWR hook re-fetches (and surfaces real errors) on mount regardless.
-  // Swallow failures here so a transient/aborted prefetch never becomes an
-  // unhandled rejection.
-  void preload(key, fetcher).catch(() => {});
-};
 
 /**
  * Warm the SWR cache for a route's data ahead of navigation (e.g. on nav-link
  * hover), so the page is usually already populated by the time it mounts. Keys
  * match the ones the pages' hooks use, so SWR dedupes rather than refetching.
+ *
+ * Deliberately *not* SWR's own `preload()`. That helper stores the in-flight
+ * request in SWR's global state rather than in the cache the surrounding
+ * `SWRConfig` provides, and cache keys here are bare upstream paths ("/tiers")
+ * that are identical in every program. Together those mean a warmed response
+ * outlives the per-program cache that `Providers` throws away on a switch, and
+ * the next program is served the previous one's rows - the exact failure the
+ * scoped cache exists to prevent. Writing through `mutate` keeps every warmed
+ * response inside that scoped cache, so switching program discards it too.
  */
-export const preloadRoute = {
-  dashboard: () => {
-    warm(keys.memberStats());
-    warm(keys.tiers());
-    warm(keys.rewards());
-    warm(keys.challenges());
-    warm(keys.members({ limit: 6 }));
-  },
-  members: () => {
-    warm(keys.members({ skip: 0, limit: 10 }));
-    warm(keys.membersCount());
-    warm(keys.tiers());
-    warm(keys.segments());
-    // The member form renders one input per custom attribute, so warming the
-    // definitions keeps those fields from popping in after the dialog opens.
-    warm(keys.memberAttributes());
-  },
-  rewards: () => {
-    warm(keys.rewards());
-  },
-  products: () => {
-    warm(keys.products());
-  },
-  challenges: () => {
-    warm(keys.challenges());
-    warm(keys.rewards());
-  },
-  tiers: () => {
-    warm(keys.tiers());
-    warm(keys.memberStats());
-  },
-  segments: () => {
-    warm(keys.segments());
-    // Also warm the full member list the "Assign members" dialog reads, so
-    // it's usually already cached by the time a segment card's dialog opens.
-    warm(keys.members());
-  },
-};
+export function usePreload() {
+  const { mutate, cache } = useSWRConfig();
 
-/**
- * Warm a single member's detail data on row hover. Shared resources (tiers,
- * rewards, challenges) are typically already cached from navigation, so only
- * the member-specific keys are warmed here.
- */
-export function preloadMember(id: string) {
-  warm(keys.member(id));
-  warm(keys.transactions(id));
-  warm(keys.redemptions(id));
-  warm(keys.memberChallenges(id));
+  const warm = useCallback(
+    (key: string) => {
+      // Already warm (or in flight from a previous hover): SWR would dedupe a
+      // read, but `mutate` is a write and would refetch every time.
+      if (cache.get(key)?.data !== undefined) return;
+      // Best-effort: this only warms the cache ahead of navigation, and the
+      // page's own useSWR hook fetches (and surfaces real errors) on mount
+      // regardless. Swallow failures so an aborted prefetch never becomes an
+      // unhandled rejection.
+      void mutate(key, fetcher(key), { revalidate: false }).catch(() => {});
+    },
+    [cache, mutate],
+  );
+
+  return useMemo(
+    () => ({
+      route: {
+        dashboard: () => {
+          warm(keys.memberStats());
+          warm(keys.tiers());
+          warm(keys.rewards());
+          warm(keys.challenges());
+          warm(keys.members({ limit: 6 }));
+        },
+        members: () => {
+          warm(keys.members({ skip: 0, limit: 10 }));
+          warm(keys.membersCount());
+          warm(keys.tiers());
+          warm(keys.segments());
+          // The member form renders one input per custom attribute, so warming
+          // the definitions keeps those fields from popping in after the
+          // dialog opens.
+          warm(keys.memberAttributes());
+        },
+        rewards: () => {
+          warm(keys.rewards());
+        },
+        products: () => {
+          warm(keys.products());
+        },
+        challenges: () => {
+          warm(keys.challenges());
+          warm(keys.rewards());
+        },
+        tiers: () => {
+          warm(keys.tiers());
+          warm(keys.memberStats());
+        },
+        segments: () => {
+          warm(keys.segments());
+          // Also warm the full member list the "Assign members" dialog reads,
+          // so it's usually already cached by the time a card's dialog opens.
+          warm(keys.members());
+        },
+      },
+      /**
+       * Warm a single member's detail data on row hover. Shared resources
+       * (tiers, rewards, challenges) are typically already cached from
+       * navigation, so only the member-specific keys are warmed here.
+       */
+      member: (id: string) => {
+        warm(keys.member(id));
+        warm(keys.transactions(id));
+        warm(keys.redemptions(id));
+        warm(keys.memberChallenges(id));
+      },
+    }),
+    [warm],
+  );
 }
+
+/** Route names `usePreload().route` can warm, for nav definitions. */
+export type PreloadRoute = keyof ReturnType<typeof usePreload>["route"];

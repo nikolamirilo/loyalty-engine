@@ -19,13 +19,20 @@ export function CopyIdButton({ id }: { id: string }) {
   };
 
   return (
+    // Icon-only, matching the edit button it sits beside. The label lives in
+    // `aria-label`/`title` rather than on screen: the id is a support handle a
+    // member copies when asked for it, so it does not need to announce itself
+    // next to the name it belongs to. Same shape as the admin console's
+    // icon-only row actions.
     <Button
       variant="secondary"
-      size="sm"
+      size="icon"
       onClick={copyId}
-      className="w-full justify-center sm:w-auto"
+      aria-label="Copy member ID"
+      title="Copy member ID"
+      className="shrink-0"
     >
-      <CopyIcon /> Copy ID
+      <CopyIcon />
     </Button>
   );
 }

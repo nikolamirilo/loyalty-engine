@@ -23,7 +23,7 @@ export function TierBadge({ tier }: { tier: Tier }) {
           <AwardIcon />
         </span>
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-white/80">
+          <p className="text-[0.6875rem] font-medium uppercase tracking-wider text-white/80">
             Your tier
           </p>
           <p className="truncate text-xl font-semibold tracking-tight">{tier.name}</p>

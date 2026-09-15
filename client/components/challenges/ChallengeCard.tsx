@@ -62,7 +62,7 @@ export function ChallengeCard({
           <div className="min-w-0">
             <p className="font-semibold text-foreground">{challenge.name}</p>
             {challenge.description && (
-              <p className="mt-0.5 line-clamp-2 text-[13px] text-muted">
+              <p className="mt-0.5 line-clamp-2 text-[0.8125rem] text-muted">
                 {challenge.description}
               </p>
             )}
@@ -73,33 +73,33 @@ export function ChallengeCard({
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Badge tone="neutral">
-          <TargetIcon className="text-[13px]" /> Target {formatNumber(challenge.targetValue)}
+          <TargetIcon className="text-[0.8125rem]" /> Target {formatNumber(challenge.targetValue)}
         </Badge>
         {challenge.rewardPoints > 0 && (
           <Badge tone="primary">
-            <CoinsIcon className="text-[13px]" /> {formatNumber(challenge.rewardPoints)} pts
+            <CoinsIcon className="text-[0.8125rem]" /> {formatNumber(challenge.rewardPoints)} pts
           </Badge>
         )}
         {prize && (
           <Badge tone="warning">
-            <AwardIcon className="text-[13px]" /> {prize.name}
+            <AwardIcon className="text-[0.8125rem]" /> {prize.name}
           </Badge>
         )}
         {challenge.expiresAt && (
           <Badge tone="neutral">
-            <ClockIcon className="text-[13px]" /> Expires {formatDate(challenge.expiresAt)}
+            <ClockIcon className="text-[0.8125rem]" /> Expires {formatDate(challenge.expiresAt)}
           </Badge>
         )}
         {challenge.expiryDays != null && (
           <Badge tone="neutral">
-            <ClockIcon className="text-[13px]" /> {challenge.expiryDays}d after assignment
+            <ClockIcon className="text-[0.8125rem]" /> {challenge.expiryDays}d after assignment
           </Badge>
         )}
       </div>
 
       <div className="mt-4">
-        <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
-          <TagIcon className="text-[13px]" /> Assigned segments
+        <p className="mb-1.5 flex items-center gap-1.5 text-[0.6875rem] font-medium uppercase tracking-wide text-muted">
+          <TagIcon className="text-[0.8125rem]" /> Assigned segments
         </p>
         {challenge.segments.length ? (
           <div className="flex flex-wrap gap-1.5">
@@ -110,7 +110,7 @@ export function ChallengeCard({
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-muted">Not assigned to any segment yet.</p>
+          <p className="text-[0.8125rem] text-muted">Not assigned to any segment yet.</p>
         )}
       </div>
 

@@ -127,6 +127,42 @@ html {
   color-scheme: light dark;
 }
 
+/*
+ * Scale the interface with the display instead of pinning it to 16px.
+ *
+ * Every size Tailwind emits is in rem, so moving the root font size moves text,
+ * padding, gaps, icon boxes and max-widths together - the same thing reaching
+ * for browser zoom does, minus the reaching. A console on a 27" monitor
+ * otherwise renders at the size it would on a 13" laptop, with the difference
+ * spent on empty margin.
+ *
+ * Deliberately flat below 1280px: phones, tablets and laptops already read
+ * correctly at 16px, and this should change nothing there. Above it the size
+ * grows smoothly (rather than jumping at breakpoints) and stops at 24px, which
+ * is the 150% a large display tends to want.
+ *
+ *   1280px -> 16px      1920px -> 20.4px
+ *   1600px -> 18px      2400px+ -> 24px (capped)
+ *
+ * Media queries are unaffected: per spec, font-relative units in a media query
+ * resolve against the *initial* root size, so Tailwind's breakpoints stay put
+ * at their usual pixel thresholds no matter what this does.
+ */
+html {
+  font-size: clamp(16px, 0.75vw + 6px, 24px);
+}
+
+/*
+ * The member app opts out. It is authored against a fixed 390x844 phone frame
+ * (MemberShell) whose dimensions are literal pixels while its contents are rem
+ * - growing the root would push that content straight out of the frame. It has
+ * its own answer to big screens already: the whole frame is scaled to 90% of
+ * the viewport height with a transform.
+ */
+html:has([data-app="member"]) {
+  font-size: 16px;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

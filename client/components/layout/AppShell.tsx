@@ -8,7 +8,7 @@ import Image from "next/image";
 
 import { cn } from "@/lib/format";
 import { logout } from "@/lib/auth/actions";
-import { preloadRoute } from "@/lib/swr/preload";
+import { usePreload, type PreloadRoute } from "@/lib/swr/preload";
 import {
   DashboardIcon,
   GiftIcon,
@@ -22,14 +22,23 @@ import {
   XIcon,
 } from "@/components/ui/icons";
 
-const NAV = [
-  { href: "/admin/dashboard", label: "Dashboard", Icon: DashboardIcon, exact: true, preload: preloadRoute.dashboard },
-  { href: "/admin/members", label: "Members", Icon: UsersIcon, preload: preloadRoute.members },
-  { href: "/admin/segments", label: "Segments", Icon: TagIcon, preload: preloadRoute.segments },
-  { href: "/admin/rewards", label: "Rewards", Icon: GiftIcon, preload: preloadRoute.rewards },
-  { href: "/admin/products", label: "Products", Icon: ShoppingBagIcon, preload: preloadRoute.products },
-  { href: "/admin/challenges", label: "Challenges", Icon: TargetIcon, preload: preloadRoute.challenges },
-  { href: "/admin/tiers", label: "Tiers", Icon: LayersIcon, preload: preloadRoute.tiers },
+// Warming is named rather than bound here: the warmer now writes into the
+// cache the surrounding SWRConfig provides, so it can only be resolved from
+// inside a component.
+const NAV: {
+  href: string;
+  label: string;
+  Icon: typeof DashboardIcon;
+  exact?: boolean;
+  preload: PreloadRoute;
+}[] = [
+  { href: "/admin/dashboard", label: "Dashboard", Icon: DashboardIcon, exact: true, preload: "dashboard" },
+  { href: "/admin/members", label: "Members", Icon: UsersIcon, preload: "members" },
+  { href: "/admin/segments", label: "Segments", Icon: TagIcon, preload: "segments" },
+  { href: "/admin/rewards", label: "Rewards", Icon: GiftIcon, preload: "rewards" },
+  { href: "/admin/products", label: "Products", Icon: ShoppingBagIcon, preload: "products" },
+  { href: "/admin/challenges", label: "Challenges", Icon: TargetIcon, preload: "challenges" },
+  { href: "/admin/tiers", label: "Tiers", Icon: LayersIcon, preload: "tiers" },
 ];
 
 function isActive(pathname: string, href: string, exact?: boolean): boolean {
@@ -52,7 +61,7 @@ function Brand() {
         height={36}
         unoptimized
       />
-      <span className="text-[15px] font-semibold tracking-tight text-foreground">
+      <span className="text-[0.9375rem] font-semibold tracking-tight text-foreground">
         Loyalty Engine
       </span>
     </Link>
@@ -76,17 +85,19 @@ function SignOut() {
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const preloader = usePreload();
   return (
     <ul className="space-y-1">
       {NAV.map(({ href, label, Icon, exact, preload }) => {
+        const warm = preloader.route[preload];
         const active = isActive(pathname, href, exact);
         return (
           <li key={href}>
             <Link
               href={href}
               onClick={onNavigate}
-              onMouseEnter={preload}
-              onFocus={preload}
+              onMouseEnter={warm}
+              onFocus={warm}
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
@@ -118,7 +129,7 @@ export function AppShell({
   return (
     <div className="min-h-dvh">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-line bg-surface lg:flex">
         <div className="flex h-16 items-center border-b border-line px-5">
           <Brand />
         </div>
@@ -171,7 +182,7 @@ export function AppShell({
       )}
 
       {/* Main content */}
-      <main className="lg:pl-64">
+      <main className="lg:pl-72">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {children}
         </div>

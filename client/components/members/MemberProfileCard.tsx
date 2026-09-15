@@ -156,14 +156,14 @@ function ProfileCardForm({
                     <Skeleton className="h-5 w-20 rounded-full" />
                   ) : tier ? (
                     <Badge tone="primary">
-                      <LayersIcon className="text-[13px]" /> {tier.name}
+                      <LayersIcon className="text-[0.8125rem]" /> {tier.name}
                     </Badge>
                   ) : (
                     <Badge tone="neutral">No tier</Badge>
                   )}
                   {member.segments.map((s) => (
                     <Badge key={s.id} tone="neutral">
-                      <TagIcon className="text-[13px]" /> {s.name}
+                      <TagIcon className="text-[0.8125rem]" /> {s.name}
                     </Badge>
                   ))}
                 </div>

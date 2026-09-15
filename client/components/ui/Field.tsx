@@ -24,7 +24,7 @@ export function Label({
   return (
     <label
       htmlFor={htmlFor}
-      className="mb-1.5 flex items-center justify-between gap-2 text-[13px] font-medium text-foreground"
+      className="mb-1.5 flex items-center justify-between gap-2 text-[0.8125rem] font-medium text-foreground"
     >
       <span>{children}</span>
       {hint && <span className="font-normal text-faint">{hint}</span>}

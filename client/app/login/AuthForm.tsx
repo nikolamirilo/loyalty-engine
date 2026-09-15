@@ -112,7 +112,7 @@ export function AuthForm() {
             setStep("request");
             setResetKey((k) => k + 1);
           }}
-          className="w-full cursor-pointer text-center text-[13px] text-muted hover:text-foreground"
+          className="w-full cursor-pointer text-center text-[0.8125rem] text-muted hover:text-foreground"
         >
           Use a different email
         </button>

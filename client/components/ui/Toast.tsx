@@ -101,7 +101,7 @@ function ToastCard({
   return (
     <div className="pointer-events-auto flex w-full max-w-sm animate-dialog-in items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3 shadow-lg">
       <span className={cn("mt-0.5 shrink-0 text-lg", ring)}>{icon}</span>
-      <p className="min-w-0 flex-1 text-[13px] text-foreground">{toast.message}</p>
+      <p className="min-w-0 flex-1 text-[0.8125rem] text-foreground">{toast.message}</p>
       <button
         type="button"
         onClick={onClose}

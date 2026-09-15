@@ -73,7 +73,7 @@ export function SegmentCard({ segment }: { segment: Segment }) {
         </div>
       </div>
       {segment.description && (
-        <p className="mt-3 line-clamp-2 text-[13px] text-muted">{segment.description}</p>
+        <p className="mt-3 line-clamp-2 text-[0.8125rem] text-muted">{segment.description}</p>
       )}
       <div className="mt-4 flex items-center border-t border-line pt-4">
         <AssignMembersDialog segment={segment} />
