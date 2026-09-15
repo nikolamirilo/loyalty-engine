@@ -11,15 +11,13 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Product, Purchase
+from app.models import Product, Program, Purchase
 from app.schemas.purchase import PurchaseStatsOut
+from app.services.scoping import get_scoped_or_404
 
 
-def get_product_or_404(db: Session, product_id: UUID) -> Product:
-    product = db.get(Product, product_id)
-    if not product:
-        raise HTTPException(404, "Product not found")
-    return product
+def get_product_or_404(db: Session, product_id: UUID, program: Program) -> Product:
+    return get_scoped_or_404(db, Product, product_id, program, "Product")
 
 
 def assert_purchasable(product: Product) -> None:

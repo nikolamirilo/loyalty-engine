@@ -7,25 +7,30 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models import Member, MemberAttribute
+from app.core.program import get_program
+from app.models import Member, MemberAttribute, Program
 from app.schemas import MemberAttributeCreate, MemberAttributeOut, MemberAttributeUpdate
 from app.services.custom_attributes import coerce, normalize_options, slugify
+from app.services.scoping import get_scoped_or_404
 
 # Mounted at its own prefix rather than under /members/... so the path can never
 # be parsed as a member id (see the ordering comment in routers/members.py).
 router = APIRouter(prefix="/member-attributes", tags=["Member attributes"])
 
 
-def _get_attribute_or_404(db: Session, attribute_id: UUID) -> MemberAttribute:
-    attribute = db.get(MemberAttribute, attribute_id)
-    if not attribute:
-        raise HTTPException(404, "Custom attribute not found")
-    return attribute
+def _get_attribute_or_404(
+    db: Session, attribute_id: UUID, program: Program
+) -> MemberAttribute:
+    return get_scoped_or_404(db, MemberAttribute, attribute_id, program, "Custom attribute")
 
 
-def _merge_into_all_members(db: Session, patch: Dict[str, Any]) -> None:
-    """Merge `patch` into every member's custom_attributes in one statement."""
-    db.query(Member).update(
+def _merge_into_program_members(db: Session, program: Program, patch: Dict[str, Any]) -> None:
+    """Merge `patch` into every member of `program` in one statement.
+
+    The program filter is load-bearing: without it, defining an attribute in
+    one program would rewrite the members of every other program.
+    """
+    db.query(Member).filter(Member.program_id == program.id).update(
         {
             Member.custom_attributes: Member.custom_attributes.op("||", return_type=JSONB)(
                 cast(patch, JSONB)
@@ -36,12 +41,21 @@ def _merge_into_all_members(db: Session, patch: Dict[str, Any]) -> None:
 
 
 @router.post("", response_model=MemberAttributeOut, status_code=201)
-def create_attribute(body: MemberAttributeCreate, db: Session = Depends(get_db)):
+def create_attribute(
+    body: MemberAttributeCreate,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
     key = slugify(body.label)
-    if db.query(MemberAttribute).filter(MemberAttribute.key == key).first():
+    if (
+        db.query(MemberAttribute)
+        .filter(MemberAttribute.key == key, MemberAttribute.program_id == program.id)
+        .first()
+    ):
         raise HTTPException(400, f"A custom attribute with the key '{key}' already exists")
 
     attribute = MemberAttribute(
+        program_id=program.id,
         key=key,
         label=body.label.strip(),
         type=body.type.value,
@@ -56,7 +70,7 @@ def create_attribute(body: MemberAttributeCreate, db: Session = Depends(get_db))
     # program-wide. With no default there's nothing to write: the console renders
     # from the definitions list, so an absent key and a null value look identical.
     if attribute.default_value is not None:
-        _merge_into_all_members(db, {attribute.key: attribute.default_value})
+        _merge_into_program_members(db, program, {attribute.key: attribute.default_value})
 
     db.commit()
     db.refresh(attribute)
@@ -64,20 +78,35 @@ def create_attribute(body: MemberAttributeCreate, db: Session = Depends(get_db))
 
 
 @router.get("", response_model=list[MemberAttributeOut])
-def list_attributes(db: Session = Depends(get_db)):
-    return db.query(MemberAttribute).order_by(MemberAttribute.created_at).all()
+def list_attributes(
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    return (
+        db.query(MemberAttribute)
+        .filter(MemberAttribute.program_id == program.id)
+        .order_by(MemberAttribute.created_at)
+        .all()
+    )
 
 
 @router.get("/{attribute_id}", response_model=MemberAttributeOut)
-def get_attribute(attribute_id: UUID, db: Session = Depends(get_db)):
-    return _get_attribute_or_404(db, attribute_id)
+def get_attribute(
+    attribute_id: UUID,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    return _get_attribute_or_404(db, attribute_id, program)
 
 
 @router.patch("/{attribute_id}", response_model=MemberAttributeOut)
 def update_attribute(
-    attribute_id: UUID, body: MemberAttributeUpdate, db: Session = Depends(get_db)
+    attribute_id: UUID,
+    body: MemberAttributeUpdate,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
 ):
-    attribute = _get_attribute_or_404(db, attribute_id)
+    attribute = _get_attribute_or_404(db, attribute_id, program)
     data = body.model_dump(exclude_unset=True)
 
     if "label" in data and data["label"]:
@@ -96,13 +125,18 @@ def update_attribute(
 
 
 @router.delete("/{attribute_id}", status_code=204)
-def delete_attribute(attribute_id: UUID, db: Session = Depends(get_db)):
-    attribute = _get_attribute_or_404(db, attribute_id)
-    # Strip the key from every member in the same transaction, so no orphaned
-    # values are left behind that a re-created attribute would silently inherit.
-    # The key is bound as text explicitly: `jsonb - jsonb` is not an operator,
-    # only `jsonb - text`, and the default coercion would type it from the left.
-    db.query(Member).update(
+def delete_attribute(
+    attribute_id: UUID,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    attribute = _get_attribute_or_404(db, attribute_id, program)
+    # Strip the key from every member of this program in the same transaction, so
+    # no orphaned values are left behind that a re-created attribute would
+    # silently inherit. The key is bound as text explicitly: `jsonb - jsonb` is
+    # not an operator, only `jsonb - text`, and the default coercion would type
+    # it from the left.
+    db.query(Member).filter(Member.program_id == program.id).update(
         {
             Member.custom_attributes: Member.custom_attributes.op("-", return_type=JSONB)(
                 literal(attribute.key, String)

@@ -9,6 +9,7 @@ write path (member create, member update, attribute default) goes through
 import re
 from datetime import date
 from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -104,16 +105,22 @@ def coerce(attribute: MemberAttribute, raw: Any) -> Any:
     return value or None
 
 
-def validate_payload(db: Session, payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    """Coerce a ``{key: value}`` map against the current definitions.
+def validate_payload(
+    db: Session, program_id: UUID, payload: Optional[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Coerce a ``{key: value}`` map against ``program_id``'s definitions.
 
     Unknown keys are rejected rather than stored, so the column can't drift into
-    a junk drawer and typos surface immediately instead of vanishing.
+    a junk drawer and typos surface immediately instead of vanishing. A key
+    defined in another program counts as unknown here.
     """
     if not payload:
         return {}
 
-    attributes = {a.key: a for a in db.query(MemberAttribute).all()}
+    attributes = {
+        a.key: a
+        for a in db.query(MemberAttribute).filter(MemberAttribute.program_id == program_id).all()
+    }
     unknown = [key for key in payload if key not in attributes]
     if unknown:
         raise HTTPException(400, f"Unknown custom attribute(s): {', '.join(sorted(unknown))}")
@@ -121,10 +128,10 @@ def validate_payload(db: Session, payload: Optional[Dict[str, Any]]) -> Dict[str
     return {key: coerce(attributes[key], value) for key, value in payload.items()}
 
 
-def defaults_for_new_member(db: Session) -> Dict[str, Any]:
+def defaults_for_new_member(db: Session, program_id: UUID) -> Dict[str, Any]:
     """The default values to seed on a member created without explicit values."""
     return {
         a.key: a.default_value
-        for a in db.query(MemberAttribute).all()
+        for a in db.query(MemberAttribute).filter(MemberAttribute.program_id == program_id).all()
         if a.default_value is not None
     }

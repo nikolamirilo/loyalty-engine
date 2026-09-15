@@ -48,14 +48,27 @@ def _jsonb_on_sqlite(type_, compiler, **kw):  # postgres-only type, unused by DO
 
 
 from app.main import app  # noqa: E402 - must be imported after the engine swap
-from app.models import EmailVerificationCode, Member  # noqa: E402
+from app.models import (  # noqa: E402
+    EmailVerificationCode,
+    Member,
+    MemberIdentity,
+    Program,
+)
 
 # ...as must this, a postgres-only default SQLite cannot render.
 Member.__table__.c.custom_attributes.server_default = None
 database.Base.metadata.create_all(
-    bind=database.engine, tables=[Member.__table__, EmailVerificationCode.__table__]
+    bind=database.engine,
+    tables=[
+        Program.__table__,
+        MemberIdentity.__table__,
+        Member.__table__,
+        EmailVerificationCode.__table__,
+    ],
 )
 
+PROGRAM_ID = uuid.uuid4()
+IDENTITY_ID = uuid.uuid4()
 MEMBER_ID = uuid.uuid4()
 HEADERS = {"Authorization": "Bearer test-token"}
 client = TestClient(app, raise_server_exceptions=False)
@@ -82,7 +95,13 @@ def _active_codes():
 
 def main() -> None:
     session = database.SessionLocal()
-    session.add(Member(id=MEMBER_ID, name="Test Member", email="member@example.com"))
+    # No X-Program-Id header is sent below, so the request resolves to the
+    # default program - which is why this one is flagged as such.
+    session.add(Program(id=PROGRAM_ID, name="Test", slug="test", is_default=True))
+    session.add(
+        MemberIdentity(id=IDENTITY_ID, name="Test Member", email="member@example.com")
+    )
+    session.add(Member(id=MEMBER_ID, program_id=PROGRAM_ID, identity_id=IDENTITY_ID))
     session.commit()
     session.close()
 

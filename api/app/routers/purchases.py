@@ -1,12 +1,14 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
-from app.models import Member, Purchase
+from app.core.program import get_program
+from app.models import Member, Program, Purchase
 from app.schemas import PurchaseCreate, PurchaseOut, PurchaseStatsOut
 from app.services.products import assert_purchasable, get_product_or_404, get_purchase_stats, record_purchase
+from app.services.scoping import get_scoped_or_404
 
 router = APIRouter(tags=["Purchases"])
 
@@ -14,11 +16,15 @@ DEFAULT_STATS_PERIOD_DAYS = 7
 
 
 @router.post("/members/{member_id}/purchases", response_model=PurchaseOut, status_code=201)
-def purchase_product(member_id: UUID, body: PurchaseCreate, db: Session = Depends(get_db)):
-    if not db.get(Member, member_id):
-        raise HTTPException(404, "Member not found")
+def purchase_product(
+    member_id: UUID,
+    body: PurchaseCreate,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    get_scoped_or_404(db, Member, member_id, program, "Member")
 
-    product = get_product_or_404(db, body.product_id)
+    product = get_product_or_404(db, body.product_id, program)
     assert_purchasable(product)
 
     # No balance is checked and nothing is debited: members pay by "credit
@@ -36,9 +42,11 @@ def list_member_purchases(
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
 ):
-    if not db.get(Member, member_id):
-        raise HTTPException(404, "Member not found")
+    # Resolving the member inside the program scopes the rows below: a purchase
+    # hangs off the membership, so it cannot belong to another one.
+    get_scoped_or_404(db, Member, member_id, program, "Member")
     # joinedload the product so a deleted product (product_id set NULL) doesn't
     # trigger a lazy-load per row, and so an active product isn't N+1 either.
     return (
@@ -58,7 +66,7 @@ def member_purchase_stats(
     # How many trailing days the period* fields cover (e.g. 7, 30, 90).
     days: int = Query(DEFAULT_STATS_PERIOD_DAYS, gt=0, le=365),
     db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
 ):
-    if not db.get(Member, member_id):
-        raise HTTPException(404, "Member not found")
+    get_scoped_or_404(db, Member, member_id, program, "Member")
     return get_purchase_stats(db, member_id, days)

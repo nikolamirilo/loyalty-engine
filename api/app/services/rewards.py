@@ -11,19 +11,26 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.models import Redemption, RedemptionSource, Reward
+from app.models import Program, Redemption, RedemptionSource, Reward
+from app.services.scoping import get_scoped_or_404
 
 
-def get_reward_or_404(db: Session, reward_id: UUID, lock: bool = False) -> Reward:
+def get_reward_or_404(db: Session, reward_id: UUID, program: Program, lock: bool = False) -> Reward:
     """Load a reward, optionally with ``SELECT ... FOR UPDATE``.
 
     Take the lock whenever stock will be decremented, so two concurrent
     redemptions can't both see the last unit.
     """
-    if lock:
-        reward = db.query(Reward).filter(Reward.id == reward_id).with_for_update().first()
-    else:
-        reward = db.get(Reward, reward_id)
+    if not lock:
+        return get_scoped_or_404(db, Reward, reward_id, program, "Reward")
+    # get_scoped_or_404 can't take the row lock, so the locking path repeats
+    # its filter rather than fetching twice.
+    reward = (
+        db.query(Reward)
+        .filter(Reward.id == reward_id, Reward.program_id == program.id)
+        .with_for_update()
+        .first()
+    )
     if not reward:
         raise HTTPException(404, "Reward not found")
     return reward

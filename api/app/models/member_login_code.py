@@ -9,18 +9,21 @@ from app.core.database import Base
 
 
 class MemberLoginCode(Base):
-    """A single-use OTP a member requests to sign in.
+    """A single-use OTP a person requests to sign in.
 
     Independent of ``EmailVerificationCode`` (DOI): DOI proves email
     ownership once, permanently, while a login code can be requested every
     time a member signs in. Only a hash of the code is ever persisted (see
     ``app/services/member_auth.py``), never the raw value.
+
+    Keyed to the identity, not to a membership: sign-in is by email, and the
+    program the member lands in is decided by the request, not by the code.
     """
 
     __tablename__ = "member_login_codes"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    member_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("members.id", ondelete="CASCADE"), nullable=False, index=True)
+    identity_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("member_identities.id", ondelete="CASCADE"), nullable=False, index=True)
     code_hash: Mapped[str] = mapped_column(String, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models import Member, PointsTransaction, TransactionType
+from app.core.program import get_program
+from app.models import Member, PointsTransaction, Program, TransactionType
 from app.schemas import (
     AdjustPointsRequest,
     BalanceOut,
@@ -17,8 +18,10 @@ from app.services.points import record_transaction
 router = APIRouter(prefix="/members/{member_id}", tags=["Points"])
 
 
-def _get_member_or_404(db: Session, member_id: UUID, lock: bool = False) -> Member:
-    q = db.query(Member).filter(Member.id == member_id)
+def _get_member_or_404(
+    db: Session, member_id: UUID, program: Program, lock: bool = False
+) -> Member:
+    q = db.query(Member).filter(Member.id == member_id, Member.program_id == program.id)
     if lock:
         q = q.with_for_update()
     member = q.first()
@@ -28,14 +31,23 @@ def _get_member_or_404(db: Session, member_id: UUID, lock: bool = False) -> Memb
 
 
 @router.get("/balance", response_model=BalanceOut)
-def get_balance(member_id: UUID, db: Session = Depends(get_db)):
-    member = _get_member_or_404(db, member_id)
+def get_balance(
+    member_id: UUID,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    member = _get_member_or_404(db, member_id, program)
     return BalanceOut(member_id=member.id, points_balance=member.total_points)
 
 
 @router.post("/points/earn", response_model=PointsTransactionOut, status_code=201)
-def earn_points(member_id: UUID, body: EarnPointsRequest, db: Session = Depends(get_db)):
-    member = _get_member_or_404(db, member_id, lock=True)
+def earn_points(
+    member_id: UUID,
+    body: EarnPointsRequest,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    member = _get_member_or_404(db, member_id, program, lock=True)
     multiplier = member.tier.multiplier if member.tier else 1.0
     awarded = round(body.points * multiplier)
     tx = record_transaction(db, member, awarded, TransactionType.earn, body.description)
@@ -45,8 +57,13 @@ def earn_points(member_id: UUID, body: EarnPointsRequest, db: Session = Depends(
 
 
 @router.post("/points/burn", response_model=PointsTransactionOut, status_code=201)
-def burn_points(member_id: UUID, body: SpendPointsRequest, db: Session = Depends(get_db)):
-    member = _get_member_or_404(db, member_id, lock=True)
+def burn_points(
+    member_id: UUID,
+    body: SpendPointsRequest,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    member = _get_member_or_404(db, member_id, program, lock=True)
     if member.total_points < body.points:
         raise HTTPException(400, f"Insufficient points: has {member.total_points}, needs {body.points}")
     tx = record_transaction(db, member, -body.points, TransactionType.spend, body.description)
@@ -56,8 +73,13 @@ def burn_points(member_id: UUID, body: SpendPointsRequest, db: Session = Depends
 
 
 @router.post("/points/adjust", response_model=PointsTransactionOut, status_code=201)
-def adjust_points(member_id: UUID, body: AdjustPointsRequest, db: Session = Depends(get_db)):
-    member = _get_member_or_404(db, member_id, lock=True)
+def adjust_points(
+    member_id: UUID,
+    body: AdjustPointsRequest,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    member = _get_member_or_404(db, member_id, program, lock=True)
     if member.total_points + body.points < 0:
         raise HTTPException(400, "Adjustment would result in negative balance")
     tx = record_transaction(db, member, body.points, TransactionType.adjust, body.description)
@@ -72,8 +94,11 @@ def list_transactions(
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
 ):
-    _get_member_or_404(db, member_id)
+    # Resolving the member inside the program is what scopes this: the ledger
+    # hangs off the membership, so it can only ever hold this program's rows.
+    _get_member_or_404(db, member_id, program)
     return (
         db.query(PointsTransaction)
         .filter(PointsTransaction.member_id == member_id)

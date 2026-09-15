@@ -16,6 +16,7 @@ from app.routers import (
     members,
     points,
     products,
+    programs,
     purchases,
     redemptions,
     rewards,
@@ -43,6 +44,9 @@ app = FastAPI(title=settings.project_name, version=settings.version, lifespan=li
 
 # All API routers require a valid bearer token.
 protected = [Depends(verify_token)]
+
+# Not program-scoped: this is how a caller finds out which programs exist.
+app.include_router(programs.router, dependencies=protected)
 
 app.include_router(members.router, dependencies=protected)
 app.include_router(member_attributes.router, dependencies=protected)

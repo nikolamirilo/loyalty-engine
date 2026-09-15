@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint, Uuid, text
+from sqlalchemy import DateTime, ForeignKey, Integer, UniqueConstraint, Uuid, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -10,6 +10,7 @@ from app.core.database import Base
 
 if TYPE_CHECKING:  # relationship targets, resolved by SQLAlchemy's class registry
     from app.models.challenge import ChallengeAssignment
+    from app.models.member_identity import MemberIdentity
     from app.models.points import PointsTransaction
     from app.models.purchase import Purchase
     from app.models.redemption import Redemption
@@ -18,17 +19,31 @@ if TYPE_CHECKING:  # relationship targets, resolved by SQLAlchemy's class regist
 
 
 class Member(Base):
+    """A person's membership in one program.
+
+    The person is ``identity``; this row is their standing in a single
+    program. The same identity has at most one of these per program, so
+    points, tier, purchases and challenge progress are per program while the
+    name and email behind them are shared.
+
+    Everything that hangs off a member (transactions, redemptions,
+    purchases, challenge assignments, segment memberships) points at this
+    row, which is what keeps that history inside one program without needing
+    a `program_id` of its own.
+    """
+
     __tablename__ = "members"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
-    phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    program_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    identity_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("member_identities.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     total_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     tier_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("tiers.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
-    # NULL = email not yet verified via the DOI flow (see app/services/email_verification.py).
-    email_verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     # Values for the admin-defined fields in `member_attributes`, keyed by their
     # `key`. Plain JSONB isn't change-tracked, so writes must *reassign* the dict
     # (`member.custom_attributes = {**old, **patch}`) - mutating it in place
@@ -37,12 +52,36 @@ class Member(Base):
         JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
     )
 
+    __table_args__ = (UniqueConstraint("program_id", "identity_id", name="uq_program_identity"),)
+
+    identity: Mapped["MemberIdentity"] = relationship("MemberIdentity", back_populates="memberships")
     tier: Mapped[Optional["Tier"]] = relationship("Tier", back_populates="members")
     transactions: Mapped[List["PointsTransaction"]] = relationship("PointsTransaction", back_populates="member", order_by="PointsTransaction.created_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
     redemptions: Mapped[List["Redemption"]] = relationship("Redemption", back_populates="member", order_by="Redemption.created_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
     purchases: Mapped[List["Purchase"]] = relationship("Purchase", back_populates="member", order_by="Purchase.created_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
     challenge_assignments: Mapped[List["ChallengeAssignment"]] = relationship("ChallengeAssignment", back_populates="member", order_by="ChallengeAssignment.assigned_at.desc()", cascade="all, delete-orphan", passive_deletes=True)
     segment_assignments: Mapped[List["MemberSegment"]] = relationship("MemberSegment", back_populates="member", cascade="all, delete-orphan", passive_deletes=True)
+
+    # The person's own fields live on the identity, shared across programs.
+    # These read-throughs keep `MemberOut` (and every other `from_attributes`
+    # read) working unchanged. They are deliberately read-only: a write goes
+    # to `member.identity`, so that changing a name in one program changes it
+    # everywhere, which is the point of a shared identity.
+    @property
+    def name(self) -> str:
+        return self.identity.name
+
+    @property
+    def email(self) -> str:
+        return self.identity.email
+
+    @property
+    def phone(self) -> Optional[str]:
+        return self.identity.phone
+
+    @property
+    def email_verified_at(self) -> Optional[datetime]:
+        return self.identity.email_verified_at
 
     @property
     def segments(self) -> List["Segment"]:
