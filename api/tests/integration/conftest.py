@@ -13,6 +13,7 @@ part worth tracking: localhost network time would be noise.
 import os
 import re
 import time
+import uuid
 from dataclasses import dataclass
 
 import pytest
@@ -63,9 +64,12 @@ class MeasuredClient:
     the route rather than one row per generated UUID.
     """
 
-    def __init__(self, client, token: str):
+    def __init__(self, client, token: str, program: str):
         self._client = client
-        self._headers = {"Authorization": f"Bearer {token}"}
+        # Every program-scoped route resolves X-Program-Id. Sending it on each
+        # call is what the admin console and MCP server do, so the flow
+        # exercises the same path they do.
+        self._headers = {"Authorization": f"Bearer {token}", "X-Program-Id": program}
         self.step = ""
 
     def request(self, method: str, path: str, **kwargs):
@@ -107,7 +111,36 @@ def api():
 
     # The context manager runs the lifespan, which creates the tables.
     with TestClient(app) as client:
-        yield MeasuredClient(client, os.environ["API_TOKEN"])
+        token = os.environ["API_TOKEN"]
+        auth = {"Authorization": f"Bearer {token}"}
+
+        # A freshly created schema holds no programs, and every scoped route
+        # needs one, so the flow brings its own. These calls go through the
+        # bare client rather than MeasuredClient: setting up and tearing down
+        # a program is scaffolding, and timing it would put rows in the
+        # latency report that no test made.
+        #
+        # Left as a non-default program on purpose. The flow sends the header
+        # explicitly instead of leaning on the is_default fallback, and
+        # DELETE /programs rejects the default, which would strand the
+        # program below.
+        slug = f"ci-flow-{uuid.uuid4().hex[:12]}"
+        created = client.post(
+            "/programs", headers=auth, json={"name": "CI flow test", "slug": slug}
+        )
+        if created.status_code != 201:
+            pytest.fail(
+                f"Could not create the test program: {created.status_code} {created.text}",
+                pytrace=False,
+            )
+        program_id = created.json()["id"]
+
+        try:
+            yield MeasuredClient(client, token, program_id)
+        finally:
+            # Deleting a program cascades every program-owned table, so this
+            # also clears whatever a run that failed mid-flow left behind.
+            client.delete(f"/programs/{program_id}", headers=auth)
 
 
 @pytest.fixture(scope="session")
