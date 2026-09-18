@@ -63,6 +63,8 @@ def require(name: str) -> str:
 RESULT_COLOURS = {"passed": "#16a34a", "failed": "#dc2626", "skipped": "#94a3b8"}
 
 CELL = "padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;vertical-align:top;"
+# Marks a call that belongs to the step named above it.
+CONTINUED = '<span style="color:#cbd5e1;">&#8627;</span>'
 MONO = "font-family:'SFMono-Regular',Consolas,Menlo,monospace;"
 
 
@@ -103,14 +105,21 @@ def latency_table(report: dict) -> str:
     )
 
     rows = []
+    previous = None
     for call in report["calls"]:
+        # A test makes one call for the thing it does and then more to check the
+        # result. Naming the step only on the first makes the follow-ups read as
+        # what they are - a DELETE answering 204 and then a GET answering 404 is
+        # the deletion being proved, not the delete failing.
+        step = "" if call["step"] == previous else call["step"]
+        previous = call["step"]
         outcome = call.get("outcome", "")
         colour = RESULT_COLOURS.get(outcome, "#0f172a")
         # Tint the whole row for a failure, so it is findable without reading.
         tint = ' style="background:#fef2f2;"' if outcome == "failed" else ""
         rows.append(
             f"<tr{tint}>"
-            f'<td style="{CELL}">{html.escape(call["step"])}</td>'
+            f'<td style="{CELL}">{html.escape(step) if step else CONTINUED}</td>'
             f'<td style="{CELL}{MONO}color:#475569;">{html.escape(call["method"])}</td>'
             f'<td style="{CELL}{MONO}word-break:break-all;">{html.escape(call["route"])}</td>'
             f'<td align="right" style="{CELL}{MONO}color:{colour};font-weight:600;">'
@@ -129,16 +138,20 @@ def latency_table(report: dict) -> str:
 
 def latency_text(report: dict) -> str:
     """Plain-text alternative: aligned columns, no markdown pipes."""
-    rows = [
-        [
-            call["step"],
-            call["method"],
-            call["route"],
-            str(call["status"]),
-            f"{call['ms']} ms",
-        ]
-        for call in report["calls"]
-    ]
+    rows = []
+    previous = None
+    for call in report["calls"]:
+        step = "" if call["step"] == previous else call["step"]
+        previous = call["step"]
+        rows.append(
+            [
+                step or "  \u21b3",
+                call["method"],
+                call["route"],
+                str(call["status"]),
+                f"{call['ms']} ms",
+            ]
+        )
     headers = ["Step", "Method", "Route", "Status", "Latency"]
     widths = [
         max(len(headers[i]), *(len(r[i]) for r in rows)) if rows else len(headers[i])

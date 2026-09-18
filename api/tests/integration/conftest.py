@@ -217,17 +217,23 @@ def pytest_terminal_summary(terminalreporter):
     if not targets:
         return
 
-    md_rows = [
-        [
-            c.step,
-            f"`{c.method}`",
-            f"`{c.route}`",
-            str(c.status),
-            f"{c.ms:.1f} ms",
-            _MARKDOWN_RESULT.get(OUTCOMES.get(c.step, ""), ""),
-        ]
-        for c in CALLS
-    ]
+    # The step is named once per test. Its later calls are the checks that
+    # follow the thing it did, and repeating the name there reads as if each one
+    # were a separate failure-worthy operation.
+    md_rows = []
+    previous = None
+    for c in CALLS:
+        md_rows.append(
+            [
+                "&#8627;" if c.step == previous else c.step,
+                f"`{c.method}`",
+                f"`{c.route}`",
+                str(c.status),
+                f"{c.ms:.1f} ms",
+                _MARKDOWN_RESULT.get(OUTCOMES.get(c.step, ""), ""),
+            ]
+        )
+        previous = c.step
     report = (
         "\n## API test results\n\n"
         + _markdown_table(md_rows, headers)
