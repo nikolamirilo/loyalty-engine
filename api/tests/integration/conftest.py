@@ -172,8 +172,15 @@ def pytest_terminal_summary(terminalreporter):
     terminalreporter.write_line("")
     terminalreporter.write_line(footer)
 
-    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
-    if not summary_path:
+    # GITHUB_STEP_SUMMARY is a fresh file for every step, so a later step in the
+    # job cannot read what this one wrote. REPORT_MD_PATH is a stable path the
+    # scheduled workflow asks for, so it can attach this table to its email.
+    targets = [
+        path
+        for path in (os.environ.get("GITHUB_STEP_SUMMARY"), os.environ.get("REPORT_MD_PATH"))
+        if path
+    ]
+    if not targets:
         return
 
     md_rows = [
@@ -187,13 +194,16 @@ def pytest_terminal_summary(terminalreporter):
         ]
         for c in CALLS
     ]
-    with open(summary_path, "a", encoding="utf-8") as fh:
-        fh.write("\n## API test results\n\n")
-        fh.write(_markdown_table(md_rows, headers) + "\n\n")
-        fh.write(
-            f"{len(CALLS)} calls, **{total:.1f} ms** total, "
-            f"slowest `{slowest.method} {slowest.route}` at **{slowest.ms:.1f} ms**\n"
-        )
+    report = (
+        "\n## API test results\n\n"
+        + _markdown_table(md_rows, headers)
+        + "\n\n"
+        + f"{len(CALLS)} calls, **{total:.1f} ms** total, "
+        + f"slowest `{slowest.method} {slowest.route}` at **{slowest.ms:.1f} ms**\n"
+    )
+    for path in targets:
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(report)
 
 
 _TERMINAL_RESULT = {"passed": "ok", "failed": "FAIL", "skipped": "skip"}

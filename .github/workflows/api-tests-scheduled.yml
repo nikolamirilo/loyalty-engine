@@ -1,0 +1,81 @@
+name: API tests (scheduled)
+
+on:
+  schedule:
+    # Wanted: 09:00, 13:00 and 16:00 Zurich time. Cron here is UTC and never
+    # observes DST, so each of those local hours needs two entries - one for
+    # CET (UTC+1) and one for CEST (UTC+2) - and the gate job below drops
+    # whichever three are currently the wrong local hour.
+    #   07,11,14 UTC -> 09:00, 13:00, 16:00 CEST (summer)
+    #   08,12,15 UTC -> 09:00, 13:00, 16:00 CET  (winter)
+    - cron: "0 7,8,11,12,14,15 * * *"
+  workflow_dispatch:
+
+jobs:
+  gate:
+    name: Is this a wanted slot?
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.slot.outputs.proceed }}
+      slot: ${{ steps.slot.outputs.slot }}
+    steps:
+      - id: slot
+        run: |
+          slot=$(TZ=Europe/Zurich date +%H:%M)
+          hour=$(TZ=Europe/Zurich date +%H)
+          echo "slot=$slot" >> "$GITHUB_OUTPUT"
+          echo "Zurich local time is $slot"
+          # A hand-triggered run is always wanted, whatever time it is.
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$hour" in
+            09 | 13 | 16)
+              echo "proceed=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "proceed=false" >> "$GITHUB_OUTPUT"
+              echo "$slot is not a wanted slot for the current DST offset, skipping." \
+                >> "$GITHUB_STEP_SUMMARY"
+              ;;
+          esac
+
+  tests:
+    name: API tests
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
+    uses: ./.github/workflows/api-tests.yml
+    secrets: inherit
+
+  report:
+    name: Email report
+    needs: [gate, tests]
+    # always(): the whole point is to mail the report when tests just failed.
+    # The gate check keeps the wrong-hour runs silent instead of mailing "skipped".
+    if: always() && needs.gate.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download report
+        # The artifact is missing if the test job died before pytest ran, which
+        # the email should still report rather than failing here.
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: api-test-report
+          path: reports
+
+      - name: Send report via Resend
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_FROM: ${{ vars.CI_REPORT_FROM }}
+          REPORT_TO: ${{ vars.CI_REPORT_TO }}
+          TEST_RESULT: ${{ needs.tests.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+          # Local time of this run, so three reports a day stay distinguishable
+          # in an inbox.
+          SLOT: ${{ needs.gate.outputs.slot }}
+        run: python3 .github/scripts/send_ci_report.py

@@ -10,6 +10,9 @@ on:
       - "api/**"
       - ".github/workflows/api-tests.yml"
   workflow_dispatch:
+  # Lets api-tests-scheduled.yml run this exact job rather than keeping a second
+  # copy of the Postgres service and pytest setup in step with this one.
+  workflow_call:
 
 jobs:
   flow-tests:
@@ -60,6 +63,24 @@ jobs:
           # Required at import. No test sends email, so these are never used.
           RESEND_API_KEY: ci-unused
           DOI_FROM_EMAIL: noreply@example.com
+          # conftest.py writes the latency table here as well as to the run
+          # summary, so the scheduled workflow can put it in an email.
+          REPORT_MD_PATH: ${{ github.workspace }}/reports/latency.md
         # The latency table is written to the run summary by
         # tests/integration/conftest.py, and still appears here on failure.
-        run: pytest
+        # pipefail is off by default in Actions' bash, so without it tee would
+        # mask a pytest failure behind its own exit code.
+        run: |
+          mkdir -p "${{ github.workspace }}/reports"
+          set -o pipefail
+          pytest --color=no | tee "${{ github.workspace }}/reports/pytest.txt"
+
+      - name: Upload report
+        # always(): the report matters most when the step above just failed.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-report
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 14
