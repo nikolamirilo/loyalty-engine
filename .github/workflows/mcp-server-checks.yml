@@ -1,0 +1,77 @@
+name: MCP server checks
+
+on:
+  push:
+    paths:
+      - "mcp-server/**"
+      - ".github/workflows/mcp-server-checks.yml"
+  pull_request:
+    paths:
+      - "mcp-server/**"
+      - ".github/workflows/mcp-server-checks.yml"
+  workflow_dispatch:
+
+jobs:
+  import:
+    name: Tools import and register
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mcp-server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # Same interpreter the API is tested on.
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: mcp-server/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Compile every module
+        # Catches a syntax error in a file nothing imports yet. Bytecode goes to
+        # a scratch directory so the check leaves no __pycache__ in the tree.
+        run: python -m compileall -q -x 'venv' -d mcp-server .
+
+      - name: Import and register tools
+        env:
+          # app.core.config reads these at import and refuses to start without
+          # them. Nothing here makes a request, so they only have to parse.
+          LOYALTY_API_BASE_URL: https://ci.invalid
+          LOYALTY_API_SERVICE_TOKEN: ci-unused
+          MCP_CLIENT_TOKENS: '[{"token": "ci", "name": "ci", "scopes": ["admin"]}]'
+        # Importing app.server is what a deploy does: it pulls in every tool
+        # module, registers each @mcp.tool onto the shared instance and builds
+        # the ASGI app. A bad import, a duplicate tool name or a signature
+        # FastMCP cannot turn into a schema all fail here rather than on Claude's
+        # first call.
+        run: |
+          python - <<'PY'
+          import asyncio
+
+          from app.server import app  # noqa: F401 - imported for the side effects
+          from app.mcp_instance import mcp
+
+          tools = asyncio.run(mcp.list_tools())
+          names = [tool.name for tool in tools]
+          duplicates = {name for name in names if names.count(name) > 1}
+          assert not duplicates, f"duplicate tool names: {sorted(duplicates)}"
+          print(f"{len(tools)} tools registered")
+
+          # Every tool that talks to a program-scoped route needs a way to say
+          # which program. Missing it is what silently pinned whole modules to
+          # the default program once already.
+          unscoped = {"list_programs", "get_program"}
+          missing = [
+              name
+              for name in names
+              if name not in unscoped and "program" not in tools[names.index(name)].inputSchema.get("properties", {})
+          ]
+          assert not missing, f"tools with no `program` argument: {missing}"
+          print("every program-scoped tool exposes `program`")
+          PY

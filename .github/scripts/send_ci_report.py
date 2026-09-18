@@ -19,6 +19,9 @@ from datetime import date
 
 RESEND_ENDPOINT = "https://api.resend.com/emails"
 
+# Sent on every request - see the note where the headers are built.
+USER_AGENT = "loyalty-engine-ci-report/1.0"
+
 # How much pytest output to include. A green run is a few lines; a failing run
 # can be thousands, and mail clients truncate long bodies unpredictably. The
 # tail is the part that matters - the failure summary pytest prints last.
@@ -141,7 +144,18 @@ def main() -> None:
     request = urllib.request.Request(
         RESEND_ENDPOINT,
         data=payload,
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            # api.resend.com sits behind Cloudflare, which bans urllib's default
+            # "Python-urllib/3.x" agent outright - that request never reaches
+            # Resend and comes back as a 403 whose body is "error code: 1010"
+            # rather than Resend's usual JSON. Any ordinary agent string gets
+            # through. The app's own mail goes via the resend SDK over requests,
+            # which is why only this script ever hit it.
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+        },
     )
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
