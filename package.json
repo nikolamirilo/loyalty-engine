@@ -1,0 +1,11 @@
+{
+  "name": "loyalty-engine",
+  "private": true,
+  "description": "Repo-root tooling only. The app itself lives in client/, api/ and mcp-server/.",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

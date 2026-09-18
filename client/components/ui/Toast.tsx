@@ -1,16 +1,10 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/format";
+import { useMounted } from "@/lib/use-mounted";
 import { CheckCircleIcon, InfoIcon, XCircleIcon, XIcon } from "./icons";
 
 type Tone = "success" | "error" | "info";
@@ -34,8 +28,8 @@ let nextId = 1;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // The toast stack is portalled, so it has to wait for the DOM.
+  const mounted = useMounted();
 
   const remove = useCallback((id: number) => {
     setToasts((list) => list.filter((t) => t.id !== id));

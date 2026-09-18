@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/format";
+import { useMounted } from "@/lib/use-mounted";
 import { XIcon } from "./icons";
 
 const SIZES = {
@@ -32,8 +33,9 @@ export function Dialog({
    *  the screen - what a phone-sized sheet wants. */
   align?: "start" | "center";
 }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // createPortal needs document, which does not exist while rendering on the
+  // server.
+  const mounted = useMounted();
 
   useEffect(() => {
     if (!open) return;

@@ -1,0 +1,45 @@
+# Pre-commit checks. Ordered cheapest first, so a failure surfaces fast.
+#
+# These run against the working tree, not the staged snapshot: `next build`
+# compiles the whole app from disk and cannot be pointed at the index. With
+# unstaged edits in the tree, a pass here is about what you have, not strictly
+# about what you are committing.
+#
+# `git commit --no-verify` skips every check below.
+
+set -e
+
+# ACMR drops deletions, whose paths no longer resolve on disk.
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+client_staged=$(printf '%s\n' "$staged" | grep -E '^client/.*\.(ts|tsx|js|jsx|mjs)$' || true)
+python_staged=$(printf '%s\n' "$staged" | grep -E '\.py$' || true)
+
+if [ -n "$python_staged" ]; then
+  echo "pre-commit: python syntax"
+  # ast.parse rather than py_compile: it reports the same syntax errors without
+  # importing the module (imports have hung on this OneDrive-synced checkout)
+  # and without leaving __pycache__ behind.
+  printf '%s\n' "$python_staged" | tr '\n' '\0' | xargs -0 python3 -c '
+import ast, sys
+
+for path in sys.argv[1:]:
+    with open(path, encoding="utf-8") as handle:
+        ast.parse(handle.read(), path)
+'
+fi
+
+if [ -n "$client_staged" ]; then
+  echo "pre-commit: eslint"
+  (cd client && npm run lint)
+
+  # `next build` typechecks too, so this is strictly a fast pre-check: it
+  # fails in ~4s with a plain error list instead of ~15s inside a build, and it
+  # keeps type errors caught if anyone ever sets typescript.ignoreBuildErrors.
+  echo "pre-commit: typecheck"
+  (cd client && ./node_modules/.bin/tsc --noEmit)
+
+  # ~15s on this project. Last, so the quicker checks have already had their
+  # say, and only when something under client/ is actually staged.
+  echo "pre-commit: next build"
+  (cd client && npm run build)
+fi

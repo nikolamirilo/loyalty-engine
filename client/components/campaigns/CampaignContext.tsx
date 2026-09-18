@@ -1,15 +1,9 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 import { clearCampaign, readCampaign, writeCampaign } from "@/lib/campaign-storage";
+import { useMounted } from "@/lib/use-mounted";
 import { useToast } from "@/components/ui/Toast";
 
 /** Appends the signed-in member's id as `userId` on the campaign URL, adding
@@ -35,6 +29,33 @@ interface CampaignContextValue {
 
 const CampaignContext = createContext<CampaignContextValue | null>(null);
 
+/** What `localStorage` had for this member, as the state to start from.
+ *
+ * Called from a state initialiser, so React may run it twice in StrictMode.
+ * `clearCampaign()` is idempotent, which is what makes that safe. */
+function restore(memberId: string): { draftUrl: string; loadedUrl: string | null } {
+  const saved = readCampaign();
+  if (!saved) return { draftUrl: "", loadedUrl: null };
+  if (!saved.open) return { draftUrl: saved.url, loadedUrl: null };
+  try {
+    return { draftUrl: saved.url, loadedUrl: withMemberId(saved.url, memberId) };
+  } catch {
+    // Stored link no longer parses - drop it and show the form.
+    clearCampaign();
+    return { draftUrl: saved.url, loadedUrl: null };
+  }
+}
+
+/** Context value for the one render that happens before storage is readable. */
+const UNRESTORED: CampaignContextValue = {
+  draftUrl: "",
+  setDraftUrl: () => {},
+  loadedUrl: null,
+  open: () => {},
+  close: () => {},
+  restored: false,
+};
+
 /**
  * Owns the campaign the member has loaded.
  *
@@ -51,29 +72,39 @@ export function CampaignProvider({
   memberId: string;
   children: React.ReactNode;
 }) {
-  const [draftUrl, setDraftUrl] = useState("");
-  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
-  const [restored, setRestored] = useState(false);
-  const toast = useToast();
+  // The server cannot read localStorage, so seeding state from it during
+  // hydration would render a form on the server and a campaign on the client.
+  // Mounting the stateful half only afterwards lets it restore in its state
+  // initialisers instead of in an effect, which costs a second render pass on
+  // every mount. CampaignLauncher renders nothing while `restored` is false,
+  // so the inert value below is never interactive.
+  const mounted = useMounted();
+  if (!mounted) {
+    return (
+      <CampaignContext.Provider value={UNRESTORED}>{children}</CampaignContext.Provider>
+    );
+  }
 
-  // Restoring runs in an effect, not in the initial state: the server has no
-  // access to localStorage, so seeding state from it directly would render a
-  // form on the server and a campaign on the client - a hydration mismatch.
-  useEffect(() => {
-    const saved = readCampaign();
-    if (saved) {
-      setDraftUrl(saved.url);
-      if (saved.open) {
-        try {
-          setLoadedUrl(withMemberId(saved.url, memberId));
-        } catch {
-          // Stored link no longer parses - drop it and show the form.
-          clearCampaign();
-        }
-      }
-    }
-    setRestored(true);
-  }, [memberId]);
+  // Keyed by member: a different member has to re-read storage, which is what
+  // the old effect's [memberId] dependency did.
+  return (
+    <RestoredCampaignProvider key={memberId} memberId={memberId}>
+      {children}
+    </RestoredCampaignProvider>
+  );
+}
+
+function RestoredCampaignProvider({
+  memberId,
+  children,
+}: {
+  memberId: string;
+  children: React.ReactNode;
+}) {
+  const [initial] = useState(() => restore(memberId));
+  const [draftUrl, setDraftUrl] = useState(initial.draftUrl);
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(initial.loadedUrl);
+  const toast = useToast();
 
   const open = useCallback(() => {
     const trimmed = draftUrl.trim();
@@ -102,8 +133,8 @@ export function CampaignProvider({
   }, [draftUrl]);
 
   const value = useMemo(
-    () => ({ draftUrl, setDraftUrl, loadedUrl, open, close, restored }),
-    [draftUrl, loadedUrl, open, close, restored],
+    () => ({ draftUrl, setDraftUrl, loadedUrl, open, close, restored: true }),
+    [draftUrl, loadedUrl, open, close],
   );
 
   return (

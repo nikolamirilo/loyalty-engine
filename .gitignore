@@ -7,3 +7,6 @@
 # their own ignores. .github/scripts is not covered by either.
 __pycache__/
 *.pyc
+
+# Root-level tooling deps (husky). The app packages carry their own ignores.
+/node_modules

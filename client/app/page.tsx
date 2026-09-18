@@ -53,7 +53,7 @@ export default function EntryPage() {
             <h1 className="text-lg font-semibold tracking-tight text-foreground">
               Welcome to Loyalty Engine
             </h1>
-            <p className="mt-0.5 text-sm text-muted">Choose how you'd like to continue</p>
+            <p className="mt-0.5 text-sm text-muted">Choose how you&apos;d like to continue</p>
           </div>
         </div>
         <div className="space-y-3">
