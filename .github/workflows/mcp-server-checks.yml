@@ -34,9 +34,9 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Compile every module
-        # Catches a syntax error in a file nothing imports yet. Bytecode goes to
-        # a scratch directory so the check leaves no __pycache__ in the tree.
-        run: python -m compileall -q -x 'venv' -d mcp-server .
+        # Catches a syntax error in a file nothing imports yet. This leaves
+        # __pycache__ behind, which does not matter on a throwaway runner.
+        run: python -m compileall -q -x venv .
 
       - name: Import and register tools
         env:
@@ -47,9 +47,9 @@ jobs:
           MCP_CLIENT_TOKENS: '[{"token": "ci", "name": "ci", "scopes": ["admin"]}]'
         # Importing app.server is what a deploy does: it pulls in every tool
         # module, registers each @mcp.tool onto the shared instance and builds
-        # the ASGI app. A bad import, a duplicate tool name or a signature
-        # FastMCP cannot turn into a schema all fail here rather than on Claude's
-        # first call.
+        # the ASGI app. A bad import, a duplicate tool name, or a signature
+        # FastMCP cannot turn into a schema all fail here rather than on
+        # Claude's first call.
         run: |
           python - <<'PY'
           import asyncio
@@ -57,21 +57,29 @@ jobs:
           from app.server import app  # noqa: F401 - imported for the side effects
           from app.mcp_instance import mcp
 
+
+          def arguments(tool):
+              # The SDK has used both spellings; requirements.txt pins no version.
+              schema = getattr(tool, "input_schema", None) or getattr(tool, "inputSchema", {})
+              return schema.get("properties", {})
+
+
           tools = asyncio.run(mcp.list_tools())
           names = [tool.name for tool in tools]
+
           duplicates = {name for name in names if names.count(name) > 1}
           assert not duplicates, f"duplicate tool names: {sorted(duplicates)}"
           print(f"{len(tools)} tools registered")
 
-          # Every tool that talks to a program-scoped route needs a way to say
-          # which program. Missing it is what silently pinned whole modules to
-          # the default program once already.
+          # Every tool that reaches a program-scoped route needs a way to say
+          # which program. Missing it is what silently pinned four whole modules
+          # to the default program once already.
           unscoped = {"list_programs", "get_program"}
-          missing = [
-              name
-              for name in names
-              if name not in unscoped and "program" not in tools[names.index(name)].inputSchema.get("properties", {})
-          ]
+          missing = sorted(
+              tool.name
+              for tool in tools
+              if tool.name not in unscoped and "program" not in arguments(tool)
+          )
           assert not missing, f"tools with no `program` argument: {missing}"
           print("every program-scoped tool exposes `program`")
           PY

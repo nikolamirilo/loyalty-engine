@@ -13,7 +13,7 @@ on:
 
 jobs:
   checks:
-    name: Lint, types and build
+    name: Lint and types
     runs-on: ubuntu-latest
 
     defaults:
@@ -33,9 +33,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Same three checks the pre-commit hook runs, in the same order, so a
-      # green commit locally does not turn red here. This is the copy that
-      # counts: the hook is per-machine and `--no-verify` skips it.
+      # The pre-commit hook runs these two plus `next build`. This is the copy
+      # that counts for lint and types: the hook is per-machine, and
+      # `--no-verify` skips it. The build is left to the deploy.
       - name: Lint
         run: npm run lint
 
@@ -44,10 +44,3 @@ jobs:
       # still fails if anyone sets typescript.ignoreBuildErrors.
       - name: Typecheck
         run: npx tsc --noEmit
-
-      # No env is set: nothing here reads configuration at build time. The only
-      # variables the app touches are NODE_ENV and an optional MEMBER_PROGRAM,
-      # and every data route is server-rendered on demand, so the build never
-      # calls the API.
-      - name: Build
-        run: npm run build

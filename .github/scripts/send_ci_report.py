@@ -59,6 +59,107 @@ def require(name: str) -> str:
     return value
 
 
+# Result -> the colour its status cell gets in the table.
+RESULT_COLOURS = {"passed": "#16a34a", "failed": "#dc2626", "skipped": "#94a3b8"}
+
+CELL = "padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;vertical-align:top;"
+MONO = "font-family:'SFMono-Regular',Consolas,Menlo,monospace;"
+
+
+def load_report(path: str):
+    """The structured latency report, or None if the run never got that far."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (FileNotFoundError, ValueError):
+        return None
+
+
+def summary_line(report: dict) -> str:
+    slowest = report["slowest"]
+    return (
+        f"{len(report['calls'])} calls, {report['totalMs']} ms total, "
+        f"slowest {slowest['method']} {slowest['route']} at {slowest['ms']} ms"
+    )
+
+
+def latency_table(report: dict) -> str:
+    """The per-call table as real table markup.
+
+    Inline styles and plain <table> rows on purpose: mail clients strip
+    stylesheets, and many still do not lay out flex or grid.
+    """
+    head = "".join(
+        f'<th align="{align}" style="padding:8px 10px;border-bottom:2px solid #e2e8f0;'
+        f'font-size:11px;letter-spacing:0.04em;text-transform:uppercase;color:#64748b;'
+        f'font-weight:600;">{label}</th>'
+        for label, align in (
+            ("Step", "left"),
+            ("Method", "left"),
+            ("Route", "left"),
+            ("Status", "right"),
+            ("Latency", "right"),
+        )
+    )
+
+    rows = []
+    for call in report["calls"]:
+        outcome = call.get("outcome", "")
+        colour = RESULT_COLOURS.get(outcome, "#0f172a")
+        # Tint the whole row for a failure, so it is findable without reading.
+        tint = ' style="background:#fef2f2;"' if outcome == "failed" else ""
+        rows.append(
+            f"<tr{tint}>"
+            f'<td style="{CELL}">{html.escape(call["step"])}</td>'
+            f'<td style="{CELL}{MONO}color:#475569;">{html.escape(call["method"])}</td>'
+            f'<td style="{CELL}{MONO}word-break:break-all;">{html.escape(call["route"])}</td>'
+            f'<td align="right" style="{CELL}{MONO}color:{colour};font-weight:600;">'
+            f'{call["status"]}</td>'
+            f'<td align="right" style="{CELL}{MONO}white-space:nowrap;">{call["ms"]} ms</td>'
+            "</tr>"
+        )
+
+    return (
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        'style="width:100%;border-collapse:collapse;margin:0 0 12px;">'
+        f"<tr>{head}</tr>{''.join(rows)}</table>"
+        f'<p style="margin:0;font-size:12px;color:#64748b;">{html.escape(summary_line(report))}</p>'
+    )
+
+
+def latency_text(report: dict) -> str:
+    """Plain-text alternative: aligned columns, no markdown pipes."""
+    rows = [
+        [
+            call["step"],
+            call["method"],
+            call["route"],
+            str(call["status"]),
+            f"{call['ms']} ms",
+        ]
+        for call in report["calls"]
+    ]
+    headers = ["Step", "Method", "Route", "Status", "Latency"]
+    widths = [
+        max(len(headers[i]), *(len(r[i]) for r in rows)) if rows else len(headers[i])
+        for i in range(len(headers))
+    ]
+    def line(cells):
+        return "  ".join(cell.ljust(widths[i]) for i, cell in enumerate(cells)).rstrip()
+
+    return "\n".join(
+        [line(headers), line(["-" * w for w in widths]), *(line(r) for r in rows), "", summary_line(report)]
+    )
+
+
+def pre(text: str) -> str:
+    return (
+        '<pre style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;'
+        "padding:16px;font-size:12px;line-height:1.5;overflow-x:auto;"
+        f'white-space:pre-wrap;margin:0 0 12px;">{html.escape(text)}</pre>'
+    )
+
+
 def main() -> None:
     api_key = require("RESEND_API_KEY")
     sender = require("REPORT_FROM")
@@ -92,16 +193,31 @@ def main() -> None:
         subject = f"⚠️ API tests did not run ({result}) - {repo} - {stamp}"
         headline = f"API tests did not complete: {result}"
 
-    latency = tail("reports/latency.md")
-    for code, char in SHORTCODES.items():
-        latency = latency.replace(code, char)
-    log = tail("reports/pytest.txt")
-    if not latency and not log:
+    report = load_report("reports/latency.json")
+
+    # The raw pytest output is only worth carrying when something went wrong:
+    # on a green run it repeats the table above and adds a screenful of
+    # collection lines. On a red one it holds the tracebacks.
+    log = "" if passed and report else tail("reports/pytest.txt")
+
+    if report:
+        table_html = latency_table(report)
+        table_text = latency_text(report)
+    else:
+        # No structured report, e.g. the job died before pytest finished. Fall
+        # back to the markdown meant for the GitHub summary, emoji and all.
+        markdown = tail("reports/latency.md")
+        for code, char in SHORTCODES.items():
+            markdown = markdown.replace(code, char)
+        table_html = pre(markdown) if markdown else ""
+        table_text = markdown
+
+    if not table_html and not log:
         log = "No report was produced - the test job failed before pytest ran."
 
     text = "\n\n".join(
         part
-        for part in [headline, context, f"Run: {run_url}", latency, log]
+        for part in [headline, context, f"Run: {run_url}", table_text, log]
         if part
     )
 
@@ -109,19 +225,13 @@ def main() -> None:
     meta_context = f" &middot; {html.escape(context)}" if context else ""
 
     accent = "#16a34a" if passed else "#dc2626"
-    blocks = "".join(
-        f'<pre style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;'
-        f'padding:16px;font-size:12px;line-height:1.5;overflow-x:auto;'
-        f'white-space:pre-wrap;">{html.escape(part)}</pre>'
-        for part in [latency, log]
-        if part
-    )
+    blocks = table_html + (pre(log) if log else "")
     body = f"""<!DOCTYPE html>
 <html>
   <body style="margin:0;padding:24px;background:#f8fafc;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
       <tr><td align="center">
-        <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;max-width:640px;width:100%;overflow:hidden;">
+        <table role="presentation" width="720" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;max-width:720px;width:100%;overflow:hidden;">
           <tr><td style="background:{accent};height:4px;line-height:4px;font-size:0;">&nbsp;</td></tr>
           <tr><td style="padding:32px;">
             <h1 style="margin:0 0 4px;font-size:20px;">{html.escape(headline)}</h1>

@@ -77,6 +77,9 @@ jobs:
           # conftest.py writes the latency table here as well as to the run
           # summary, so the report job below can put it in an email.
           REPORT_MD_PATH: ${{ github.workspace }}/reports/latency.md
+          # Same numbers, structured, so the report job can build a real HTML
+          # table instead of pasting markdown into the email.
+          REPORT_JSON_PATH: ${{ github.workspace }}/reports/latency.json
         # The latency table is written to the run summary by
         # tests/integration/conftest.py, and still appears here on failure.
         # pipefail is off by default in Actions' bash, so without it tee would

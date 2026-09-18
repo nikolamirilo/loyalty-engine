@@ -10,6 +10,7 @@ trip, but not network transfer, since the app is called in process. That is the
 part worth tracking: localhost network time would be noise.
 """
 
+import json
 import os
 import re
 import time
@@ -237,6 +238,36 @@ def pytest_terminal_summary(terminalreporter):
     for path in targets:
         with open(path, "a", encoding="utf-8") as fh:
             fh.write(report)
+
+    # The same numbers again, structured. The markdown above is for GitHub,
+    # which renders it; the report email needs real table markup, and building
+    # that from JSON beats parsing the pipes back out of the markdown.
+    json_path = os.environ.get("REPORT_JSON_PATH")
+    if not json_path:
+        return
+    with open(json_path, "w", encoding="utf-8") as fh:
+        json.dump(
+            {
+                "calls": [
+                    {
+                        "step": c.step,
+                        "method": c.method,
+                        "route": c.route,
+                        "status": c.status,
+                        "ms": round(c.ms, 1),
+                        "outcome": OUTCOMES.get(c.step, ""),
+                    }
+                    for c in CALLS
+                ],
+                "totalMs": round(total, 1),
+                "slowest": {
+                    "method": slowest.method,
+                    "route": slowest.route,
+                    "ms": round(slowest.ms, 1),
+                },
+            },
+            fh,
+        )
 
 
 _TERMINAL_RESULT = {"passed": "ok", "failed": "FAIL", "skipped": "skip"}
