@@ -42,26 +42,41 @@ async def list_member_redemptions(
 
 
 @mcp.tool(title="Redemptions: Grant a prize")
-async def assign_prize(member_id: str, reward_id: str) -> Dict[str, Any]:
+async def assign_prize(
+    member_id: str,
+    reward_id: str,
+    program: Optional[str] = None,
+) -> Dict[str, Any]:
     """Grant a reward to a member at no points cost (source "assigned"), e.g.
     as a goodwill gesture or a manual campaign prize. Still subject to the
     reward's own availability (active, in stock) - just skips the balance
     check and debit that `redeem_reward` performs.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
     """
     require_scope("write")
-    return await api.post(f"/members/{member_id}/prizes/{reward_id}")
+    return await api.post(f"/members/{member_id}/prizes/{reward_id}", program=program)
 
 
 @mcp.tool(title="Redemptions: List prizes for member")
 async def list_member_prizes(
-    member_id: str, source: Optional[str] = None, skip: int = 0, limit: int = 50
+    member_id: str,
+    source: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+    program: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """List a member's prize/redemption history, newest first. `source`
     optionally filters to "redeemed" (member spent points) or "assigned"
     (granted at no cost, e.g. via `assign_prize` or a completed challenge).
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
     """
     require_scope("read")
     return await api.get(
         f"/members/{member_id}/prizes",
         params={"source": source, "skip": skip, "limit": limit},
+        program=program,
     )

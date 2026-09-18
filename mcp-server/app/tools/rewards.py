@@ -25,7 +25,7 @@ async def list_rewards(
     require_scope("read")
     return await api.get(
         "/rewards",
-        params={"activeOnly": active_only, "skip": skip, "limit": limit},
+        params={"active_only": active_only, "skip": skip, "limit": limit},
         program=program,
     )
 

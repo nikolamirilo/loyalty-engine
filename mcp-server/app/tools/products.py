@@ -18,9 +18,13 @@ async def create_product(
     currency: str = "EUR",
     category: Optional[str] = None,
     is_active: bool = True,
+    program: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create a purchasable product. `price_cents` is the unit price in the
     smallest unit of `currency` (e.g. cents for EUR/USD).
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
     """
     require_scope("write")
     body = {
@@ -31,25 +35,38 @@ async def create_product(
         "category": category,
         "is_active": is_active,
     }
-    return await api.post("/products", body)
+    return await api.post("/products", body, program=program)
 
 
 @mcp.tool(title="Products: List")
 async def list_products(
-    active_only: bool = False, skip: int = 0, limit: int = 100
+    active_only: bool = False,
+    skip: int = 0,
+    limit: int = 100,
+    program: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """List the product catalog, newest first, optionally restricted to active products."""
+    """List the product catalog, newest first, optionally restricted to active products.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
     require_scope("read")
     return await api.get(
-        "/products", params={"activeOnly": active_only, "skip": skip, "limit": limit}
+        "/products",
+        params={"active_only": active_only, "skip": skip, "limit": limit},
+        program=program,
     )
 
 
 @mcp.tool(title="Products: Get")
-async def get_product(product_id: str) -> Dict[str, Any]:
-    """Get a single product by id."""
+async def get_product(product_id: str, program: Optional[str] = None) -> Dict[str, Any]:
+    """Get a single product by id.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
     require_scope("read")
-    return await api.get(f"/products/{product_id}")
+    return await api.get(f"/products/{product_id}", program=program)
 
 
 @mcp.tool(title="Products: Update")
@@ -61,8 +78,13 @@ async def update_product(
     currency: Optional[str] = None,
     category: Optional[str] = None,
     is_active: Optional[bool] = None,
+    program: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Update a product. Only the fields provided are changed."""
+    """Update a product. Only the fields provided are changed.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
     require_scope("write")
     body = {
         "name": name,
@@ -72,11 +94,15 @@ async def update_product(
         "category": category,
         "is_active": is_active,
     }
-    return await api.patch(f"/products/{product_id}", body)
+    return await api.patch(f"/products/{product_id}", body, program=program)
 
 
 @mcp.tool(title="Products: Delete")
-async def delete_product(product_id: str) -> None:
-    """Delete a product from the catalog."""
+async def delete_product(product_id: str, program: Optional[str] = None) -> None:
+    """Delete a product from the catalog.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
     require_scope("write")
-    return await api.delete(f"/products/{product_id}")
+    return await api.delete(f"/products/{product_id}", program=program)

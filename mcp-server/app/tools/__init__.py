@@ -10,6 +10,7 @@ from app.tools import (  # noqa: F401
     members,
     points,
     products,
+    programs,
     purchases,
     redemptions,
     rewards,

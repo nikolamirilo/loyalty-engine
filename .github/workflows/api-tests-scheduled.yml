@@ -45,37 +45,10 @@ jobs:
     name: API tests
     needs: gate
     if: needs.gate.outputs.proceed == 'true'
+    # The report email is part of that workflow, so it is sent for these runs
+    # and for ordinary push runs from the one place. All this adds is the slot
+    # label, which keeps three reports a day apart in an inbox.
     uses: ./.github/workflows/api-tests.yml
+    with:
+      report_label: ${{ needs.gate.outputs.slot }}
     secrets: inherit
-
-  report:
-    name: Email report
-    needs: [gate, tests]
-    # always(): the whole point is to mail the report when tests just failed.
-    # The gate check keeps the wrong-hour runs silent instead of mailing "skipped".
-    if: always() && needs.gate.outputs.proceed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download report
-        # The artifact is missing if the test job died before pytest ran, which
-        # the email should still report rather than failing here.
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: api-test-report
-          path: reports
-
-      - name: Send report via Resend
-        env:
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          REPORT_FROM: ${{ vars.CI_REPORT_FROM }}
-          REPORT_TO: ${{ vars.CI_REPORT_TO }}
-          TEST_RESULT: ${{ needs.tests.result }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          REPO: ${{ github.repository }}
-          # Local time of this run, so three reports a day stay distinguishable
-          # in an inbox.
-          SLOT: ${{ needs.gate.outputs.slot }}
-        run: python3 .github/scripts/send_ci_report.py

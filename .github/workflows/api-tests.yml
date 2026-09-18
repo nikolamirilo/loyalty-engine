@@ -5,14 +5,25 @@ on:
     paths:
       - "api/**"
       - ".github/workflows/api-tests.yml"
+      - ".github/scripts/send_ci_report.py"
   pull_request:
     paths:
       - "api/**"
       - ".github/workflows/api-tests.yml"
+      - ".github/scripts/send_ci_report.py"
   workflow_dispatch:
   # Lets api-tests-scheduled.yml run this exact job rather than keeping a second
   # copy of the Postgres service and pytest setup in step with this one.
   workflow_call:
+    inputs:
+      report_label:
+        description: >-
+          Shown in the report email's subject so two runs on the same day do not
+          arrive with identical subjects. The scheduled workflow passes its
+          Zurich slot; left empty the report job labels the run itself.
+        type: string
+        required: false
+        default: ""
 
 jobs:
   flow-tests:
@@ -64,7 +75,7 @@ jobs:
           RESEND_API_KEY: ci-unused
           DOI_FROM_EMAIL: noreply@example.com
           # conftest.py writes the latency table here as well as to the run
-          # summary, so the scheduled workflow can put it in an email.
+          # summary, so the report job below can put it in an email.
           REPORT_MD_PATH: ${{ github.workspace }}/reports/latency.md
         # The latency table is written to the run summary by
         # tests/integration/conftest.py, and still appears here on failure.
@@ -84,3 +95,78 @@ jobs:
           path: reports/
           if-no-files-found: warn
           retention-days: 14
+
+  report:
+    name: Email report
+    needs: flow-tests
+    # always(): the whole point is to mail the report when the tests just failed.
+    #
+    # Pull requests are left out on purpose. Their result is already visible as
+    # a check on the PR itself, and because the push and pull_request triggers
+    # both fire for a branch with an open PR, mailing both would send two
+    # identical reports for every commit. Drop the event_name check to mail
+    # those too.
+    if: always() && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download report
+        # The artifact is missing if the test job died before pytest ran, which
+        # the email should still report rather than failing here.
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: api-test-report
+          path: reports
+
+      - name: Describe this run
+        id: describe
+        env:
+          # Read through the environment rather than interpolated into the
+          # script: a branch name is attacker-controlled on a fork and would
+          # otherwise run as shell.
+          LABEL: ${{ inputs.report_label }}
+          EVENT: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          # A caller-supplied label wins - the scheduled workflow already knows
+          # which of its three daily slots this is.
+          # The branch is not in the label because the context line below
+          # already names it; the label only has to keep subjects apart.
+          label="$LABEL"
+          if [ -z "$label" ]; then
+            label="$(TZ=Europe/Zurich date +%H:%M)"
+          fi
+          case "$EVENT" in
+            schedule) context="scheduled run" ;;
+            push) context="push to $REF_NAME" ;;
+            workflow_dispatch) context="manual run on $REF_NAME" ;;
+            pull_request) context="pull request $REF_NAME" ;;
+            *) context="$EVENT run" ;;
+          esac
+          {
+            echo "label=$label"
+            echo "context=$context"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send report via Resend
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_FROM: ${{ vars.CI_REPORT_FROM }}
+          REPORT_TO: ${{ vars.CI_REPORT_TO }}
+          TEST_RESULT: ${{ needs.flow-tests.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+          SLOT: ${{ steps.describe.outputs.label }}
+          RUN_CONTEXT: ${{ steps.describe.outputs.context }}
+        run: |
+          # A pull request from a fork gets no secrets, so there is no key to
+          # send with. Say so in the summary instead of failing a run the
+          # contributor has no way to fix.
+          if [ -z "$RESEND_API_KEY" ]; then
+            echo "RESEND_API_KEY is not available to this run, skipping the report email." \
+              >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python3 .github/scripts/send_ci_report.py

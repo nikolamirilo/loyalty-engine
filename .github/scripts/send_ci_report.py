@@ -1,11 +1,12 @@
-"""Email a scheduled API test report through Resend.
+"""Email an API test report through Resend.
 
 Uses the same provider the app already sends DOI and login mail with, so the
 reports need no second email vendor and no SMTP secrets - only a sender
 on the domain that is already verified in Resend.
 
-Called by .github/workflows/api-tests-scheduled.yml with the test job's outcome
-in the environment, and reads whatever the test job left in reports/.
+Called by the report job in .github/workflows/api-tests.yml - for pushes,
+manual runs and the scheduled runs alike - with the test job's outcome in the
+environment, and reads whatever the test job left in reports/.
 """
 
 import html
@@ -49,7 +50,7 @@ def require(name: str) -> str:
     value = os.environ.get(name, "").strip()
     if not value:
         sys.exit(
-            f"{name} is not set. The scheduled report needs RESEND_API_KEY (secret), "
+            f"{name} is not set. The report needs RESEND_API_KEY (secret), "
             "CI_REPORT_FROM and CI_REPORT_TO (repository variables)."
         )
     return value
@@ -62,9 +63,12 @@ def main() -> None:
     recipients = [addr.strip() for addr in require("REPORT_TO").split(",") if addr.strip()]
 
     result = os.environ.get("TEST_RESULT", "unknown")
-    # Local time of this run. There are three slots a day, so without it all
-    # three subjects would be identical and thread together in most clients.
+    # Local time of this run. Several runs land on the same day, so without it
+    # their subjects would be identical and thread together in most clients.
     slot = os.environ.get("SLOT", "").strip()
+    # What set this run off, e.g. "scheduled run" or "push to main", so a
+    # report that arrives off-schedule is not mistaken for a slot.
+    context = os.environ.get("RUN_CONTEXT", "").strip()
     run_url = os.environ.get("RUN_URL", "")
     repo = os.environ.get("REPO", "loyalty-engine")
     stamp = f"{date.today().isoformat()} {slot}".strip()
@@ -94,9 +98,12 @@ def main() -> None:
 
     text = "\n\n".join(
         part
-        for part in [headline, f"Run: {run_url}", latency, log]
+        for part in [headline, context, f"Run: {run_url}", latency, log]
         if part
     )
+
+    # Omitted rather than left blank when the caller passed no context.
+    meta_context = f" &middot; {html.escape(context)}" if context else ""
 
     accent = "#16a34a" if passed else "#dc2626"
     blocks = "".join(
@@ -115,7 +122,7 @@ def main() -> None:
           <tr><td style="background:{accent};height:4px;line-height:4px;font-size:0;">&nbsp;</td></tr>
           <tr><td style="padding:32px;">
             <h1 style="margin:0 0 4px;font-size:20px;">{html.escape(headline)}</h1>
-            <p style="margin:0 0 24px;font-size:13px;color:#64748b;">{html.escape(repo)} &middot; {stamp} Europe/Zurich &middot; scheduled run</p>
+            <p style="margin:0 0 24px;font-size:13px;color:#64748b;">{html.escape(repo)} &middot; {stamp} Europe/Zurich{meta_context}</p>
             {blocks}
             <p style="margin:24px 0 0;font-size:13px;">
               <a href="{html.escape(run_url)}" style="color:#5b4bd6;">Open the full run in GitHub Actions</a>
@@ -146,8 +153,9 @@ def main() -> None:
     except urllib.error.URLError as exc:
         sys.exit(f"Could not reach Resend: {exc.reason}")
 
-    # Make the scheduled run itself red when the tests were red, so it
-    # shows the failure in the Actions list and not just in the inbox.
+    # Exit red when the tests were red. The test job already fails the run on
+    # its own; this keeps the report job's own status honest about what it just
+    # mailed, rather than showing green next to a failure.
     if not passed:
         sys.exit(1)
 
