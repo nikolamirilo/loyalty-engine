@@ -3,12 +3,20 @@ name: API tests (scheduled)
 on:
   schedule:
     # Wanted: 09:00, 13:00 and 16:00 Zurich time. Cron here is UTC and never
-    # observes DST, so each of those local hours needs two entries - one for
-    # CET (UTC+1) and one for CEST (UTC+2) - and the gate job below drops
-    # whichever three are currently the wrong local hour.
-    #   07,11,14 UTC -> 09:00, 13:00, 16:00 CEST (summer)
-    #   08,12,15 UTC -> 09:00, 13:00, 16:00 CET  (winter)
-    - cron: "0 7,8,11,12,14,15 * * *"
+    # observes DST, so each slot needs two entries - one for CEST (UTC+2) and
+    # one for CET (UTC+1) - and the gate job below keeps whichever three match
+    # today's offset.
+    #
+    # Written as six separate entries rather than "0 7,8,11,12,14,15 * * *" on
+    # purpose: github.event.schedule reports the entry that fired, and matching
+    # on that is what lets the gate tell a real slot from its winter twin even
+    # when GitHub delivers the run late.
+    - cron: "0 7 * * *" # 09:00 CEST
+    - cron: "0 11 * * *" # 13:00 CEST
+    - cron: "0 14 * * *" # 16:00 CEST
+    - cron: "0 8 * * *" # 09:00 CET
+    - cron: "0 12 * * *" # 13:00 CET
+    - cron: "0 15 * * *" # 16:00 CET
   workflow_dispatch:
 
 jobs:
@@ -20,23 +28,49 @@ jobs:
       slot: ${{ steps.slot.outputs.slot }}
     steps:
       - id: slot
+        env:
+          # The cron entry that fired, exactly as written above. Empty for a
+          # manual run.
+          FIRED: ${{ github.event.schedule }}
+          EVENT: ${{ github.event_name }}
         run: |
-          slot=$(TZ=Europe/Zurich date +%H:%M)
-          hour=$(TZ=Europe/Zurich date +%H)
-          echo "slot=$slot" >> "$GITHUB_OUTPUT"
-          echo "Zurich local time is $slot"
           # A hand-triggered run is always wanted, whatever time it is.
-          if [ "${{ github.event_name }}" != "schedule" ]; then
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" != "schedule" ]; then
+            {
+              echo "proceed=true"
+              echo "slot=$(TZ=Europe/Zurich date +%H:%M)"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          case "$hour" in
-            09 | 13 | 16)
+
+          # Which three entries are today's depends on whether Zurich is on
+          # CEST or CET right now.
+          case "$(TZ=Europe/Zurich date +%z)" in
+            +0200) wanted="0 7 * * *|0 11 * * *|0 14 * * *" ;;
+            +0100) wanted="0 8 * * *|0 12 * * *|0 15 * * *" ;;
+            *) wanted="" ;;
+          esac
+
+          # The slot this entry stands for, not the clock. A run GitHub
+          # delivers 40 minutes late is still the 13:00 report, and labelling
+          # it 13:40 would make three daily subjects unpredictable.
+          case "$FIRED" in
+            "0 7 * * *" | "0 8 * * *") slot="09:00" ;;
+            "0 11 * * *" | "0 12 * * *") slot="13:00" ;;
+            "0 14 * * *" | "0 15 * * *") slot="16:00" ;;
+            *) slot="$(TZ=Europe/Zurich date +%H:%M)" ;;
+          esac
+          echo "slot=$slot" >> "$GITHUB_OUTPUT"
+
+          echo "Fired by '$FIRED'; today's entries are '$wanted'."
+          case "|$wanted|" in
+            *"|$FIRED|"*)
               echo "proceed=true" >> "$GITHUB_OUTPUT"
+              echo "Running the $slot Europe/Zurich report." >> "$GITHUB_STEP_SUMMARY"
               ;;
             *)
               echo "proceed=false" >> "$GITHUB_OUTPUT"
-              echo "$slot is not a wanted slot for the current DST offset, skipping." \
+              echo "'$FIRED' is the other DST offset's entry, skipping." \
                 >> "$GITHUB_STEP_SUMMARY"
               ;;
           esac
