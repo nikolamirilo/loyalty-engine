@@ -1,7 +1,10 @@
 .vercel
 .env*
 !.env.example
-/supabase/.temp
+# The Supabase CLI writes its local state to a .temp dir beside whichever
+# directory it is run against, so anchoring this to /supabase misses the
+# copy under supabase/migrations/ that `git add .` would otherwise pick up.
+supabase/**/.temp/
 
 # Python bytecode from tooling run outside api/ and mcp-server/, which carry
 # their own ignores. .github/scripts is not covered by either.
