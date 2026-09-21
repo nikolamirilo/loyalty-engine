@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { Field, Input } from "@/components/ui/Field";
 import { FormDialog } from "@/components/ui/FormDialog";
-import { PencilIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
+import { useToast } from "@/components/ui/Toast";
+import { CopyIcon, PencilIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 
 /** Shared between the create and edit dialogs. */
 function ProgramFields({ program }: { program?: Program }) {
@@ -62,6 +63,35 @@ export function NewProgramButton() {
     >
       <ProgramFields />
     </FormDialog>
+  );
+}
+
+/** The program id is what API calls address a program by, so it is worth one
+ * click to get hold of. Icon-only like the edit and delete buttons it sits
+ * beside - the id itself stays off screen, the slug next to the name is the
+ * readable handle. */
+export function CopyProgramIdButton({ program }: { program: Program }) {
+  const toast = useToast();
+
+  const copyId = async () => {
+    try {
+      await navigator.clipboard.writeText(program.id);
+      toast.success("Program ID copied.");
+    } catch {
+      toast.error("Couldn't copy program ID.");
+    }
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={copyId}
+      aria-label={`Copy ID for ${program.name}`}
+      title="Copy program ID"
+    >
+      <CopyIcon />
+    </Button>
   );
 }
 

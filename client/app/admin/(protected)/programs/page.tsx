@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { switchProgram } from "@/lib/programs/actions";
 import { Button } from "@/components/ui/Button";
 import {
+  CopyProgramIdButton,
   DeleteProgramButton,
   EditProgramButton,
   NewProgramButton,
@@ -76,6 +77,7 @@ export default async function ProgramsPage() {
                         </Button>
                       </form>
                     )}
+                    <CopyProgramIdButton program={program} />
                     <EditProgramButton program={program} />
                     {/* The default program is what a request with no program
                         header falls back to, so the API refuses to delete it. */}
