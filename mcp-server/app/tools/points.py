@@ -6,11 +6,12 @@ by this server yet.
 from typing import Any, Dict, List, Optional
 
 from app.client import loyalty_api_client as api
+from app.core import annotations as ann
 from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Points: Get balance")
+@mcp.tool(title="Points: Get balance", annotations=ann.READ)
 async def get_member_balance(
     member_id: str, program: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -23,7 +24,7 @@ async def get_member_balance(
     return await api.get(f"/members/{member_id}/balance", program=program)
 
 
-@mcp.tool(title="Points: List transactions")
+@mcp.tool(title="Points: List transactions", annotations=ann.READ)
 async def list_transactions(
     member_id: str, skip: int = 0, limit: int = 50, program: Optional[str] = None
 ) -> List[Dict[str, Any]]:
@@ -40,7 +41,7 @@ async def list_transactions(
     )
 
 
-@mcp.tool(title="Points: Earn")
+@mcp.tool(title="Points: Earn", annotations=ann.WRITE)
 async def earn_points(
     member_id: str,
     points: int,
@@ -61,7 +62,7 @@ async def earn_points(
     )
 
 
-@mcp.tool(title="Points: Burn")
+@mcp.tool(title="Points: Burn", annotations=ann.DESTRUCTIVE)
 async def burn_points(
     member_id: str,
     points: int,

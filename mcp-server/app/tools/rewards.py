@@ -6,11 +6,12 @@ scope rather than exposed here.
 from typing import Any, Dict, List, Optional
 
 from app.client import loyalty_api_client as api
+from app.core import annotations as ann
 from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Rewards: List")
+@mcp.tool(title="Rewards: List", annotations=ann.READ)
 async def list_rewards(
     active_only: bool = False,
     skip: int = 0,
@@ -30,7 +31,7 @@ async def list_rewards(
     )
 
 
-@mcp.tool(title="Rewards: Get")
+@mcp.tool(title="Rewards: Get", annotations=ann.READ)
 async def get_reward(reward_id: str, program: Optional[str] = None) -> Dict[str, Any]:
     """Get a single reward by id.
 
