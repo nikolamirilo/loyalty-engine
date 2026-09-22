@@ -70,6 +70,7 @@ mcp-server/
     ├── core/
     │   ├── config.py       # env vars, read in one place
     │   ├── auth.py         # token to principal, require_scope()
+    │   ├── annotations.py  # the behaviour hints each tool declares
     │   ├── branding.py     # the icons sent in the initialize response
     │   └── middleware.py   # ASGI bearer auth
     ├── assets/
@@ -198,11 +199,13 @@ display title, see [Why the titles look like that](#why-the-titles-look-like-tha
 1. Add the function to the matching module in `app/tools/`, or create a new
    module and import it in `app/tools/__init__.py`.
 2. Give it a `title` in the `"<Group>: <action>"` shape, matching the group
-   headings above. See [Why the titles look like that](#why-the-titles-look-like-that).
-3. Call `require_scope("read")` or `require_scope("write")` first.
-4. Call the API through `app.client.loyalty_api_client`, never `httpx` directly.
+   headings above. See [How tools are grouped](#how-tools-are-grouped).
+3. Pass `annotations=ann.READ`, `ann.WRITE`, `ann.DESTRUCTIVE` or `ann.OUTBOUND`
+   from `app/core/annotations.py`, matching the scope in the next step.
+4. Call `require_scope("read")` or `require_scope("write")` first.
+5. Call the API through `app.client.loyalty_api_client`, never `httpx` directly.
    That keeps the transport mockable and the service token in one place.
-5. Add a row to the table above.
+6. Add a row to the table above.
 
 ## Error handling
 
@@ -210,16 +213,45 @@ A non 2xx answer from the loyalty API raises `LoyaltyAPIError` inside the tool.
 MCP turns that into a tool error carrying the API's own `detail` message, for
 example `404: Member not found`.
 
-## Why the titles look like that
+## How tools are grouped
 
-Every tool carries a `title` such as `Challenges: Update progress`, and the
-prefix is doing real work.
+A client sorts this server's 42 tools along two axes, and they work differently.
 
-MCP has no concept of tool groups. A `Tool` carries a name, a title, a
-description, its schemas and icons, and nothing else. There is no tag or
-category field, so a server cannot ask a client to draw the headings used in the
-table above. In the Claude connector settings all 40 tools land in one flat
-**Other tools** list, and no server side change moves them out of it.
+### By behaviour, which the protocol does support
+
+Every tool declares `annotations` from `app/core/annotations.py`:
+
+| Preset | Tools | `readOnlyHint` | `destructiveHint` | `openWorldHint` |
+|---|---|---|---|---|
+| `READ` | 22 | `true` | `false` | `false` |
+| `WRITE` | 14 | `false` | `false` | `false` |
+| `DESTRUCTIVE` | 4 | `false` | `true` | `false` |
+| `OUTBOUND` | 2 | `false` | `false` | `true` |
+
+`DESTRUCTIVE` is the four that remove something rather than add it:
+`delete_challenge`, `delete_product`, `unassign_challenge` and `burn_points`.
+`OUTBOUND` is the two DOI tools, the only ones that reach an address outside
+the system. `openWorldHint` is `false` everywhere else because these tools
+address one loyalty API holding a closed, enumerable set of entities.
+
+This is what the Claude connector settings screen reads to split the list into
+**Read-only tools** and **Write/delete tools**. A tool that declares no
+annotations gives it nothing to sort by, so it lands in the flat **Other
+tools** list, which is where all 42 sat before these were added. Note that
+`destructiveHint` defaults to *true* when omitted, so the non-destructive
+writes have to say `false` out loud rather than stay silent.
+
+The hints are hints. `require_scope(...)` on the tool's first line is the
+actual gate, and it runs whatever a client believes.
+
+### By domain, which the protocol does not support
+
+There is no way to tell a client that `earn_points` belongs to a "Points"
+group. A `Tool` carries a name, a title, a description, its schemas, icons and
+`_meta`, and nothing else, so a server cannot ask for the headings used in the
+tool reference above. [SEP-1300](https://github.com/modelcontextprotocol/modelcontextprotocol/issues/1300)
+proposed exactly that, groups and tags on `tools/list`, and was closed without
+being adopted; the 2026-07-28 spec does not contain it.
 
 What a client does use is the title, with display precedence `title`, then
 `annotations.title`, then `name`. Lists are ordered by that display name, so a
@@ -235,8 +267,9 @@ Points: Burn
 Points: Earn
 ```
 
-Grouping by convention rather than by protocol. Keep the prefix identical inside
-a group, otherwise the group splits in the list.
+Grouping by convention rather than by protocol, and it now sorts *within* each
+behaviour bucket rather than within one flat list. Keep the prefix identical
+inside a group, otherwise the group splits.
 
 ## Branding
 
@@ -263,7 +296,17 @@ python -c "import cairosvg; cairosvg.svg2png(url='app/assets/logo.svg', write_to
 `cairosvg` is a one off tool for that command, not a runtime dependency, so it
 stays out of `requirements.txt`.
 
-Worth knowing: Claude does not yet render icons for custom connectors, so the
-connector still shows a generic avatar today. The spec has supported server
-icons since 2025-11-25, and this is the correct shape, so it will appear
-whenever client support lands.
+Worth knowing: this is the correct shape and there is nothing further to do on
+the server. Rendering is entirely up to the client, and claude.ai does not read
+`serverInfo.icons` for custom connectors yet, so the connector still shows a
+generic avatar. That is tracked in
+[claude-ai-mcp#152](https://github.com/anthropics/claude-ai-mcp/issues/152),
+open and unanswered, alongside
+[claude-code#95558](https://github.com/anthropics/claude-code/issues/95558) for
+the CLI. Branded icons on Claude's own connectors are configured by Anthropic,
+not sent by those servers. No server-side change, and no other MCP library,
+moves this: the icon appears when client support lands.
+
+The `Icon` type also carries a `theme` field (`light` or `dark`), and `Tool`
+carries its own `icons` list. Neither is used here, since no client draws
+either yet.

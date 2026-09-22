@@ -8,11 +8,12 @@ requires ``write``.
 from typing import Any, Dict, List, Optional
 
 from app.client import loyalty_api_client as api
+from app.core import annotations as ann
 from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Purchases: Record a purchase")
+@mcp.tool(title="Purchases: Record a purchase", annotations=ann.WRITE)
 async def purchase_product(
     member_id: str,
     product_id: str,
@@ -33,7 +34,7 @@ async def purchase_product(
     )
 
 
-@mcp.tool(title="Purchases: List for member")
+@mcp.tool(title="Purchases: List for member", annotations=ann.READ)
 async def list_member_purchases(
     member_id: str,
     skip: int = 0,
@@ -53,7 +54,7 @@ async def list_member_purchases(
     )
 
 
-@mcp.tool(title="Purchases: Get member stats")
+@mcp.tool(title="Purchases: Get member stats", annotations=ann.READ)
 async def get_member_purchase_stats(
     member_id: str,
     days: int = 7,

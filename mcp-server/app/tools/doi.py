@@ -5,11 +5,12 @@ the ``write`` scope - there's no meaningful read-only DOI operation.
 from typing import Any, Dict, Optional
 
 from app.client import loyalty_api_client as api
+from app.core import annotations as ann
 from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Email verification: Send")
+@mcp.tool(title="Email verification: Send", annotations=ann.OUTBOUND)
 async def trigger_doi(
     email: Optional[str] = None,
     member_id: Optional[str] = None,
@@ -32,7 +33,7 @@ async def trigger_doi(
     )
 
 
-@mcp.tool(title="Email verification: Confirm")
+@mcp.tool(title="Email verification: Confirm", annotations=ann.OUTBOUND)
 async def verify_doi(
     code: str,
     email: Optional[str] = None,

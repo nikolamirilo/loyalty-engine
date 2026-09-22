@@ -7,11 +7,12 @@ goodwill grant). Both share the same `Redemption` record, distinguished by
 from typing import Any, Dict, List, Optional
 
 from app.client import loyalty_api_client as api
+from app.core import annotations as ann
 from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Redemptions: Redeem a reward")
+@mcp.tool(title="Redemptions: Redeem a reward", annotations=ann.WRITE)
 async def redeem_reward(
     member_id: str, reward_id: str, program: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -24,7 +25,7 @@ async def redeem_reward(
     return await api.post(f"/members/{member_id}/redeem/{reward_id}", program=program)
 
 
-@mcp.tool(title="Redemptions: List for member")
+@mcp.tool(title="Redemptions: List for member", annotations=ann.READ)
 async def list_member_redemptions(
     member_id: str, skip: int = 0, limit: int = 50, program: Optional[str] = None
 ) -> List[Dict[str, Any]]:
@@ -41,7 +42,7 @@ async def list_member_redemptions(
     )
 
 
-@mcp.tool(title="Redemptions: Grant a prize")
+@mcp.tool(title="Redemptions: Grant a prize", annotations=ann.WRITE)
 async def assign_prize(
     member_id: str,
     reward_id: str,
@@ -59,7 +60,7 @@ async def assign_prize(
     return await api.post(f"/members/{member_id}/prizes/{reward_id}", program=program)
 
 
-@mcp.tool(title="Redemptions: List prizes for member")
+@mcp.tool(title="Redemptions: List prizes for member", annotations=ann.READ)
 async def list_member_prizes(
     member_id: str,
     source: Optional[str] = None,
