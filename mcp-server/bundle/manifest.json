@@ -1,0 +1,47 @@
+{
+  "manifest_version": "0.3",
+  "name": "loyalty-engine-mcp",
+  "display_name": "Loyalty Engine",
+  "version": "0.1.0",
+  "description": "Loyalty program tools: members, points, rewards, challenges, products and purchases.",
+  "long_description": "A thin stdio wrapper around the deployed Loyalty Engine MCP server. The tools themselves run remotely and call the loyalty API over HTTPS; this bundle exists so Claude Desktop can install the connector in one click and show it with its own icon.",
+  "author": {
+    "name": "Brame"
+  },
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "node_modules/mcp-remote/dist/proxy.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/node_modules/mcp-remote/dist/proxy.js",
+        "${user_config.server_url}",
+        "--header",
+        "Authorization: Bearer ${user_config.client_token}"
+      ]
+    }
+  },
+  "user_config": {
+    "server_url": {
+      "type": "string",
+      "title": "MCP endpoint",
+      "description": "Full URL of the deployed server, ending in /mcp.",
+      "required": true
+    },
+    "client_token": {
+      "type": "string",
+      "title": "Client token",
+      "description": "One of the tokens listed in the server's MCP_CLIENT_TOKENS. Its scopes decide which tools are allowed.",
+      "required": true,
+      "sensitive": true
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin", "win32"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "keywords": ["loyalty", "rewards", "points", "challenges", "members"]
+}

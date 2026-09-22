@@ -64,6 +64,10 @@ logic already lives in the API.
 mcp-server/
 ├── requirements.txt
 ├── .env.example
+├── bundle/                 # the .mcpb Claude Desktop installs, see Desktop bundle
+│   ├── manifest.json
+│   ├── icon.png
+│   └── build.sh
 └── app/
     ├── server.py           # ASGI entrypoint: `uvicorn app.server:app`
     ├── mcp_instance.py     # the shared MCPServer instance tools register onto
@@ -202,9 +206,11 @@ reading only; the title a client actually shows is verb first, see
 2. Give it a verb-first `title` in the `"<Verb> <object>"` shape, such as
    `Create Challenge` or `List Member Purchases`. No domain prefix. See
    [How tools are grouped](#how-tools-are-grouped).
-3. Pass `annotations=ann.READ`, `ann.WRITE`, `ann.DELETE` or `ann.OUTBOUND`
-   from `app/core/annotations.py`, matching the scope in the next step.
-   `ann.DELETE` is for tools that remove a record and nothing else.
+3. Pass `annotations=ann.READ`, `ann.WRITE` or `ann.DELETE` from
+   `app/core/annotations.py`, matching the scope in the next step. `ann.DELETE`
+   is for tools that remove a record and nothing else. Always pass one: the two
+   tools that pass nothing do so for a documented reason, see
+   [How tools are grouped](#how-tools-are-grouped).
 4. Call `require_scope("read")` or `require_scope("write")` first.
 5. Call the API through `app.client.loyalty_api_client`, never `httpx` directly.
    That keeps the transport mockable and the service token in one place.
@@ -222,38 +228,47 @@ A client sorts this server's 42 tools along two axes, and they work differently.
 
 ### By behaviour, which the protocol does support
 
-Every tool declares `annotations` from `app/core/annotations.py`:
+Forty of the 42 declare `annotations` from `app/core/annotations.py`:
 
-| Preset | Bucket | Tools | `readOnlyHint` | `destructiveHint` | `openWorldHint` |
-|---|---|---|---|---|---|
-| `READ` | read | 22 | `true` | `false` | `false` |
-| `WRITE` | write | 15 | `false` | `false` | `false` |
-| `DELETE` | delete | 3 | `false` | `true` | `false` |
-| `OUTBOUND` | write | 2 | `false` | `false` | `true` |
+| Preset | Tools | `readOnlyHint` | `destructiveHint` | `openWorldHint` |
+|---|---|---|---|---|
+| `READ` | 22 | `true` | `false` | `false` |
+| `WRITE` | 15 | `false` | `false` | `false` |
+| `DELETE` | 3 | `false` | `true` | `false` |
+| *(none)* | 2 | — | — | — |
 
 `DELETE` means the tool removes a record and nothing else, which is three of
 them: `delete_challenge`, `delete_product` and `unassign_challenge`.
 `burn_points` is a `WRITE` despite spending a balance, because what it actually
-does is append a transaction; no record goes away. `OUTBOUND` is the two DOI
-tools, the only ones that reach an address outside the system. `openWorldHint`
-is `false` everywhere else because these tools address one loyalty API holding
-a closed, enumerable set of entities.
+does is append a transaction; no record goes away. `openWorldHint` is `false`
+throughout, because every tool that declares a preset addresses one loyalty API
+holding a closed, enumerable set of entities.
 
-These four flags are the whole vocabulary the protocol gives a server for this.
-`destructiveHint` is the only thing separating a write from a delete, so the
-read / write / delete split above is exactly as fine-grained as MCP allows.
 Note that `destructiveHint` defaults to *true* when omitted, so the writes have
 to say `false` out loud rather than stay silent, otherwise they read as deletes.
 
-**What the client does with it is the client's business.** Claude's connector
-settings screen currently folds both non-read buckets into one heading,
-**Write/delete tools**, opposite **Read-only tools**; a tool declaring no
-annotations at all has nothing to sort by and lands in a flat **Other tools**
-list, which is where all 42 sat before these were added. A server cannot rename
-those headings or ask for a third one, so `DELETE` will not draw its own section
-until a client chooses to read `destructiveHint` that way. What it does do today
-is mark those three tools as irreversible, which is what drives a client's
-confirmation prompt before it calls one.
+**How Claude draws this.** Its connector settings screen reads `readOnlyHint`
+and nothing else, giving three sections:
+
+| Section | Comes from | Tools |
+|---|---|---|
+| **Read-only tools** | `readOnlyHint: true` | 22 |
+| **Write/delete tools** | `readOnlyHint: false` | 18 |
+| **Other tools** | no `annotations` at all | 2 |
+
+Those headings are Claude's. A server cannot rename them or ask for a fourth,
+and `destructiveHint` draws no section of its own, so the three `DELETE` tools
+sit inside **Write/delete tools** with the writes. What `DELETE` does buy is
+the marking that drives a client's confirmation prompt before an irreversible
+call, which is worth having whether or not it shows up as a heading.
+
+**Other tools** is the one section a server can aim a tool at, by annotating
+nothing, and the two DOI tools use it on purpose. They are the only tools here
+that reach an address outside the system, so a separate section with its own
+allow/ask toggle is the right place for them, and going unannotated is the only
+way to land there. The cost is real: no hints means no `openWorldHint: true`
+saying why they are different, and no read/write signal at all. That trade is
+worth it for exactly these two. Everything else declares a preset.
 
 The hints are hints. `require_scope(...)` on the tool's first line is the
 actual gate, and it runs whatever a client believes.
@@ -267,14 +282,29 @@ tool reference above. [SEP-1300](https://github.com/modelcontextprotocol/modelco
 proposed exactly that, groups and tags on `tools/list`, and was closed without
 being adopted; the 2026-07-28 spec does not contain it.
 
-What a client does use is the title, with display precedence `title`, then
-`annotations.title`, then `name`, and it orders its list by that display name.
-Titles here used to exploit that with a `"<Domain>: <action>"` prefix, so
-related tools sorted together and faked the missing grouping.
+What a client does display is the title, with precedence `title`, then
+`annotations.title`, then `name`. Titles here used to exploit that with a
+`"<Domain>: <action>"` prefix, on the theory that a client sorts by what it
+shows, so a shared prefix would make related tools sit together and fake the
+missing grouping.
 
-That prefix has been dropped. The behaviour annotations above already split the
-list into read and write, and inside a bucket the prefix only pushed the word
-that identifies the tool to the right, where it is slower to scan:
+That theory is wrong, at least for Claude. **Claude's connector settings screen
+orders each bucket by the tool `name`, not by the title it draws.** The observed
+order is `get_challenge`, `get_member`, `get_member_balance`,
+`get_member_challenge_progress`, ... which renders as:
+
+```
+Get Challenge
+Get Member
+Get Points Balance              <- get_member_balance
+Get Member Challenge Progress
+```
+
+Alphabetical in `name`, visibly out of order in the titles. So the prefix never
+controlled placement, and the domain prefix bought nothing it was added for.
+
+It has been dropped. Titles are now verb first, reading as the action the tool
+performs:
 
 | Was | Now |
 |---|---|
@@ -282,11 +312,10 @@ that identifies the tool to the right, where it is slower to scan:
 | `Challenges: Create` | `Create Challenge` |
 | `Points: Burn` | `Burn Points` |
 
-Titles are now verb first, reading as the action the tool performs. The trade is
-that sorting no longer clusters a domain: `Create Challenge` lands beside
-`Create Product`, and `Get Challenge` sits well away from both. That is the
-better default once the read/write split has already halved the list, since what
-a caller scans for is the verb.
+The lever that does control order is the function name in `app/tools/`. Where a
+name and its title disagree the list reads as unsorted, which is worth keeping
+in mind when adding a tool: name it after its title and it lands where a reader
+expects.
 
 ## Branding
 
@@ -324,6 +353,51 @@ the CLI. Branded icons on Claude's own connectors are configured by Anthropic,
 not sent by those servers. No server-side change, and no other MCP library,
 moves this: the icon appears when client support lands.
 
+Which leaves one place a logo does render today, and it is not the protocol:
+the desktop bundle below, where the icon is a file in the archive rather than a
+field on the wire.
+
 The `Icon` type also carries a `theme` field (`light` or `dark`), and `Tool`
 carries its own `icons` list. Neither is used here, since no client draws
 either yet.
+
+## Desktop bundle
+
+`bundle/` packages this server as an
+[MCPB](https://github.com/modelcontextprotocol/mcpb), the one-click install
+format Claude Desktop reads. Claude Desktop draws `bundle/icon.png` beside the
+extension, so installing the `.mcpb` is currently the only way to see the logo
+next to this server in a Claude client.
+
+The bundle ships no code of ours. Claude Desktop speaks stdio to extensions,
+this server speaks Streamable HTTP, so the archive carries
+[`mcp-remote`](https://www.npmjs.com/package/mcp-remote) as the proxy between
+the two and nothing else. The tools still run on the deployment; the desktop
+only gets a pipe to it.
+
+```bash
+./bundle/build.sh          # npm install, then mcpb pack
+```
+
+That writes `bundle/loyalty-engine-mcp.mcpb` (about 1.7 MB). Drag it onto
+Claude Desktop, or use Settings, Extensions, Advanced settings, Install
+Extension. The install prompt asks for the two values in `user_config`:
+
+| Field | Value |
+|---|---|
+| MCP endpoint | The deployment's URL, ending in `/mcp`. |
+| Client token | One of the tokens in `MCP_CLIENT_TOKENS`. Stored by Claude Desktop as a secret, since the field is marked `sensitive`. |
+
+`icon.png` is 512x512, the size Claude Desktop asks for, rendered from the same
+`app/assets/logo.svg` the `initialize` icons come from:
+
+```bash
+npx --yes sharp-cli -i app/assets/logo.svg -o bundle/icon.png resize 512 512
+```
+
+Two things to know before leaning on this. The token is passed as an
+`--header` argument, so it is visible in the process list to anyone already on
+that machine; `mcp-remote` also accepts `--header-file` if that matters for a
+given install. And the bundle is a Claude Desktop format: it does nothing for
+claude.ai in a browser, where the connector keeps its generic avatar, and
+nothing for Claude Code, which draws no images at all.

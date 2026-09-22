@@ -1,16 +1,23 @@
 """Double opt-in email verification tools. Both trigger and verify require
 the ``write`` scope - there's no meaningful read-only DOI operation.
+
+Neither declares ``annotations``, and that is deliberate. These are the only
+two tools that reach an address outside the system, so they deserve a
+permission decision of their own, separate from the writes that stay inside
+the loyalty API. A client has no field to express that - see "How tools are
+grouped" in the README - but Claude does put every unannotated tool in its
+own **Other tools** section, with its own allow/ask toggle. Leaving these two
+unannotated is what buys that section. Nothing else here should follow suit.
 """
 
 from typing import Any, Dict, Optional
 
 from app.client import loyalty_api_client as api
-from app.core import annotations as ann
 from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Send Email Verification", annotations=ann.OUTBOUND)
+@mcp.tool(title="Send Email Verification")
 async def trigger_doi(
     email: Optional[str] = None,
     member_id: Optional[str] = None,
@@ -33,7 +40,7 @@ async def trigger_doi(
     )
 
 
-@mcp.tool(title="Confirm Email Verification", annotations=ann.OUTBOUND)
+@mcp.tool(title="Confirm Email Verification")
 async def verify_doi(
     code: str,
     email: Optional[str] = None,

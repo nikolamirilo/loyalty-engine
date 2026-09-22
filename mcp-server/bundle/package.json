@@ -1,0 +1,9 @@
+{
+  "name": "loyalty-engine-mcp-bundle",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Packaging only: mcp-remote is the stdio-to-HTTP proxy the .mcpb ships. No source of our own.",
+  "dependencies": {
+    "mcp-remote": "^0.14.3"
+  }
+}
