@@ -17,7 +17,7 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Programs: List", annotations=ann.READ)
+@mcp.tool(title="List Programs", annotations=ann.READ)
 async def list_programs() -> List[Dict[str, Any]]:
     """List the loyalty programs on this deployment, oldest first.
 
@@ -34,7 +34,7 @@ async def list_programs() -> List[Dict[str, Any]]:
     return await api.get("/programs")
 
 
-@mcp.tool(title="Programs: Get", annotations=ann.READ)
+@mcp.tool(title="Get Program", annotations=ann.READ)
 async def get_program(program_id: str) -> Dict[str, Any]:
     """Get a single program by id.
 

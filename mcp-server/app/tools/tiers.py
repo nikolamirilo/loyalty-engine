@@ -11,7 +11,7 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Tiers: List", annotations=ann.READ)
+@mcp.tool(title="List Tiers", annotations=ann.READ)
 async def list_tiers(program: Optional[str] = None) -> List[Dict[str, Any]]:
     """List point-threshold tiers in ascending order of `minPoints`.
 
@@ -22,7 +22,7 @@ async def list_tiers(program: Optional[str] = None) -> List[Dict[str, Any]]:
     return await api.get("/tiers", program=program)
 
 
-@mcp.tool(title="Tiers: Get", annotations=ann.READ)
+@mcp.tool(title="Get Tier", annotations=ann.READ)
 async def get_tier(tier_id: str, program: Optional[str] = None) -> Dict[str, Any]:
     """Get a single tier by id.
 

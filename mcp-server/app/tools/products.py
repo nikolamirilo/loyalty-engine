@@ -11,7 +11,7 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Products: Create", annotations=ann.WRITE)
+@mcp.tool(title="Create Product", annotations=ann.WRITE)
 async def create_product(
     name: str,
     price_cents: int,
@@ -39,7 +39,7 @@ async def create_product(
     return await api.post("/products", body, program=program)
 
 
-@mcp.tool(title="Products: List", annotations=ann.READ)
+@mcp.tool(title="List Products", annotations=ann.READ)
 async def list_products(
     active_only: bool = False,
     skip: int = 0,
@@ -59,7 +59,7 @@ async def list_products(
     )
 
 
-@mcp.tool(title="Products: Get", annotations=ann.READ)
+@mcp.tool(title="Get Product", annotations=ann.READ)
 async def get_product(product_id: str, program: Optional[str] = None) -> Dict[str, Any]:
     """Get a single product by id.
 
@@ -70,7 +70,7 @@ async def get_product(product_id: str, program: Optional[str] = None) -> Dict[st
     return await api.get(f"/products/{product_id}", program=program)
 
 
-@mcp.tool(title="Products: Update", annotations=ann.WRITE)
+@mcp.tool(title="Update Product", annotations=ann.WRITE)
 async def update_product(
     product_id: str,
     name: Optional[str] = None,
@@ -98,7 +98,7 @@ async def update_product(
     return await api.patch(f"/products/{product_id}", body, program=program)
 
 
-@mcp.tool(title="Products: Delete", annotations=ann.DESTRUCTIVE)
+@mcp.tool(title="Delete Product", annotations=ann.DELETE)
 async def delete_product(product_id: str, program: Optional[str] = None) -> None:
     """Delete a product from the catalog.
 

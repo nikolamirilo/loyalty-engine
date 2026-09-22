@@ -16,7 +16,7 @@ from app.mcp_instance import mcp
 # ── challenge definitions (admin CRUD) ───────────────────────────────────────
 
 
-@mcp.tool(title="Challenges: Create", annotations=ann.WRITE)
+@mcp.tool(title="Create Challenge", annotations=ann.WRITE)
 async def create_challenge(
     name: str,
     description: Optional[str] = None,
@@ -53,7 +53,7 @@ async def create_challenge(
     return await api.post("/challenges", body, program=program)
 
 
-@mcp.tool(title="Challenges: List", annotations=ann.READ)
+@mcp.tool(title="List Challenges", annotations=ann.READ)
 async def list_challenges(
     active_only: bool = False,
     skip: int = 0,
@@ -73,7 +73,7 @@ async def list_challenges(
     )
 
 
-@mcp.tool(title="Challenges: Get", annotations=ann.READ)
+@mcp.tool(title="Get Challenge", annotations=ann.READ)
 async def get_challenge(challenge_id: str, program: Optional[str] = None) -> Dict[str, Any]:
     """Get a single challenge definition by id.
 
@@ -84,7 +84,7 @@ async def get_challenge(challenge_id: str, program: Optional[str] = None) -> Dic
     return await api.get(f"/challenges/{challenge_id}", program=program)
 
 
-@mcp.tool(title="Challenges: Update", annotations=ann.WRITE)
+@mcp.tool(title="Update Challenge", annotations=ann.WRITE)
 async def update_challenge(
     challenge_id: str,
     name: Optional[str] = None,
@@ -119,7 +119,7 @@ async def update_challenge(
     return await api.patch(f"/challenges/{challenge_id}", body, program=program)
 
 
-@mcp.tool(title="Challenges: Delete", annotations=ann.DESTRUCTIVE)
+@mcp.tool(title="Delete Challenge", annotations=ann.DELETE)
 async def delete_challenge(challenge_id: str, program: Optional[str] = None) -> None:
     """Delete a challenge definition, along with any member assignments on it.
 
@@ -133,7 +133,7 @@ async def delete_challenge(challenge_id: str, program: Optional[str] = None) -> 
 # ── assignment & progress (member-centric) ───────────────────────────────────
 
 
-@mcp.tool(title="Challenges: Assign to member", annotations=ann.WRITE)
+@mcp.tool(title="Assign Challenge to Member", annotations=ann.WRITE)
 async def assign_challenge_to_member(
     member_id: str,
     challenge_id: str,
@@ -149,7 +149,7 @@ async def assign_challenge_to_member(
     return await api.post(f"/members/{member_id}/challenges/{challenge_id}", program=program)
 
 
-@mcp.tool(title="Challenges: List for member", annotations=ann.READ)
+@mcp.tool(title="List Member Challenges", annotations=ann.READ)
 async def list_member_challenges(
     member_id: str,
     status: Optional[str] = None,
@@ -172,7 +172,7 @@ async def list_member_challenges(
     )
 
 
-@mcp.tool(title="Challenges: Get member progress", annotations=ann.READ)
+@mcp.tool(title="Get Member Challenge Progress", annotations=ann.READ)
 async def get_member_challenge_progress(
     member_id: str,
     challenge_id: str,
@@ -189,7 +189,7 @@ async def get_member_challenge_progress(
     return await api.get(f"/members/{member_id}/challenges/{challenge_id}", program=program)
 
 
-@mcp.tool(title="Challenges: Update progress", annotations=ann.WRITE)
+@mcp.tool(title="Update Challenge Progress", annotations=ann.WRITE)
 async def update_challenge_progress(
     member_id: str,
     challenge_id: str,
@@ -213,7 +213,7 @@ async def update_challenge_progress(
     )
 
 
-@mcp.tool(title="Challenges: Complete for member", annotations=ann.WRITE)
+@mcp.tool(title="Complete Challenge for Member", annotations=ann.WRITE)
 async def complete_challenge(
     member_id: str,
     challenge_id: str,
@@ -232,7 +232,7 @@ async def complete_challenge(
     )
 
 
-@mcp.tool(title="Challenges: Remove from member", annotations=ann.DESTRUCTIVE)
+@mcp.tool(title="Remove Challenge from Member", annotations=ann.DELETE)
 async def unassign_challenge(
     member_id: str,
     challenge_id: str,
@@ -250,7 +250,7 @@ async def unassign_challenge(
 # ── bulk assignment by segment ───────────────────────────────────────────────
 
 
-@mcp.tool(title="Challenges: Assign to segment", annotations=ann.WRITE)
+@mcp.tool(title="Assign Challenge to Segment", annotations=ann.WRITE)
 async def assign_challenge_to_segment(
     challenge_id: str,
     segment_id: str,

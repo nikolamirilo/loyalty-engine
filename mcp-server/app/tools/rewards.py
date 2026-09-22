@@ -11,7 +11,7 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Rewards: List", annotations=ann.READ)
+@mcp.tool(title="List Rewards", annotations=ann.READ)
 async def list_rewards(
     active_only: bool = False,
     skip: int = 0,
@@ -31,7 +31,7 @@ async def list_rewards(
     )
 
 
-@mcp.tool(title="Rewards: Get", annotations=ann.READ)
+@mcp.tool(title="Get Reward", annotations=ann.READ)
 async def get_reward(reward_id: str, program: Optional[str] = None) -> Dict[str, Any]:
     """Get a single reward by id.
 

@@ -11,7 +11,7 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Points: Get balance", annotations=ann.READ)
+@mcp.tool(title="Get Points Balance", annotations=ann.READ)
 async def get_member_balance(
     member_id: str, program: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -24,7 +24,7 @@ async def get_member_balance(
     return await api.get(f"/members/{member_id}/balance", program=program)
 
 
-@mcp.tool(title="Points: List transactions", annotations=ann.READ)
+@mcp.tool(title="List Point Transactions", annotations=ann.READ)
 async def list_transactions(
     member_id: str, skip: int = 0, limit: int = 50, program: Optional[str] = None
 ) -> List[Dict[str, Any]]:
@@ -41,7 +41,7 @@ async def list_transactions(
     )
 
 
-@mcp.tool(title="Points: Earn", annotations=ann.WRITE)
+@mcp.tool(title="Earn Points", annotations=ann.WRITE)
 async def earn_points(
     member_id: str,
     points: int,
@@ -62,7 +62,7 @@ async def earn_points(
     )
 
 
-@mcp.tool(title="Points: Burn", annotations=ann.DESTRUCTIVE)
+@mcp.tool(title="Burn Points", annotations=ann.WRITE)
 async def burn_points(
     member_id: str,
     points: int,

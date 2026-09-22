@@ -121,8 +121,9 @@ Point a client at `/mcp` with `Authorization: Bearer <one of MCP_CLIENT_TOKENS>`
 ## Tool reference
 
 40 tools. Inputs use snake_case field names, outputs pass the API response
-straight through, already camelCase. The headings below match each tool's
-display title, see [Why the titles look like that](#why-the-titles-look-like-that).
+straight through, already camelCase. The headings below group by domain for
+reading only; the title a client actually shows is verb first, see
+[How tools are grouped](#how-tools-are-grouped).
 
 **Members**
 
@@ -198,10 +199,12 @@ display title, see [Why the titles look like that](#why-the-titles-look-like-tha
 
 1. Add the function to the matching module in `app/tools/`, or create a new
    module and import it in `app/tools/__init__.py`.
-2. Give it a `title` in the `"<Group>: <action>"` shape, matching the group
-   headings above. See [How tools are grouped](#how-tools-are-grouped).
-3. Pass `annotations=ann.READ`, `ann.WRITE`, `ann.DESTRUCTIVE` or `ann.OUTBOUND`
+2. Give it a verb-first `title` in the `"<Verb> <object>"` shape, such as
+   `Create Challenge` or `List Member Purchases`. No domain prefix. See
+   [How tools are grouped](#how-tools-are-grouped).
+3. Pass `annotations=ann.READ`, `ann.WRITE`, `ann.DELETE` or `ann.OUTBOUND`
    from `app/core/annotations.py`, matching the scope in the next step.
+   `ann.DELETE` is for tools that remove a record and nothing else.
 4. Call `require_scope("read")` or `require_scope("write")` first.
 5. Call the API through `app.client.loyalty_api_client`, never `httpx` directly.
    That keeps the transport mockable and the service token in one place.
@@ -221,25 +224,36 @@ A client sorts this server's 42 tools along two axes, and they work differently.
 
 Every tool declares `annotations` from `app/core/annotations.py`:
 
-| Preset | Tools | `readOnlyHint` | `destructiveHint` | `openWorldHint` |
-|---|---|---|---|---|
-| `READ` | 22 | `true` | `false` | `false` |
-| `WRITE` | 14 | `false` | `false` | `false` |
-| `DESTRUCTIVE` | 4 | `false` | `true` | `false` |
-| `OUTBOUND` | 2 | `false` | `false` | `true` |
+| Preset | Bucket | Tools | `readOnlyHint` | `destructiveHint` | `openWorldHint` |
+|---|---|---|---|---|---|
+| `READ` | read | 22 | `true` | `false` | `false` |
+| `WRITE` | write | 15 | `false` | `false` | `false` |
+| `DELETE` | delete | 3 | `false` | `true` | `false` |
+| `OUTBOUND` | write | 2 | `false` | `false` | `true` |
 
-`DESTRUCTIVE` is the four that remove something rather than add it:
-`delete_challenge`, `delete_product`, `unassign_challenge` and `burn_points`.
-`OUTBOUND` is the two DOI tools, the only ones that reach an address outside
-the system. `openWorldHint` is `false` everywhere else because these tools
-address one loyalty API holding a closed, enumerable set of entities.
+`DELETE` means the tool removes a record and nothing else, which is three of
+them: `delete_challenge`, `delete_product` and `unassign_challenge`.
+`burn_points` is a `WRITE` despite spending a balance, because what it actually
+does is append a transaction; no record goes away. `OUTBOUND` is the two DOI
+tools, the only ones that reach an address outside the system. `openWorldHint`
+is `false` everywhere else because these tools address one loyalty API holding
+a closed, enumerable set of entities.
 
-This is what the Claude connector settings screen reads to split the list into
-**Read-only tools** and **Write/delete tools**. A tool that declares no
-annotations gives it nothing to sort by, so it lands in the flat **Other
-tools** list, which is where all 42 sat before these were added. Note that
-`destructiveHint` defaults to *true* when omitted, so the non-destructive
-writes have to say `false` out loud rather than stay silent.
+These four flags are the whole vocabulary the protocol gives a server for this.
+`destructiveHint` is the only thing separating a write from a delete, so the
+read / write / delete split above is exactly as fine-grained as MCP allows.
+Note that `destructiveHint` defaults to *true* when omitted, so the writes have
+to say `false` out loud rather than stay silent, otherwise they read as deletes.
+
+**What the client does with it is the client's business.** Claude's connector
+settings screen currently folds both non-read buckets into one heading,
+**Write/delete tools**, opposite **Read-only tools**; a tool declaring no
+annotations at all has nothing to sort by and lands in a flat **Other tools**
+list, which is where all 42 sat before these were added. A server cannot rename
+those headings or ask for a third one, so `DELETE` will not draw its own section
+until a client chooses to read `destructiveHint` that way. What it does do today
+is mark those three tools as irreversible, which is what drives a client's
+confirmation prompt before it calls one.
 
 The hints are hints. `require_scope(...)` on the tool's first line is the
 actual gate, and it runs whatever a client believes.
@@ -254,22 +268,25 @@ proposed exactly that, groups and tags on `tools/list`, and was closed without
 being adopted; the 2026-07-28 spec does not contain it.
 
 What a client does use is the title, with display precedence `title`, then
-`annotations.title`, then `name`. Lists are ordered by that display name, so a
-shared prefix is the one way to make related tools sit together:
+`annotations.title`, then `name`, and it orders its list by that display name.
+Titles here used to exploit that with a `"<Domain>: <action>"` prefix, so
+related tools sorted together and faked the missing grouping.
 
-```
-Challenges: Assign to member
-Challenges: Assign to segment
-Challenges: Complete for member
-Challenges: Create
-...
-Points: Burn
-Points: Earn
-```
+That prefix has been dropped. The behaviour annotations above already split the
+list into read and write, and inside a bucket the prefix only pushed the word
+that identifies the tool to the right, where it is slower to scan:
 
-Grouping by convention rather than by protocol, and it now sorts *within* each
-behaviour bucket rather than within one flat list. Keep the prefix identical
-inside a group, otherwise the group splits.
+| Was | Now |
+|---|---|
+| `Challenges: Assign to member` | `Assign Challenge to Member` |
+| `Challenges: Create` | `Create Challenge` |
+| `Points: Burn` | `Burn Points` |
+
+Titles are now verb first, reading as the action the tool performs. The trade is
+that sorting no longer clusters a domain: `Create Challenge` lands beside
+`Create Product`, and `Get Challenge` sits well away from both. That is the
+better default once the read/write split has already halved the list, since what
+a caller scans for is the verb.
 
 ## Branding
 

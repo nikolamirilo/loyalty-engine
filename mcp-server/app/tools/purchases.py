@@ -13,7 +13,7 @@ from app.core.auth import require_scope
 from app.mcp_instance import mcp
 
 
-@mcp.tool(title="Purchases: Record a purchase", annotations=ann.WRITE)
+@mcp.tool(title="Record Purchase", annotations=ann.WRITE)
 async def purchase_product(
     member_id: str,
     product_id: str,
@@ -34,7 +34,7 @@ async def purchase_product(
     )
 
 
-@mcp.tool(title="Purchases: List for member", annotations=ann.READ)
+@mcp.tool(title="List Member Purchases", annotations=ann.READ)
 async def list_member_purchases(
     member_id: str,
     skip: int = 0,
@@ -54,7 +54,7 @@ async def list_member_purchases(
     )
 
 
-@mcp.tool(title="Purchases: Get member stats", annotations=ann.READ)
+@mcp.tool(title="Get Member Purchase Stats", annotations=ann.READ)
 async def get_member_purchase_stats(
     member_id: str,
     days: int = 7,
