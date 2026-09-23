@@ -16,6 +16,7 @@ from starlette.routing import Route
 
 from app import tools  # noqa: F401 - registers every @mcp.tool()
 from app.core.config import settings
+from app.core.landing import PUBLIC_ROUTES
 from app.core.middleware import BearerAuthMiddleware
 from app.mcp_instance import mcp
 
@@ -38,6 +39,7 @@ app = mcp.streamable_http_app(
     ),
 )
 app.routes.append(Route("/healthz", healthz, methods=["GET"]))
+app.routes.extend(PUBLIC_ROUTES)
 app.add_middleware(BearerAuthMiddleware)
 # Added last so it wraps BearerAuthMiddleware, letting Starlette answer the
 # browser's OPTIONS preflight (sent by claude.ai before its Authorization

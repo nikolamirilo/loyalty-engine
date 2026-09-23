@@ -17,8 +17,13 @@ from mcp.types import Icon
 _ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
 
+def asset_bytes(filename: str) -> bytes:
+    """Raw bytes of a file in ``app/assets/``."""
+    return (_ASSETS / filename).read_bytes()
+
+
 def _data_uri(filename: str, mime_type: str) -> str:
-    encoded = base64.b64encode((_ASSETS / filename).read_bytes()).decode("ascii")
+    encoded = base64.b64encode(asset_bytes(filename)).decode("ascii")
     return f"data:{mime_type};base64,{encoded}"
 
 

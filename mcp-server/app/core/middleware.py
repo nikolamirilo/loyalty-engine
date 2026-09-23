@@ -11,10 +11,12 @@ principal set below is reliably visible to ``require_scope()``.
 import json
 
 from app.core.auth import authenticate, reset_current_principal, set_current_principal
+from app.core.landing import PUBLIC_PATHS
 
-# Unauthenticated paths for infra health checks (Vercel, uptime monitors).
+# Unauthenticated paths: the infra health check (Vercel, uptime monitors) and
+# the landing page and logo files, which carry no data.
 # The MCP protocol endpoints themselves always require a valid bearer token.
-_UNAUTHENTICATED_PATHS = {"/healthz"}
+_UNAUTHENTICATED_PATHS = {"/healthz"} | PUBLIC_PATHS
 
 
 class BearerAuthMiddleware:

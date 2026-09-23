@@ -76,10 +76,12 @@ mcp-server/
     │   ├── auth.py         # token to principal, require_scope()
     │   ├── annotations.py  # the behaviour hints each tool declares
     │   ├── branding.py     # the icons sent in the initialize response
+    │   ├── landing.py      # public landing page and favicon routes
     │   └── middleware.py   # ASGI bearer auth
     ├── assets/
     │   ├── logo.svg        # copy of client/public/logo.svg
-    │   └── logo-64.png     # rendered from that SVG
+    │   ├── logo-64.png     # rendered from that SVG, for serverInfo.icons
+    │   └── logo-192.png    # rendered from that SVG, for the favicon routes
     ├── client/
     │   └── loyalty_api_client.py   # the only module that knows the API
     └── tools/              # one module per resource, mirrors api/app/routers/
@@ -119,6 +121,7 @@ uvicorn app.server:app --reload --port 8100
 
 - MCP endpoint: `http://localhost:8100/mcp`
 - Health check, no auth: `http://localhost:8100/healthz`
+- Landing page and logo, no auth: `/`, `/favicon.ico`, `/favicon.svg`, `/icon.png`
 
 Point a client at `/mcp` with `Authorization: Bearer <one of MCP_CLIENT_TOKENS>`.
 
@@ -353,9 +356,65 @@ the CLI. Branded icons on Claude's own connectors are configured by Anthropic,
 not sent by those servers. No server-side change, and no other MCP library,
 moves this: the icon appears when client support lands.
 
-Which leaves one place a logo does render today, and it is not the protocol:
-the desktop bundle below, where the icon is a file in the archive rather than a
-field on the wire.
+Which leaves two places a logo does render today, neither of them the protocol:
+the desktop bundle below, where the icon is a file in the archive, and claude.ai
+in a browser, where the icon is a property of the hostname.
+
+### What claude.ai actually draws
+
+claude.ai does not ask this server for anything. It takes the connector URL,
+truncates the host to its last two labels, and asks Google's favicon service
+for that domain:
+
+```
+https://www.google.com/s2/favicons?domain=<last-two-labels>&sz=96
+```
+
+Whatever comes back is the tile. This was established across
+[#152](https://github.com/anthropics/claude-ai-mcp/issues/152) by several
+independent reporters, who between them ruled out `serverInfo.icons`, favicons
+served at the MCP origin, `logo_uri` in the RFC 8414 metadata, `title` and
+`websiteUrl`.
+
+The truncation is naive, so a deployment on a shared suffix inherits the
+platform's brand. Measured 2026-09-22:
+
+| Queried domain | Result |
+|---|---|
+| `loyalty-engine-mcp.vercel.app` | 404, the 726-byte default globe |
+| `vercel.app`, what the truncation actually asks for | 200, Vercel's triangle |
+| `brame.io` | 200, the Brame mark |
+
+So the connector currently shows a globe or someone else's logo, and no change
+to this codebase alters that. The hostname is the lever:
+
+```bash
+# what claude.ai will draw for a candidate host, checked before committing to it
+curl -sL -o /tmp/fav.png -w "%{http_code} %{size_download}\n" \
+  "https://www.google.com/s2/favicons?domain=<last-two-labels-of-host>&sz=96"
+# 404 and 726 bytes is the default globe
+```
+
+Serving this endpoint from `mcp.brame.io` resolves to `brame.io` and draws the
+Brame mark. A product specific icon needs its own registrable domain whose root
+site Google has crawled: the lookup is keyed on the registrable domain, so a
+subdomain can never carry an icon the root does not already have.
+
+Two traps if you go down this road. The tile is composited onto white, so a
+favicon with transparent corners shows white corners in dark mode; full bleed
+square art avoids it. And the result is cached per origin on Anthropic's side,
+where removing and re-adding the connector does not re-fetch it, so test on a
+hostname you have not used yet.
+
+Whichever host it ends up on has to be in `MCP_ALLOWED_HOSTS`
+(`app/core/config.py`), or the transport's rebinding check answers 421 before
+any of this matters.
+
+The origin still serves the logo itself, from `app/core/landing.py`: a landing
+page at `/` with `<link rel="icon">`, plus `/favicon.ico`, `/favicon.svg` and
+`/icon.png`, all without auth. claude.ai ignores them, per the above. They are
+there so a browser, a crawler, or the first client that does read the host
+finds the logo instead of the 401 every other path returns.
 
 The `Icon` type also carries a `theme` field (`light` or `dark`), and `Tool`
 carries its own `icons` list. Neither is used here, since no client draws
