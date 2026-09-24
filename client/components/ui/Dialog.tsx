@@ -21,6 +21,7 @@ export function Dialog({
   children,
   size = "md",
   align = "start",
+  scrollBody = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -32,6 +33,10 @@ export function Dialog({
    *  form scrollable from its first field. `center` puts it on the middle of
    *  the screen - what a phone-sized sheet wants. */
   align?: "start" | "center";
+  /** Cap the panel at the viewport and scroll its body instead, so content
+   *  that grows while the dialog is open (rows added to a builder) never
+   *  pushes the panel off the bottom of the screen. The title stays put. */
+  scrollBody?: boolean;
 }) {
   // createPortal needs document, which does not exist while rendering on the
   // server.
@@ -71,9 +76,11 @@ export function Dialog({
         className={cn(
           "relative z-10 my-6 w-full animate-dialog-in rounded-2xl border border-line bg-surface shadow-xl",
           SIZES[size],
+          // The overlay's padding plus this panel's my-6, top and bottom.
+          scrollBody && "flex max-h-[calc(100dvh-5rem)] flex-col sm:max-h-[calc(100dvh-6rem)]",
         )}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-5 py-4">
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-foreground">{title}</h2>
             {description && (
@@ -89,7 +96,7 @@ export function Dialog({
             <XIcon />
           </button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        <div className={cn("px-5 py-4", scrollBody && "min-h-0 overflow-y-auto")}>{children}</div>
       </div>
     </div>,
     document.body,

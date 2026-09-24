@@ -58,6 +58,7 @@ export function RuleEditorDialog({
       title={rule ? "Edit rule" : "New rule"}
       description={`Decide what a "${eventType.name}" event does for the member.`}
       size="lg"
+      scrollBody
     >
       {/* Mounted only while open, so the draft resets on every open. */}
       <RuleEditorBody eventType={eventType} catalog={catalog} rule={rule} onDone={onClose} />
