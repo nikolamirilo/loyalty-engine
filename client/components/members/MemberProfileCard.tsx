@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 
 import { deleteMember, updateMember } from "@/lib/actions";
 import { idleState } from "@/lib/action-state";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { useSegments } from "@/lib/swr/hooks";
 import type { Member, Reward } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { Checkbox, Input } from "@/components/ui/Field";
+import { Checkbox, Field, Input } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { VerifiedBadge } from "@/components/ui/StatusBadge";
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/icons";
 import { CustomAttributeFields } from "@/components/members/CustomAttributeFields";
 import { CustomAttributeList } from "@/components/members/CustomAttributeList";
+import { NotSet, ProfileDetail } from "@/components/members/ProfileDetail";
 import { PointsActions } from "@/components/members/PointsActions";
 
 // Interaction-only dialog, lazy-loaded so its chunk (and the reward list
@@ -213,67 +214,51 @@ function ProfileCardForm({
           </div>
         )}
 
-        <dl className="mt-5 flex flex-wrap items-start gap-x-6 gap-y-5 border-t border-line pt-5">
-          <ProfileField label="Phone" className="w-40">
-            {editing ? (
-              <Input name="phone" defaultValue={member.phone ?? ""} />
-            ) : (
-              member.phone ?? <Empty />
-            )}
-          </ProfileField>
-
-          <ProfileField
-            label="Segments"
-            className={editing ? "w-full sm:w-72" : "w-40"}
-          >
-            {editing ? (
-              <SegmentCheckboxes selectedIds={member.segments.map((s) => s.id)} />
-            ) : member.segments.length ? (
-              member.segments.map((s) => s.name).join(", ")
-            ) : (
-              <Empty />
-            )}
-          </ProfileField>
-
-          <ProfileField label="Tier" hint="auto" className="w-40">
-            {member.tier ? <Badge tone="primary">{member.tier.name}</Badge> : <Empty />}
-            {editing && (
-              <p className="mt-1 text-xs text-faint">
-                Assigned automatically from points balance, purchases, segments and custom attributes.
-              </p>
-            )}
-          </ProfileField>
-
-          <ProfileField label="Email verified" className="w-40">
-            {editing ? (
-              <Checkbox
-                name="emailVerified"
-                label="Verified"
-                defaultChecked={!!member.emailVerifiedAt}
-              />
-            ) : (
-              <div className="flex flex-col items-start gap-1">
-                <VerifiedBadge verified={!!member.emailVerifiedAt} />
-                {member.emailVerifiedAt && (
-                  <span className="text-xs text-faint">
-                    {formatDateTime(member.emailVerifiedAt)}
-                  </span>
-                )}
+        {/* Tier and segments are the badges under the name, so the details
+            below only hold what the header doesn't already show. */}
+        {editing ? (
+          <div className="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Phone" htmlFor="member-phone">
+              <Input id="member-phone" name="phone" defaultValue={member.phone ?? ""} />
+            </Field>
+            <Field label="Email" help="Normally set by the verification email.">
+              {/* Same height as the inputs beside it, so the row lines up. */}
+              <div className="flex h-[2.375rem] items-center">
+                <Checkbox
+                  name="emailVerified"
+                  label="Verified"
+                  defaultChecked={!!member.emailVerifiedAt}
+                />
               </div>
-            )}
-            {editing && (
-              <p className="mt-1 text-xs text-faint">
-                Normally set by the DOI email flow; check/uncheck to override.
-              </p>
-            )}
-          </ProfileField>
-
-          {editing ? (
-            <CustomAttributeFields member={member} itemClassName="w-40" />
-          ) : (
-            <CustomAttributeList member={member} itemClassName="w-40" />
-          )}
-        </dl>
+            </Field>
+            <CustomAttributeFields member={member} />
+            <Field label="Segments" className="sm:col-span-2 lg:col-span-4">
+              <SegmentCheckboxes selectedIds={member.segments.map((s) => s.id)} />
+            </Field>
+            <p className="text-xs text-faint sm:col-span-2 lg:col-span-4">
+              The tier updates on its own from points balance, purchases, segments and custom
+              attributes.
+            </p>
+          </div>
+        ) : (
+          <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-line pt-5 sm:grid-cols-3 lg:grid-cols-4">
+            <ProfileDetail label="Phone">
+              {member.phone ? <span className="truncate">{member.phone}</span> : <NotSet />}
+            </ProfileDetail>
+            <ProfileDetail label="Email">
+              <VerifiedBadge verified={!!member.emailVerifiedAt} />
+              {member.emailVerifiedAt && (
+                <span
+                  className="truncate text-xs font-normal text-faint"
+                  title={formatDateTime(member.emailVerifiedAt)}
+                >
+                  {formatDate(member.emailVerifiedAt)}
+                </span>
+              )}
+            </ProfileDetail>
+            <CustomAttributeList member={member} />
+          </dl>
+        )}
       </form>
 
       <div
@@ -293,32 +278,6 @@ function ProfileCardForm({
       </div>
     </Card>
   );
-}
-
-function ProfileField({
-  label,
-  hint,
-  className,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={className}>
-      <dt className="mb-1.5 flex items-center gap-1.5 text-xs text-faint">
-        {label}
-        {hint && <span className="text-faint/70">({hint})</span>}
-      </dt>
-      <dd className="min-w-0 text-sm text-foreground">{children}</dd>
-    </div>
-  );
-}
-
-function Empty() {
-  return <span className="text-faint">-</span>;
 }
 
 function SegmentCheckboxes({ selectedIds }: { selectedIds: string[] }) {

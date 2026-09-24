@@ -80,7 +80,6 @@ function SignOut() {
         <LogOutIcon className="text-lg" />
         Sign out
       </button>
-      <p className="px-3 pt-2 text-xs text-faint">Admin console · v1.0</p>
     </form>
   );
 }
