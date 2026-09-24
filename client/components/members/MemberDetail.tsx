@@ -25,14 +25,16 @@ import {
   signedNumber,
 } from "@/lib/format";
 import { Badge } from "@/components/ui/Badge";
-import { Card, CardHeader } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatTile } from "@/components/ui/StatTile";
 import { TransactionBadge } from "@/components/ui/StatusBadge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
 import { MemberChallengeItem } from "@/components/members/MemberChallengeItem";
+import { MemberEventsCard } from "@/components/members/MemberEventsCard";
 import { MemberProfileCard } from "@/components/members/MemberProfileCard";
+import { MemberWidget } from "@/components/members/MemberWidget";
 import {
   ChevronRightIcon,
   CoinsIcon,
@@ -55,8 +57,7 @@ const AssignChallengeDialog = dynamic(
 /**
  * Member detail, rendered entirely client-side so navigation is instant: the
  * shell paints immediately and each section fills in as its own SWR hook
- * resolves, top-to-bottom by priority (profile → stats → activity →
- * redemptions → challenges). Nothing blocks the whole page on the slowest call.
+ * resolves. Nothing blocks the whole page on the slowest call.
  */
 export function MemberDetail({ id }: { id: string }) {
   const revalidate = useRevalidate();
@@ -174,192 +175,187 @@ export function MemberDetail({ id }: { id: string }) {
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left: history */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* 3 — Points activity */}
-          <Card className="overflow-hidden">
-            <CardHeader
-              title="Points activity"
-              description="Earn, burn, and adjustment history"
+      {/* Equal-size widgets, two per row from laptop up. Activity and
+          challenges lead, as they did when challenges had its own column. */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* 3 — Points activity */}
+        <MemberWidget
+          title="Points activity"
+          description="Earn, burn, and adjustment history"
+        >
+          {transactions === undefined ? (
+            <TableSkeleton />
+          ) : transactions.length === 0 ? (
+            <EmptyState
+              icon={<CoinsIcon />}
+              title="No activity yet"
+              description="Points transactions will appear here."
             />
-            {transactions === undefined ? (
-              <TableSkeleton />
-            ) : transactions.length === 0 ? (
+          ) : (
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Type</TH>
+                  <TH className="text-right">Points</TH>
+                  <TH>Description</TH>
+                  <TH className="text-right">When</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {transactions.map((t) => (
+                  <TR key={t.id} className="hover:bg-surface-2/60">
+                    <TD>
+                      <TransactionBadge type={t.type} />
+                    </TD>
+                    <TD
+                      className={cn(
+                        "text-right font-semibold tabular-nums",
+                        t.points > 0
+                          ? "text-success-fg"
+                          : t.points < 0
+                            ? "text-danger-fg"
+                            : "text-muted",
+                      )}
+                    >
+                      {signedNumber(t.points)}
+                    </TD>
+                    <TD className="max-w-xs truncate text-muted">
+                      {t.description ?? "-"}
+                    </TD>
+                    <TD className="text-right whitespace-nowrap text-muted">
+                      {formatDateTime(t.createdAt)}
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          )}
+        </MemberWidget>
+
+        {/* 4 — Challenges */}
+        <MemberWidget
+          title="Challenges"
+          action={
+            <AssignChallengeDialog
+              memberId={id}
+              challenges={challenges ?? []}
+              assignedIds={assignedIds}
+            />
+          }
+        >
+          <div className="p-4">
+            {memberChallenges === undefined ? (
+              <ChallengesSkeleton />
+            ) : memberChallenges.length === 0 ? (
               <EmptyState
-                icon={<CoinsIcon />}
-                title="No activity yet"
-                description="Points transactions will appear here."
+                icon={<TargetIcon />}
+                title="No challenges"
+                description="Assign a challenge to get this member started."
               />
             ) : (
-              <Table>
-                <THead>
-                  <TR>
-                    <TH>Type</TH>
-                    <TH className="text-right">Points</TH>
-                    <TH>Description</TH>
-                    <TH className="text-right">When</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {transactions.map((t) => (
-                    <TR key={t.id} className="hover:bg-surface-2/60">
-                      <TD>
-                        <TransactionBadge type={t.type} />
-                      </TD>
-                      <TD
-                        className={cn(
-                          "text-right font-semibold tabular-nums",
-                          t.points > 0
-                            ? "text-success-fg"
-                            : t.points < 0
-                              ? "text-danger-fg"
-                              : "text-muted",
-                        )}
-                      >
-                        {signedNumber(t.points)}
-                      </TD>
-                      <TD className="max-w-xs truncate text-muted">
-                        {t.description ?? "-"}
-                      </TD>
-                      <TD className="text-right whitespace-nowrap text-muted">
-                        {formatDateTime(t.createdAt)}
-                      </TD>
-                    </TR>
-                  ))}
-                </TBody>
-              </Table>
+              <div className="space-y-3">
+                {memberChallenges.map((assignment) => (
+                  <MemberChallengeItem
+                    key={assignment.id}
+                    assignment={assignment}
+                    memberId={id}
+                  />
+                ))}
+              </div>
             )}
-          </Card>
+          </div>
+        </MemberWidget>
 
-          {/* 4 — Redemptions */}
-          <Card className="overflow-hidden">
-            <CardHeader
-              title="Redemptions & prizes"
-              description="Rewards redeemed for points or assigned for free"
+        {/* 5 — Redemptions */}
+        <MemberWidget
+          title="Redemptions & prizes"
+          description="Rewards redeemed for points or assigned for free"
+        >
+          {redemptions === undefined ? (
+            <TableSkeleton />
+          ) : redemptions.length === 0 ? (
+            <EmptyState
+              icon={<GiftIcon />}
+              title="No redemptions yet"
+              description="Redeemed rewards and assigned prizes will appear here."
             />
-            {redemptions === undefined ? (
-              <TableSkeleton />
-            ) : redemptions.length === 0 ? (
-              <EmptyState
-                icon={<GiftIcon />}
-                title="No redemptions yet"
-                description="Redeemed rewards and assigned prizes will appear here."
-              />
-            ) : (
-              <Table>
-                <THead>
-                  <TR>
-                    <TH>Reward</TH>
-                    <TH>Source</TH>
-                    <TH className="text-right">Points spent</TH>
-                    <TH className="text-right">When</TH>
+          ) : (
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Reward</TH>
+                  <TH>Source</TH>
+                  <TH className="text-right">Points spent</TH>
+                  <TH className="text-right">When</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {redemptions.map((r) => (
+                  <TR key={r.id} className="hover:bg-surface-2/60">
+                    <TD className="font-medium">{r.reward.name}</TD>
+                    <TD>
+                      {r.source === "assigned" ? (
+                        <Badge tone="warning">Prize</Badge>
+                      ) : (
+                        <Badge tone="neutral">Redeemed</Badge>
+                      )}
+                    </TD>
+                    <TD className="text-right font-medium tabular-nums">
+                      {r.pointsSpent > 0 ? formatNumber(r.pointsSpent) : "Free"}
+                    </TD>
+                    <TD className="text-right whitespace-nowrap text-muted">
+                      {formatDateTime(r.createdAt)}
+                    </TD>
                   </TR>
-                </THead>
-                <TBody>
-                  {redemptions.map((r) => (
-                    <TR key={r.id} className="hover:bg-surface-2/60">
-                      <TD className="font-medium">{r.reward.name}</TD>
-                      <TD>
-                        {r.source === "assigned" ? (
-                          <Badge tone="warning">Prize</Badge>
-                        ) : (
-                          <Badge tone="neutral">Redeemed</Badge>
-                        )}
-                      </TD>
-                      <TD className="text-right font-medium tabular-nums">
-                        {r.pointsSpent > 0 ? formatNumber(r.pointsSpent) : "Free"}
-                      </TD>
-                      <TD className="text-right whitespace-nowrap text-muted">
-                        {formatDateTime(r.createdAt)}
-                      </TD>
-                    </TR>
-                  ))}
-                </TBody>
-              </Table>
-            )}
-          </Card>
+                ))}
+              </TBody>
+            </Table>
+          )}
+        </MemberWidget>
 
-          {/* 4b — Purchases */}
-          <Card className="overflow-hidden">
-            <CardHeader
-              title="Purchases"
-              description="Simulated buys, used to track spend and frequency"
+        {/* 6 — Purchases */}
+        <MemberWidget
+          title="Purchases"
+          description="Simulated buys, used to track spend and frequency"
+        >
+          {purchases === undefined ? (
+            <TableSkeleton />
+          ) : purchases.length === 0 ? (
+            <EmptyState
+              icon={<ShoppingBagIcon />}
+              title="No purchases yet"
+              description="Products this member buys will appear here."
             />
-            {purchases === undefined ? (
-              <TableSkeleton />
-            ) : purchases.length === 0 ? (
-              <EmptyState
-                icon={<ShoppingBagIcon />}
-                title="No purchases yet"
-                description="Products this member buys will appear here."
-              />
-            ) : (
-              <Table>
-                <THead>
-                  <TR>
-                    <TH>Product</TH>
-                    <TH className="text-right">Qty</TH>
-                    <TH className="text-right">Total</TH>
-                    <TH className="text-right">When</TH>
+          ) : (
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Product</TH>
+                  <TH className="text-right">Qty</TH>
+                  <TH className="text-right">Total</TH>
+                  <TH className="text-right">When</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {purchases.map((p) => (
+                  <TR key={p.id} className="hover:bg-surface-2/60">
+                    <TD className="font-medium">{p.productName}</TD>
+                    <TD className="text-right tabular-nums">{p.quantity}</TD>
+                    <TD className="text-right font-medium tabular-nums">
+                      {formatPrice(p.totalCents, p.currency)}
+                    </TD>
+                    <TD className="text-right whitespace-nowrap text-muted">
+                      {formatDateTime(p.createdAt)}
+                    </TD>
                   </TR>
-                </THead>
-                <TBody>
-                  {purchases.map((p) => (
-                    <TR key={p.id} className="hover:bg-surface-2/60">
-                      <TD className="font-medium">{p.productName}</TD>
-                      <TD className="text-right tabular-nums">{p.quantity}</TD>
-                      <TD className="text-right font-medium tabular-nums">
-                        {formatPrice(p.totalCents, p.currency)}
-                      </TD>
-                      <TD className="text-right whitespace-nowrap text-muted">
-                        {formatDateTime(p.createdAt)}
-                      </TD>
-                    </TR>
-                  ))}
-                </TBody>
-              </Table>
-            )}
-          </Card>
-        </div>
+                ))}
+              </TBody>
+            </Table>
+          )}
+        </MemberWidget>
 
-        {/* Right: challenges + details */}
-        <div className="space-y-6">
-          {/* 5 — Challenges */}
-          <Card>
-            <CardHeader
-              title="Challenges"
-              action={
-                <AssignChallengeDialog
-                  memberId={id}
-                  challenges={challenges ?? []}
-                  assignedIds={assignedIds}
-                />
-              }
-            />
-            <div className="p-4">
-              {memberChallenges === undefined ? (
-                <ChallengesSkeleton />
-              ) : memberChallenges.length === 0 ? (
-                <EmptyState
-                  icon={<TargetIcon />}
-                  title="No challenges"
-                  description="Assign a challenge to get this member started."
-                />
-              ) : (
-                <div className="space-y-3">
-                  {memberChallenges.map((assignment) => (
-                    <MemberChallengeItem
-                      key={assignment.id}
-                      assignment={assignment}
-                      memberId={id}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </Card>
-        </div>
+        {/* 7 — Events, and what their rules did */}
+        <MemberEventsCard memberId={id} />
       </div>
     </div>
   );

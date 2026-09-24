@@ -67,6 +67,9 @@ export function usePreload() {
           warm(keys.challenges());
           warm(keys.rewards());
         },
+        events: () => {
+          warm(keys.eventTypes());
+        },
         tiers: () => {
           warm(keys.tiers());
           warm(keys.memberStats());
@@ -88,6 +91,7 @@ export function usePreload() {
         warm(keys.transactions(id));
         warm(keys.redemptions(id));
         warm(keys.memberChallenges(id));
+        warm(keys.memberEvents(id));
       },
     }),
     [warm],

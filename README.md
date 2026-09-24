@@ -47,6 +47,7 @@ keeps one set of rules in one place.
 | **Redemptions** | A reward a member took. Either `redeemed` (they paid points) or `assigned` (granted free). |
 | **Challenges** | Goals a member works toward. Progress accumulates, and finishing pays out points, a reward, or both. |
 | **Products and purchases** | A product catalog and what members bought. Used as a spend signal for targeting, not paid for with points. |
+| **Events** | Things members do that another system reports, such as placing an order. Rules on each event decide what it earns: points, a reward, challenge progress, a segment, or updated member fields. |
 | **DOI** | Double opt in email verification, by 6 digit code or by link. |
 
 ## Running it locally

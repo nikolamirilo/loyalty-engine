@@ -159,6 +159,45 @@ def sync_assignments_for_segments(
                 )
 
 
+def new_assignment(member_id: UUID, challenge: Challenge) -> ChallengeAssignment:
+    """A fresh assignment of `challenge`, with the member's own deadline worked
+    out from now. Check `assert_joinable` first; the caller adds and commits."""
+    assigned_at = now()
+    return ChallengeAssignment(
+        member_id=member_id,
+        challenge=challenge,
+        assigned_at=assigned_at,
+        expires_at=compute_assignment_expiry(challenge, assigned_at),
+    )
+
+
+def progress_blocker(assignment: ChallengeAssignment) -> Optional[str]:
+    """Why `assignment` can't take progress right now, or None if it can.
+
+    An assignment found past its deadline is marked expired here, so the
+    progress endpoint and event rules leave it in the same state. The caller
+    commits.
+    """
+    if assignment.status in (ChallengeStatus.completed, ChallengeStatus.cancelled):
+        return f"Challenge is already {assignment.status.value}"
+    if assignment_is_expired(assignment):
+        assignment.status = ChallengeStatus.expired
+        return "Challenge has expired"
+    return None
+
+
+def apply_progress(db: Session, assignment: ChallengeAssignment, amount: int) -> None:
+    """Add `amount` progress, completing the challenge (and paying out its
+    rewards) once it reaches the target. Check `progress_blocker` first. The
+    caller commits.
+    """
+    assignment.current_value += amount
+    if assignment.current_value >= assignment.challenge.target_value:
+        complete_assignment(db, assignment)
+    else:
+        assignment.status = ChallengeStatus.in_progress
+
+
 def complete_assignment(db: Session, assignment: ChallengeAssignment) -> None:
     """Mark an assignment completed and grant its challenge's rewards.
 

@@ -127,7 +127,7 @@ Point a client at `/mcp` with `Authorization: Bearer <one of MCP_CLIENT_TOKENS>`
 
 ## Tool reference
 
-40 tools. Inputs use snake_case field names, outputs pass the API response
+47 tools. Inputs use snake_case field names, outputs pass the API response
 straight through, already camelCase. The headings below group by domain for
 reading only; the title a client actually shows is verb first, see
 [How tools are grouped](#how-tools-are-grouped).
@@ -202,6 +202,16 @@ reading only; the title a client actually shows is verb first, see
 | `write` | `trigger_doi(email?, member_id?, type?)` | `POST /doi/trigger` |
 | `write` | `verify_doi(code, email?, member_id?)` | `POST /doi/verify` |
 
+**Events**
+
+| Scope | Tool | API call |
+|---|---|---|
+| `read` | `list_event_types()` | `GET /event-types` |
+| `write` | `create_event_type(name, description?, attributes?, is_active?)` | `POST /event-types` |
+| `write` | `update_event_type(event_type_id, name?, description?, is_active?, attributes?)` | `PATCH /event-types/{id}` |
+| `write` | `track_event(member_id, type, attributes?, event_id?)` | `POST /events` |
+| `read` | `list_member_events(member_id, skip?, limit?)` | `GET /members/{id}/events` |
+
 ## Adding a tool
 
 1. Add the function to the matching module in `app/tools/`, or create a new
@@ -227,16 +237,16 @@ example `404: Member not found`.
 
 ## How tools are grouped
 
-A client sorts this server's 42 tools along two axes, and they work differently.
+A client sorts this server's 47 tools along two axes, and they work differently.
 
 ### By behaviour, which the protocol does support
 
-Forty of the 42 declare `annotations` from `app/core/annotations.py`:
+Forty-five of the 47 declare `annotations` from `app/core/annotations.py`:
 
 | Preset | Tools | `readOnlyHint` | `destructiveHint` | `openWorldHint` |
 |---|---|---|---|---|
-| `READ` | 22 | `true` | `false` | `false` |
-| `WRITE` | 15 | `false` | `false` | `false` |
+| `READ` | 24 | `true` | `false` | `false` |
+| `WRITE` | 18 | `false` | `false` | `false` |
 | `DELETE` | 3 | `false` | `true` | `false` |
 | *(none)* | 2 | — | — | — |
 
@@ -255,8 +265,8 @@ and nothing else, giving three sections:
 
 | Section | Comes from | Tools |
 |---|---|---|
-| **Read-only tools** | `readOnlyHint: true` | 22 |
-| **Write/delete tools** | `readOnlyHint: false` | 18 |
+| **Read-only tools** | `readOnlyHint: true` | 24 |
+| **Write/delete tools** | `readOnlyHint: false` | 21 |
 | **Other tools** | no `annotations` at all | 2 |
 
 Those headings are Claude's. A server cannot rename them or ask for a fourth,

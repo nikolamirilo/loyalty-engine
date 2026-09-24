@@ -43,6 +43,7 @@ how this fits with the rest of the platform.
 | `/admin/members/configure` | Define the custom attributes members can carry. |
 | `/admin/segments` | Manage segments and bulk assign members to them. |
 | `/admin/challenges` | Create challenges and hand them out. |
+| `/admin/events` | Define events and the rules that decide what each one earns. A member's events show on their detail page. |
 | `/admin/rewards`, `/admin/products`, `/admin/tiers` | Catalog and program setup. |
 
 `/verify` sits outside the protected groups on purpose. The people opening it are
@@ -112,8 +113,9 @@ components/
 │                StatTile, ProgressMeter, StatusBadge, Skeletons, icons
 ├── layout/      AppShell (admin sidebar), MemberShell (member tabs + campaign frame)
 ├── members/     list, detail, points actions, grant reward, assign challenge,
-│                custom attribute fields
+│                custom attribute fields, events card
 ├── challenges/  ChallengeCard, ChallengeFields
+├── events/      event list and detail, the rule builder (RuleEditorDialog), rules.ts
 ├── campaigns/   CampaignContext, CampaignFrame, CampaignLauncher
 ├── products/    catalog, cards, buy button, purchase history
 ├── segments/    incl. AssignMembersDialog

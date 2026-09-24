@@ -250,3 +250,115 @@ export interface SegmentAssignResult {
   assigned: number;
   skipped: number;
 }
+
+// ── Events and rules ─────────────────────────────────────────────────────────
+
+/** One attribute of an event type: data the sending system includes. */
+export interface EventAttribute {
+  key: string;
+  label: string;
+  type: MemberAttributeType;
+  options: string[] | null;
+}
+
+export type RuleOperator = "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "contains";
+
+export type RuleValue = string | number | boolean | null;
+
+/** `field` is a path: `event.attributes.<key>`, `member.pointsBalance`,
+ *  `member.tier`, `member.segments` or `member.customAttributes.<key>`. */
+export interface RuleCondition {
+  field: string;
+  operator: RuleOperator;
+  value: RuleValue;
+}
+
+/** One member field an `updateMember` effect sets: to `value`, or to a copy of
+ *  the event attribute named in `fromAttribute`. */
+export interface MemberFieldUpdate {
+  field: string;
+  value: RuleValue;
+  fromAttribute: string | null;
+}
+
+export type RuleEffect =
+  // Numbers are fixed, or read from the event attribute named in fromAttribute.
+  | { type: "addPoints"; points: number | null; fromAttribute: string | null }
+  | { type: "burnPoints"; points: number | null; fromAttribute: string | null }
+  | { type: "grantReward"; rewardId: UUID }
+  | { type: "assignChallenge"; challengeId: UUID }
+  | { type: "addChallengeProgress"; challengeId: UUID; amount: number | null; fromAttribute: string | null }
+  | { type: "addToSegment"; segmentId: UUID }
+  | { type: "removeFromSegment"; segmentId: UUID }
+  | { type: "updateMember"; fields: MemberFieldUpdate[] };
+
+export type RuleEffectType = RuleEffect["type"];
+
+export interface EventRule {
+  id: UUID;
+  eventTypeId: UUID;
+  name: string;
+  isActive: boolean;
+  conditions: RuleCondition[];
+  effects: RuleEffect[];
+  /** How many times one member can trigger the rule. Null means every time. */
+  limitPerMember: number | null;
+  createdAt: string;
+}
+
+/** Something a member does that an outside system reports, from `GET /event-types`. */
+export interface EventType {
+  id: UUID;
+  /** What callers send as the event `type`. Fixed once created. */
+  key: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  attributes: EventAttribute[];
+  rules: EventRule[];
+  createdAt: string;
+}
+
+/** Body for creating or editing an event type. Send `key` only to keep an
+ *  existing attribute; new ones get a key derived from their label. */
+export interface EventTypeInput {
+  name: string;
+  description: string | null;
+  /** Omit to leave it as is. It's switched on the event's own page. */
+  isActive?: boolean;
+  attributes: { key?: string; label: string; type: MemberAttributeType; options: string[] | null }[];
+}
+
+export interface EventRuleInput {
+  name: string;
+  isActive: boolean;
+  conditions: RuleCondition[];
+  effects: RuleEffect[];
+  limitPerMember: number | null;
+}
+
+/** What one effect of a matching rule did (or why it was skipped). */
+export interface AppliedEffect {
+  ruleId: UUID;
+  ruleName: string;
+  type: string;
+  summary: string;
+  skipped: boolean;
+  points: number | null;
+  rewardId: UUID | null;
+}
+
+/** One event received for a member, from `GET /members/{id}/events`. */
+export interface MemberEvent {
+  id: UUID;
+  memberId: UUID;
+  /** The event type's key. */
+  type: string;
+  /** The event type's name, or its key once the type is deleted. */
+  name: string;
+  attributes: Record<string, CustomAttributeValue>;
+  effects: AppliedEffect[];
+  /** The sender's own id for the event, if it gave one. */
+  eventId: string | null;
+  createdAt: string;
+}

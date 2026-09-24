@@ -5,8 +5,10 @@ import useSWR from "swr";
 import type {
   Challenge,
   ChallengeAssignment,
+  EventType,
   Member,
   MemberAttribute,
+  MemberEvent,
   MemberStats,
   PointsTransaction,
   Product,
@@ -86,4 +88,16 @@ export function useSegments() {
 
 export function useMemberAttributes() {
   return useSWR<MemberAttribute[]>(keys.memberAttributes());
+}
+
+export function useEventTypes() {
+  return useSWR<EventType[]>(keys.eventTypes());
+}
+
+export function useEventType(id: string | undefined) {
+  return useSWR<EventType>(id ? keys.eventType(id) : null);
+}
+
+export function useMemberEvents(id: string | undefined) {
+  return useSWR<MemberEvent[]>(id ? keys.memberEvents(id) : null);
 }

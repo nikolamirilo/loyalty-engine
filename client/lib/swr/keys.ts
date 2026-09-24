@@ -47,4 +47,7 @@ export const keys = {
     `/challenges${qs({ limit: 1000, activeOnly })}`,
   segments: () => `/segments`,
   memberAttributes: () => `/member-attributes`,
+  eventTypes: () => `/event-types`,
+  eventType: (id: string) => `/event-types/${id}`,
+  memberEvents: (id: string) => `/members/${id}/events${qs({ limit: 200 })}`,
 } as const;

@@ -12,6 +12,8 @@ from app.routers import (
     auth,
     challenges,
     doi,
+    event_types,
+    events,
     member_attributes,
     members,
     points,
@@ -58,6 +60,8 @@ app.include_router(purchases.router, dependencies=protected)
 app.include_router(challenges.router, dependencies=protected)
 app.include_router(tiers.router, dependencies=protected)
 app.include_router(segments.router, dependencies=protected)
+app.include_router(event_types.router, dependencies=protected)
+app.include_router(events.router, dependencies=protected)
 app.include_router(doi.router, dependencies=protected)
 app.include_router(auth.router, dependencies=protected)
 

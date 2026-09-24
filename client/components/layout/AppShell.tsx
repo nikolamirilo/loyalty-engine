@@ -10,6 +10,7 @@ import { cn } from "@/lib/format";
 import { logout } from "@/lib/auth/actions";
 import { usePreload, type PreloadRoute } from "@/lib/swr/preload";
 import {
+  BoltIcon,
   DashboardIcon,
   GiftIcon,
   LayersIcon,
@@ -38,6 +39,7 @@ const NAV: {
   { href: "/admin/rewards", label: "Rewards", Icon: GiftIcon, preload: "rewards" },
   { href: "/admin/products", label: "Products", Icon: ShoppingBagIcon, preload: "products" },
   { href: "/admin/challenges", label: "Challenges", Icon: TargetIcon, preload: "challenges" },
+  { href: "/admin/events", label: "Events", Icon: BoltIcon, preload: "events" },
   { href: "/admin/tiers", label: "Tiers", Icon: LayersIcon, preload: "tiers" },
 ];
 

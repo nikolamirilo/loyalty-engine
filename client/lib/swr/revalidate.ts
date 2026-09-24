@@ -26,5 +26,8 @@ export function useRevalidate() {
     // backfills every member, deleting strips the key), so callers revalidate
     // both this and `members()`.
     memberAttributes: () => byPrefix("/member-attributes"),
+    // Rules are embedded in each event type, so this covers rule edits too.
+    // Events received by a member live under /members and refresh with it.
+    eventTypes: () => byPrefix("/event-types"),
   };
 }

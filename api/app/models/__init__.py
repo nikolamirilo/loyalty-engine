@@ -19,6 +19,7 @@ from app.models.enums import (
     RedemptionSource,
     TransactionType,
 )
+from app.models.event import EventRule, EventRuleRun, EventType, MemberEvent
 from app.models.member import Member, MemberSegment
 from app.models.member_attribute import MemberAttribute
 from app.models.member_identity import MemberIdentity
@@ -39,9 +40,13 @@ __all__ = [
     "ChallengeStatus",
     "DOIType",
     "EmailVerificationCode",
+    "EventRule",
+    "EventRuleRun",
+    "EventType",
     "Member",
     "MemberAttribute",
     "MemberAttributeType",
+    "MemberEvent",
     "MemberIdentity",
     "MemberLoginCode",
     "MemberSegment",

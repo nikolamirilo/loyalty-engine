@@ -7,6 +7,7 @@ imported directly by name.
 from app.tools import (  # noqa: F401
     challenges,
     doi,
+    events,
     members,
     points,
     products,

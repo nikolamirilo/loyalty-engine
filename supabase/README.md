@@ -32,9 +32,9 @@ supabase db push          # apply local migrations to the linked project
 supabase db pull          # pull the live schema back into a new migration file
 ```
 
-`20260914092017_remote_schema.sql` is a full snapshot produced by `db pull`. It
-replaced the older per feature migration files, so it is the one file that
-describes the whole schema today.
+`20260921104524_remote_schema.sql` is a full snapshot produced by `db pull`. It
+replaced the older per feature migration files. Migrations after it add one
+feature each, such as `20260924090000_member_events.sql` for events and rules.
 
 ## What the schema looks like
 
@@ -55,14 +55,20 @@ erDiagram
     rewards          ||--o{ challenges : "pays out"
     members          ||--o{ email_verification_codes : "DOI codes"
     members          ||--o{ member_login_codes : "login codes"
+    event_types      ||--o{ event_rules : "decided by"
+    members          ||--o{ member_events : "did"
+    event_types      |o--o{ member_events : "recorded as"
+    event_rules      ||--o{ event_rule_runs : "counted in"
 ```
 
-Fifteen tables in total. `member_attributes` is the one not drawn above: it holds
-admin defined custom field definitions and links to nothing, since the values
-themselves live in a JSON column on `members`.
+Twenty-one tables in total. Three are not drawn above: `programs`, which owns
+nearly every other row, `member_identities`, the person behind each membership,
+and `member_attributes`, which holds admin defined custom field definitions
+while the values themselves live in a JSON column on `members`.
 
 Deleting a member clears their segments, transactions, redemptions, purchases,
-challenge assignments and codes along with them. Deleting a reward or a product
+challenge assignments, events and codes along with them. Deleting an event type
+deletes its rules but keeps members' events, which remember the type's key. Deleting a reward or a product
 is gentler: challenges keep working with `reward_id` set to null, and purchases
 keep the product name they recorded at the time.
 

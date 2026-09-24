@@ -31,6 +31,7 @@ from app.schemas import (
     SegmentAssignResult,
 )
 from app.services.challenges import (
+    apply_progress,
     assert_joinable,
     assignment_is_expired,
     complete_assignment,
@@ -38,7 +39,9 @@ from app.services.challenges import (
     get_assignment_or_404,
     get_challenge_or_404,
     is_expired,
+    new_assignment,
     now,
+    progress_blocker,
 )
 from app.services.scoping import get_scoped_or_404
 
@@ -148,13 +151,7 @@ def assign_challenge(
     if existing:
         raise HTTPException(400, "Challenge already assigned to this member")
 
-    assigned_at = now()
-    assignment = ChallengeAssignment(
-        member_id=member_id,
-        challenge_id=challenge_id,
-        assigned_at=assigned_at,
-        expires_at=compute_assignment_expiry(challenge, assigned_at),
-    )
+    assignment = new_assignment(member_id, challenge)
     db.add(assignment)
     try:
         db.commit()
@@ -275,22 +272,13 @@ def add_progress(
     get_scoped_or_404(db, Member, member_id, program, "Member")
     assignment = get_assignment_or_404(db, member_id, challenge_id, lock=True)
 
-    if assignment.status in (ChallengeStatus.completed, ChallengeStatus.cancelled):
-        raise HTTPException(400, f"Challenge is already {assignment.status.value}")
+    reason = progress_blocker(assignment)
+    if reason:
+        # Persists the expired status, if the check just found the deadline passed.
+        db.commit()
+        raise HTTPException(400, reason)
 
-    challenge = assignment.challenge
-    if assignment_is_expired(assignment):
-        if assignment.status != ChallengeStatus.expired:
-            assignment.status = ChallengeStatus.expired
-            db.commit()
-        raise HTTPException(400, "Challenge has expired")
-
-    assignment.current_value += body.amount
-    if assignment.current_value >= challenge.target_value:
-        complete_assignment(db, assignment)
-    else:
-        assignment.status = ChallengeStatus.in_progress
-
+    apply_progress(db, assignment, body.amount)
     db.commit()
     db.refresh(assignment)
     return assignment

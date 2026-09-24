@@ -19,6 +19,7 @@ Every route except `/health` and the docs requires a bearer token.
 | **Redemptions and prizes** | Members spend points on a reward, or staff grant one for free. |
 | **Challenges** | Goals with a target value. Progress accrues, and completion pays out points, a reward, or both. Can be pushed to a whole segment at once. |
 | **Products and purchases** | A catalog members buy from on unlimited credit. Purchases are a spend signal, not a points transaction. |
+| **Events and rules** | Admin defined event types with typed attributes. `POST /events` records one for a member and runs every matching rule: add points, grant a reward, move a challenge, add to a segment, or update member fields. |
 | **DOI** | Double opt in email verification, by 6 digit code or by link. |
 | **Member auth** | Passwordless sign in for the member app, by emailed code. |
 | **Member attributes** | Admin defined custom fields, with type validation. |
@@ -64,7 +65,9 @@ api/
     │   ├── tiers.py              # apply_tier, re-applied on every balance change
     │   ├── points.py             # record_transaction, the only path that moves total_points
     │   ├── rewards.py            # availability checks and prize granting
-    │   ├── challenges.py         # expiry, segment fan out, completion rewards
+    │   ├── challenges.py         # expiry, segment fan out, progress, completion rewards
+    │   ├── events.py             # track_event: records an event and runs its rules
+    │   ├── rules/                # the rule engine: fields, conditions, one handler per effect
     │   ├── products.py           # purchase recording and spend stats
     │   ├── member_auth.py        # passwordless member login codes
     │   ├── email_verification.py # DOI codes and links
@@ -73,7 +76,7 @@ api/
     │   └── custom_attributes.py  # type validation for member custom attributes
     └── routers/                  # members, member_attributes, points, rewards,
                                   # redemptions, products, purchases, challenges,
-                                  # segments, tiers, doi, auth
+                                  # segments, tiers, event_types, events, doi, auth
 ```
 
 SQL migrations live in [`../supabase/migrations`](../supabase), not in this folder.
@@ -263,6 +266,17 @@ own, and `POST /complete` forces it regardless of progress or deadline.
 | `POST` `GET` | `/tiers` | Create, list tiers |
 | `GET` `PATCH` `DELETE` | `/tiers/{id}` | Get, update, delete a tier |
 
+**Events and rules**
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` `GET` | `/event-types` | Define, list event types, each with its rules |
+| `GET` `PATCH` `DELETE` | `/event-types/{id}` | Get, update, delete an event type |
+| `GET` `POST` | `/event-types/{id}/rules` | List, create rules |
+| `PATCH` `DELETE` | `/event-types/{id}/rules/{ruleId}` | Update, delete a rule |
+| `POST` | `/events` | Record an event and run its rules, see [Events and rules](#events-and-rules) |
+| `GET` | `/members/{id}/events` | A member's events, with what their rules did |
+
 **Email and member sign in**
 
 | Method | Path | Description |
@@ -326,6 +340,65 @@ provider, for example `Resend 403 validation_error: The <domain> domain is not
 verified`. Rate limits, provider outages and network failures answer `502`
 instead, since those are worth retrying.
 
+## Events and rules
+
+An event type is something a member does that another system reports, such as
+"Order placed". Define it first with the attributes it carries. Its `key`,
+derived from the name (`orderPlaced`), is what callers send as `type`, and it
+never changes. Unknown types and attributes are rejected, so a typo in an
+integration fails loudly instead of earning nothing.
+
+A rule reads as one sentence: when the event arrives, if all conditions hold,
+run all effects. There is no OR; two rules express one. Every matching rule
+runs, and all of them see the member as they were when the event arrived, so
+rule order never changes the outcome.
+
+```json
+{
+  "name": "Points for the order total, first order sets the store",
+  "conditions": [{ "field": "event.attributes.amount", "operator": "gte", "value": 20 }],
+  "effects": [
+    { "type": "addPoints", "fromAttribute": "amount" },
+    { "type": "updateMember", "fields": [
+      { "field": "member.customAttributes.favouriteStore", "fromAttribute": "store" },
+      { "field": "member.phone", "value": null }
+    ] }
+  ],
+  "limitPerMember": null
+}
+```
+
+| A condition can test | Path |
+|---|---|
+| An event attribute | `event.attributes.<key>` |
+| The points balance | `member.pointsBalance` |
+| The tier, by id | `member.tier` |
+| Segments, by id, with `contains` | `member.segments` |
+| A custom attribute | `member.customAttributes.<key>` |
+
+Operators are `eq`, `neq`, `gt`, `gte`, `lt`, `lte` and `contains`, limited to
+the ones that fit the field's type.
+
+| Effect | What it does |
+|---|---|
+| `addPoints` | Earns a fixed number of `points`, or the value of the number attribute named in `fromAttribute`. The tier multiplier applies, as on `/points/earn`. |
+| `burnPoints` | Spends `points` or `fromAttribute`, the same way. Like `/points/burn` it never goes below zero: a member without enough points is skipped. |
+| `grantReward` | Grants `rewardId` for free, if it is active and in stock. |
+| `assignChallenge` | Starts `challengeId` for the member, if it is active and they don't have it yet. |
+| `addChallengeProgress` | Adds a fixed `amount` (default 1), or the value of the number attribute named in `fromAttribute`, to `challengeId`, for members who have that challenge. |
+| `addToSegment` | Adds the member to `segmentId`, which also hands them that segment's challenges. |
+| `removeFromSegment` | Takes the member out of `segmentId`. Challenges it handed them are kept. |
+| `updateMember` | Sets one or more of `member.name`, `member.phone` and `member.customAttributes.<key>`, each to a fixed `value` (null clears it) or to the event attribute named in `fromAttribute`. Email can't be set by a rule. |
+
+A rule is checked when it is saved, so a missing reward or an attribute of the
+wrong type is a `400` then rather than a silent miss later. An effect whose
+target has gone since, such as a deleted reward or a challenge the member
+doesn't have, is skipped and the event records why. `limitPerMember` caps how
+often one member can trigger a rule; `1` means the first time only.
+
+**Retries.** Send your own `eventId` to make retries safe: the same id for the
+same member returns the first result with `200` and runs nothing again.
+
 ## Example requests
 
 ```bash
@@ -354,6 +427,12 @@ curl -X POST http://localhost:8000/members/<member-id>/challenges/<challenge-id>
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"amount":1,"description":"Scanned a receipt"}'
+
+# Send an event; the response lists what its rules did
+curl -X POST http://localhost:8000/events \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"memberId":"<member-id>","type":"orderPlaced","attributes":{"amount":45},"eventId":"order-1001"}'
 ```
 
 ## Testing
@@ -365,8 +444,9 @@ Two kinds of tests live under `tests/`.
 `tests/integration/` is a pytest suite that drives one member and one reward
 through the routes a real client uses: create the member, read it, update it,
 check the balance, earn, burn, create a reward, grant it as a prize, redeem it,
-then delete both. It runs against a real Postgres, not a mock, so constraints
-and cascades are exercised too.
+then delete both. A second file does the same for events: define an event
+type and its rules, send events, and check what the rules did. It runs against
+a real Postgres, not a mock, so constraints and cascades are exercised too.
 
 These tests write and delete rows, so they refuse to start unless
 `TEST_DATABASE_URL` is set. They never fall back to `DATABASE_URL`, which means
@@ -416,6 +496,7 @@ which is why `pytest.ini` points `testpaths` at `tests/integration` only:
 ./venv/bin/python -m tests.test_doi_email_errors       # send failures are classified, not swallowed
 ./venv/bin/python -m tests.test_doi_trigger_flow       # /doi/trigger is idempotent while a code is live
 ./venv/bin/python -m tests.test_doi_link_flow          # type="link" mails a working /verify link
+./venv/bin/python -m tests.test_event_rules            # every rule effect, limits, retries, save-time checks
 ./venv/bin/python -m tests.test_database_url           # DATABASE_URL driver normalization
 ```
 
