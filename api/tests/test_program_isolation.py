@@ -280,6 +280,21 @@ def main() -> None:
         f"a rejected edit renamed the program anyway: {still_default['name']!r}",
     )
 
+    # 11. The console sends only a name, so the slug is derived from it - made
+    # unique with a suffix, and left alone by a rename, since env vars and MCP
+    # calls may already address the program by it.
+    first = post("/programs", {"name": "Café Club Rewards!"})
+    second = post("/programs", {"name": "Cafe club rewards"})
+    check(first.status_code == 201, f"creating a program by name alone answered {first.status_code}: {first.text}")
+    check(first.json().get("slug") == "cafe-club-rewards", f"derived slug was {first.json().get('slug')!r}")
+    check(second.json().get("slug") == "cafe-club-rewards-2", f"colliding slug was {second.json().get('slug')!r}")
+    renamed = client.patch(f"/programs/{first.json()['id']}", json={"name": "Coffee Club"}, headers=AUTH)
+    check(
+        renamed.status_code == 200 and renamed.json()["slug"] == "cafe-club-rewards",
+        f"renaming a program changed its slug: {renamed.text}",
+    )
+    check(get("/rewards", "cafe-club-rewards").status_code == 200, "a derived slug does not address its program")
+
     if failures:
         print("FAIL:")
         for failure in failures:

@@ -8,13 +8,14 @@ from app.schemas.base import CamelModel
 
 # Lowercase, digits and single hyphens. The slug is accepted in place of the
 # id in the X-Program-Id header, so it has to survive a URL and a shell
-# argument untouched.
+# argument untouched. Optional on create: left out, it is derived from the name
+# (app.services.programs).
 SLUG_PATTERN = r"^[a-z0-9]+(-[a-z0-9]+)*$"
 
 
 class ProgramCreate(CamelModel):
     name: str = Field(min_length=1)
-    slug: str = Field(pattern=SLUG_PATTERN, max_length=64)
+    slug: Optional[str] = Field(default=None, pattern=SLUG_PATTERN, max_length=64)
     description: Optional[str] = None
     is_default: bool = False
 

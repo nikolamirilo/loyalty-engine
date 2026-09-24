@@ -9,7 +9,8 @@ import { FormDialog } from "@/components/ui/FormDialog";
 import { useToast } from "@/components/ui/Toast";
 import { CopyIcon, PencilIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 
-/** Shared between the create and edit dialogs. */
+/** Shared between the create and edit dialogs. The slug is not asked for: the
+ * API derives it from the name on create and keeps it on rename. */
 function ProgramFields({ program }: { program?: Program }) {
   return (
     <>
@@ -17,22 +18,7 @@ function ProgramFields({ program }: { program?: Program }) {
         <Input
           id="program-name"
           name="name"
-          placeholder="e.g. Retail Demo"
           defaultValue={program?.name}
-          required
-        />
-      </Field>
-      <Field
-        label="Slug"
-        htmlFor="program-slug"
-        hint="Lowercase letters, numbers and hyphens. Used to address the program in API calls."
-      >
-        <Input
-          id="program-slug"
-          name="slug"
-          placeholder="e.g. retail-demo"
-          pattern="[a-z0-9]+(-[a-z0-9]+)*"
-          defaultValue={program?.slug}
           required
         />
       </Field>
@@ -40,7 +26,6 @@ function ProgramFields({ program }: { program?: Program }) {
         <Input
           id="program-description"
           name="description"
-          placeholder="What this demo is for"
           defaultValue={program?.description ?? ""}
         />
       </Field>
@@ -57,7 +42,7 @@ export function NewProgramButton() {
         </Button>
       }
       title="New program"
-      description="A program starts empty: its own rewards, products, challenges, tiers, segments and members."
+      description="A program has its own rewards, products, challenges, tiers and segments. Existing members join it automatically, starting at 0 points."
       action={createProgram}
       submitLabel="Create program"
     >

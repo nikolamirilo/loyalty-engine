@@ -14,6 +14,7 @@ from app.core.database import get_db
 from app.models import Program
 from app.schemas import ProgramCreate, ProgramOut, ProgramUpdate
 from app.services.memberships import enrol_all_identities
+from app.services.programs import unique_slug
 
 router = APIRouter(prefix="/programs", tags=["Programs"])
 
@@ -40,11 +41,16 @@ def _clear_existing_default(db: Session, keep_id: UUID | None = None) -> None:
 
 @router.post("", response_model=ProgramOut, status_code=201)
 def create_program(body: ProgramCreate, db: Session = Depends(get_db)):
-    if db.query(Program).filter(Program.slug == body.slug).first():
+    # The console sends only a name; API callers may still choose their own slug.
+    if body.slug is None:
+        slug = unique_slug(db, body.name)
+    elif db.query(Program).filter(Program.slug == body.slug).first():
         raise HTTPException(400, f"A program with the slug {body.slug!r} already exists")
+    else:
+        slug = body.slug
     if body.is_default:
         _clear_existing_default(db)
-    program = Program(**body.model_dump())
+    program = Program(**{**body.model_dump(), "slug": slug})
     db.add(program)
     db.flush()
     # Members are global, so a new program opens holding everyone already - each

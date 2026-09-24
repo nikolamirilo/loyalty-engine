@@ -129,7 +129,7 @@ export default function DashboardPage() {
                 <TR>
                   <TH>Member</TH>
                   <TH>Tier</TH>
-                  <TH className="text-right">Balance</TH>
+                  <TH>Balance</TH>
                 </TR>
               </THead>
               <TBody>
@@ -160,7 +160,7 @@ export default function DashboardPage() {
                           <span className="text-xs text-faint">-</span>
                         )}
                       </TD>
-                      <TD className="text-right font-semibold tabular-nums whitespace-nowrap">
+                      <TD className="font-semibold tabular-nums whitespace-nowrap">
                         {formatNumber(member.pointsBalance)}
                         <span className="ml-1 text-xs font-normal text-faint">pts</span>
                       </TD>

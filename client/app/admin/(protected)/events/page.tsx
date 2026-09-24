@@ -149,7 +149,7 @@ export default function EventsPage() {
                     <TD>
                       <ActiveBadge active={eventType.isActive} />
                     </TD>
-                    <TD className="text-right text-faint">
+                    <TD className="text-faint">
                       <ChevronRightIcon />
                     </TD>
                   </TR>

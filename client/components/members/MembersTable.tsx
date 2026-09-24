@@ -24,7 +24,7 @@ export function MembersTable({ members }: { members: Member[] }) {
           <TH>Member</TH>
           <TH>Tier</TH>
           <TH>Segments</TH>
-          <TH className="text-right">Balance</TH>
+          <TH>Balance</TH>
           <TH className="w-8" />
         </TR>
       </THead>
@@ -74,7 +74,7 @@ export function MembersTable({ members }: { members: Member[] }) {
                   )}
                 </div>
               </TD>
-              <TD className="text-right font-semibold tabular-nums whitespace-nowrap">
+              <TD className="font-semibold tabular-nums whitespace-nowrap">
                 {formatNumber(member.pointsBalance)}
                 <span className="ml-1 text-xs font-normal text-faint">pts</span>
               </TD>
@@ -82,7 +82,7 @@ export function MembersTable({ members }: { members: Member[] }) {
                 <Link
                   href={`/admin/members/${member.id}`}
                   aria-label={`Open ${member.name}`}
-                  className="flex justify-end text-faint transition-colors group-hover:text-foreground"
+                  className="flex text-faint transition-colors group-hover:text-foreground"
                 >
                   <ChevronRightIcon className="text-base" />
                 </Link>

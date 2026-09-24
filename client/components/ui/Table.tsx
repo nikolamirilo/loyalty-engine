@@ -35,7 +35,7 @@ export function TH({
 }: ThHTMLAttributes<HTMLTableCellElement>) {
   return (
     <th
-      className={cn("px-4 py-2.5 font-medium whitespace-nowrap", className)}
+      className={cn("px-4 py-2.5 text-left font-medium whitespace-nowrap", className)}
       {...props}
     />
   );
@@ -46,6 +46,6 @@ export function TD({
   ...props
 }: TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={cn("px-4 py-3 align-middle text-foreground", className)} {...props} />
+    <td className={cn("px-4 py-3 text-left align-middle text-foreground", className)} {...props} />
   );
 }

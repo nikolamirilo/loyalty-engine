@@ -187,9 +187,9 @@ export function MemberDetail({ id }: { id: string }) {
             <THead>
               <TR>
                 <TH>Type</TH>
-                <TH className="text-right">Points</TH>
+                <TH>Points</TH>
                 <TH>Description</TH>
-                <TH className="text-right">When</TH>
+                <TH>When</TH>
               </TR>
             </THead>
             <TBody>
@@ -200,7 +200,7 @@ export function MemberDetail({ id }: { id: string }) {
                   </TD>
                   <TD
                     className={cn(
-                      "text-right font-semibold tabular-nums",
+                      "font-semibold tabular-nums",
                       t.points > 0
                         ? "text-success-fg"
                         : t.points < 0
@@ -213,7 +213,7 @@ export function MemberDetail({ id }: { id: string }) {
                   <TD className="max-w-xs truncate text-muted">
                     {t.description ?? "-"}
                   </TD>
-                  <TD className="text-right whitespace-nowrap text-muted">
+                  <TD className="whitespace-nowrap text-muted">
                     {formatDateTime(t.createdAt)}
                   </TD>
                 </TR>
@@ -278,8 +278,8 @@ export function MemberDetail({ id }: { id: string }) {
                 <TR>
                   <TH>Reward</TH>
                   <TH>Source</TH>
-                  <TH className="text-right">Points spent</TH>
-                  <TH className="text-right">When</TH>
+                  <TH>Points spent</TH>
+                  <TH>When</TH>
                 </TR>
               </THead>
               <TBody>
@@ -293,10 +293,10 @@ export function MemberDetail({ id }: { id: string }) {
                         <Badge tone="neutral">Redeemed</Badge>
                       )}
                     </TD>
-                    <TD className="text-right font-medium tabular-nums">
+                    <TD className="font-medium tabular-nums">
                       {r.pointsSpent > 0 ? formatNumber(r.pointsSpent) : "Free"}
                     </TD>
-                    <TD className="text-right whitespace-nowrap text-muted">
+                    <TD className="whitespace-nowrap text-muted">
                       {formatDateTime(r.createdAt)}
                     </TD>
                   </TR>
@@ -324,20 +324,20 @@ export function MemberDetail({ id }: { id: string }) {
               <THead>
                 <TR>
                   <TH>Product</TH>
-                  <TH className="text-right">Qty</TH>
-                  <TH className="text-right">Total</TH>
-                  <TH className="text-right">When</TH>
+                  <TH>Qty</TH>
+                  <TH>Total</TH>
+                  <TH>When</TH>
                 </TR>
               </THead>
               <TBody>
                 {purchases.map((p) => (
                   <TR key={p.id} className="hover:bg-surface-2/60">
                     <TD className="font-medium">{p.productName}</TD>
-                    <TD className="text-right tabular-nums">{p.quantity}</TD>
-                    <TD className="text-right font-medium tabular-nums">
+                    <TD className="tabular-nums">{p.quantity}</TD>
+                    <TD className="font-medium tabular-nums">
                       {formatPrice(p.totalCents, p.currency)}
                     </TD>
-                    <TD className="text-right whitespace-nowrap text-muted">
+                    <TD className="whitespace-nowrap text-muted">
                       {formatDateTime(p.createdAt)}
                     </TD>
                   </TR>

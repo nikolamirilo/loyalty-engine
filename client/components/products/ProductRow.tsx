@@ -79,7 +79,7 @@ export function ProductRow({ product }: { product: Product }) {
           </div>
         )}
       </TD>
-      <TD className="text-right font-medium tabular-nums whitespace-nowrap">
+      <TD className="font-medium tabular-nums whitespace-nowrap">
         {formatPrice(product.priceCents, product.currency)}
       </TD>
       <TD className="whitespace-nowrap text-muted">
@@ -89,7 +89,7 @@ export function ProductRow({ product }: { product: Product }) {
         <ActiveBadge active={product.isActive} />
       </TD>
       <TD>
-        <div className="flex justify-end">
+        <div className="flex">
           <DropdownMenu
             trigger={
               <Button variant="ghost" size="icon" aria-label={`Actions for ${product.name}`}>

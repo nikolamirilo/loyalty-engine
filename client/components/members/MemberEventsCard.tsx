@@ -7,8 +7,9 @@ import { sendEvent } from "@/lib/events/actions";
 import { formatDateTime } from "@/lib/format";
 import { useEventTypes, useMemberEvents } from "@/lib/swr/hooks";
 import { useRevalidate } from "@/lib/swr/revalidate";
-import type { EventType } from "@/lib/types";
+import type { EventType, MemberEvent } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { Dialog } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Field, Select } from "@/components/ui/Field";
 import { FormDialog } from "@/components/ui/FormDialog";
@@ -16,13 +17,15 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
 import { MemberWidget } from "@/components/members/MemberWidget";
 import { EventAttributeFields } from "@/components/events/EventAttributeFields";
-import { EventEffects, eventDetails } from "@/components/events/EventEffects";
-import { BoltIcon } from "@/components/ui/icons";
+import { EventEffects } from "@/components/events/EventEffects";
+import { BoltIcon, ChevronRightIcon } from "@/components/ui/icons";
 
-/** A member's events, newest first, each with what its rules did. */
+/** A member's events, newest first, each with what its rules did. Clicking one
+ * shows the whole event as JSON. */
 export function MemberEventsCard({ memberId }: { memberId: string }) {
   const { data: events } = useMemberEvents(memberId);
   const { data: eventTypes } = useEventTypes();
+  const [selected, setSelected] = useState<MemberEvent | null>(null);
 
   return (
     <MemberWidget
@@ -52,27 +55,48 @@ export function MemberEventsCard({ memberId }: { memberId: string }) {
             <TR>
               <TH>Event</TH>
               <TH>What happened</TH>
-              <TH className="text-right">When</TH>
+              <TH>When</TH>
+              <TH className="w-8" />
             </TR>
           </THead>
           <TBody>
-            {events.map((event) => {
-              const details = eventDetails(event, eventTypes);
-              return (
-                <TR key={event.id} className="align-top hover:bg-surface-2/60">
-                  <TD>
-                    <p className="font-medium">{event.name}</p>
-                    {details && <p className="mt-0.5 max-w-56 text-[0.8125rem] text-muted">{details}</p>}
-                  </TD>
-                  <TD>
-                    <EventEffects effects={event.effects} />
-                  </TD>
-                  <TD className="text-right whitespace-nowrap text-muted">{formatDateTime(event.createdAt)}</TD>
-                </TR>
-              );
-            })}
+            {events.map((event) => (
+              <TR
+                key={event.id}
+                className="group cursor-pointer align-top hover:bg-surface-2/60"
+                onClick={() => setSelected(event)}
+              >
+                <TD>
+                  {/* No handler of its own: the click bubbles to the row. The
+                      button is what makes the row reachable by keyboard. */}
+                  <button type="button" className="cursor-pointer text-left font-medium hover:underline">
+                    {event.name}
+                  </button>
+                </TD>
+                <TD>
+                  <EventEffects effects={event.effects} />
+                </TD>
+                <TD className="whitespace-nowrap text-muted">{formatDateTime(event.createdAt)}</TD>
+                <TD className="text-faint transition-colors group-hover:text-foreground">
+                  <ChevronRightIcon className="text-base" />
+                </TD>
+              </TR>
+            ))}
           </TBody>
         </Table>
+      )}
+      {selected && (
+        <Dialog
+          open
+          onClose={() => setSelected(null)}
+          title={selected.name}
+          description={formatDateTime(selected.createdAt)}
+          size="lg"
+        >
+          <pre className="max-h-[60vh] overflow-auto rounded-lg bg-surface-2 p-4 font-mono text-xs leading-relaxed text-foreground">
+            {JSON.stringify(selected, null, 2)}
+          </pre>
+        </Dialog>
       )}
     </MemberWidget>
   );

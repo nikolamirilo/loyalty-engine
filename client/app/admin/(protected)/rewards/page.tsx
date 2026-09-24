@@ -65,10 +65,10 @@ export default function RewardsPage() {
             <THead>
               <TR>
                 <TH>Reward</TH>
-                <TH className="text-right">Cost</TH>
-                <TH className="text-right">Stock</TH>
+                <TH>Cost</TH>
+                <TH>Stock</TH>
                 <TH>Status</TH>
-                <TH className="text-right">Actions</TH>
+                <TH>Actions</TH>
               </TR>
             </THead>
             <TBody>

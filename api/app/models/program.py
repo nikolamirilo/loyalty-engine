@@ -26,7 +26,8 @@ class Program(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     # Human-readable handle, accepted in place of the id in the X-Program-Id
-    # header so a curl example or an MCP call reads as "retail-demo".
+    # header so a curl example or an MCP call reads as "coffee-club". Derived
+    # from the name on create unless the caller supplies one.
     slug: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # The program a request without an X-Program-Id header falls back to.

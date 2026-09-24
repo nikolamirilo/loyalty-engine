@@ -77,7 +77,7 @@ function NewAttributeButton() {
 function AttributeRowActions({ attribute }: { attribute: MemberAttribute }) {
   const onMutated = useAttributesMutated();
   return (
-    <div className="flex justify-end gap-2">
+    <div className="flex gap-2">
       <FormDialog
         trigger={
           <Button variant="secondary" size="sm">
@@ -184,7 +184,7 @@ export default function ConfigureMembersPage() {
                 <TH>Field</TH>
                 <TH>Type</TH>
                 <TH>Default</TH>
-                <TH className="text-right">Actions</TH>
+                <TH>Actions</TH>
               </TR>
             </THead>
             <TBody>

@@ -14,7 +14,7 @@ import { getMemberSession } from "@/lib/memberAuth/session";
  *
  *  - the console sends whatever its sidebar switcher last selected;
  *  - the member app sends whatever the account page last selected, falling
- *    back to `MEMBER_PROGRAM` so a deployment can be pinned to one demo.
+ *    back to `MEMBER_PROGRAM` so a deployment can be pinned to one program.
  *
  * Neither cookie is signed. Both surfaces let you pick any program through the
  * UI anyway, so forging one grants nothing that clicking does not. If

@@ -210,3 +210,132 @@ body {
 .animate-dialog-in {
   animation: dialog-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/*
+ * Page loader (components/ui/LogoLoader.tsx). Everything runs on one 2.4s beat:
+ * the tile rises, the medallion flips at the top of the float, and the glint
+ * sweeps the tile on the way back down. The ribbon tails flutter on their own,
+ * slightly out of step. The entrance is delayed so quick navigations that
+ * resolve in under ~200ms never show the loader at all.
+ */
+.loader-enter {
+  animation: fade-in 0.3s ease-out 0.2s both;
+}
+
+.loader-float {
+  animation: loader-float 2.4s ease-in-out infinite;
+}
+
+.loader-shadow {
+  animation: loader-shadow 2.4s ease-in-out infinite;
+}
+
+.loader-flip,
+.loader-glint {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.loader-flip {
+  animation: loader-flip 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.loader-glint {
+  animation: loader-glint 2.4s ease-in-out infinite;
+}
+
+.loader-ribbon-left,
+.loader-ribbon-right {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: 0.7s ease-in-out infinite alternate;
+}
+
+.loader-ribbon-left {
+  animation-name: loader-flutter-left;
+}
+
+.loader-ribbon-right {
+  animation-name: loader-flutter-right;
+  animation-delay: -0.35s;
+}
+
+@keyframes loader-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes loader-shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleX(0.6);
+    opacity: 0.5;
+  }
+}
+
+@keyframes loader-flip {
+  0%,
+  25% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(-1);
+  }
+  75%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes loader-glint {
+  0%,
+  60% {
+    transform: translateX(0) skewX(-20deg);
+  }
+  85%,
+  100% {
+    transform: translateX(64px) skewX(-20deg);
+  }
+}
+
+/* Each tail swings outward from its resting angle and back, so they never cross. */
+@keyframes loader-flutter-left {
+  to {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes loader-flutter-right {
+  to {
+    transform: rotate(-5deg);
+  }
+}
+
+@keyframes loader-breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-shadow,
+  .loader-flip,
+  .loader-glint,
+  .loader-ribbon-left,
+  .loader-ribbon-right {
+    animation: none;
+  }
+
+  .loader-float {
+    animation: loader-breathe 1.6s ease-in-out infinite;
+  }
+}

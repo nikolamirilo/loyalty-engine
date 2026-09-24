@@ -93,7 +93,7 @@ export function EventLog() {
                 <TH>Event</TH>
                 <TH>Member</TH>
                 <TH>What happened</TH>
-                <TH className="text-right">When</TH>
+                <TH>When</TH>
               </TR>
             </THead>
             <TBody>
@@ -117,7 +117,7 @@ export function EventLog() {
                     <TD>
                       <EventEffects effects={event.effects} />
                     </TD>
-                    <TD className="text-right whitespace-nowrap text-muted">{formatDateTime(event.createdAt)}</TD>
+                    <TD className="whitespace-nowrap text-muted">{formatDateTime(event.createdAt)}</TD>
                   </TR>
                 );
               })}

@@ -65,10 +65,10 @@ export default function ProductsPage() {
             <THead>
               <TR>
                 <TH>Product</TH>
-                <TH className="text-right">Price</TH>
+                <TH>Price</TH>
                 <TH>Category</TH>
                 <TH>Status</TH>
-                <TH className="text-right">Actions</TH>
+                <TH>Actions</TH>
               </TR>
             </THead>
             <TBody>

@@ -80,11 +80,11 @@ export function RewardRow({ reward }: { reward: Reward }) {
           </div>
         )}
       </TD>
-      <TD className="text-right font-medium tabular-nums whitespace-nowrap">
+      <TD className="font-medium tabular-nums whitespace-nowrap">
         {formatNumber(reward.pointsCost)}
         <span className="ml-1 text-xs font-normal text-faint">pts</span>
       </TD>
-      <TD className="text-right tabular-nums whitespace-nowrap">
+      <TD className="tabular-nums whitespace-nowrap">
         {reward.stock == null ? (
           <span className="text-faint">Unlimited</span>
         ) : outOfStock ? (
@@ -97,7 +97,7 @@ export function RewardRow({ reward }: { reward: Reward }) {
         <ActiveBadge active={reward.isActive} />
       </TD>
       <TD>
-        <div className="flex justify-end">
+        <div className="flex">
           <DropdownMenu
             trigger={
               <Button variant="ghost" size="icon" aria-label={`Actions for ${reward.name}`}>

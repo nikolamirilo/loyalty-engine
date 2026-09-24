@@ -12,10 +12,9 @@ import {
 } from "@/components/programs/ProgramActions";
 
 /**
- * Programs are the isolation boundary: each one is a self-contained dataset
- * with its own rewards, products, challenges, tiers, segments and members.
- * Preparing a demo means creating one here and filling it, rather than
- * clearing out whatever the last demo left behind.
+ * Programs are the isolation boundary: each one is a self-contained loyalty
+ * program with its own rewards, products, challenges, tiers, segments and
+ * member balances. Nothing inside one program is visible from another.
  */
 export default async function ProgramsPage() {
   const [programs, selected] = await Promise.all([
@@ -27,13 +26,13 @@ export default async function ProgramsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Programs"
-        description="Each program is a separate dataset. Switching programs in the sidebar changes everything the console shows."
+        description="Each program has its own rewards, products, challenges, tiers and member points. Switching programs in the sidebar changes everything the console shows."
         actions={<NewProgramButton />}
       />
 
       {programs.length === 0 ? (
         <Card className="p-8 text-center text-sm text-muted">
-          No programs yet. Create one to give a demo its own dataset.
+          No programs yet. Create one to start adding rewards, challenges and tiers.
         </Card>
       ) : (
         <ul className="space-y-3">

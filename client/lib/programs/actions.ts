@@ -9,9 +9,9 @@ import { PROGRAM_COOKIE } from "@/lib/server/program";
 import type { Program } from "@/lib/types";
 
 /**
- * Programs are the console's dataset switcher: creating one gives a demo its
- * own rewards, products, challenges, tiers, segments and members, and deleting
- * one takes all of that with it.
+ * Programs are the console's top-level switcher: each has its own rewards,
+ * products, challenges, tiers, segments and member balances, and deleting one
+ * takes all of that with it.
  *
  * These calls are deliberately unscoped (`programId: null`): /programs is the
  * one part of the API that is not inside a program.
@@ -77,16 +77,14 @@ export async function createProgram(
   fd: FormData,
 ): Promise<ActionState> {
   const name = String(fd.get("name") ?? "").trim();
-  const slug = String(fd.get("slug") ?? "").trim();
   const description = String(fd.get("description") ?? "").trim();
-  if (!name || !slug) {
-    return { ok: false, error: "Enter a name and a slug." };
-  }
+  if (!name) return { ok: false, error: "Enter a name." };
 
   try {
+    // No slug: the API derives one from the name.
     await apiRequest<Program>("/programs", {
       method: "POST",
-      json: { name, slug, description: description || null },
+      json: { name, description: description || null },
       programId: null,
     });
     refreshConsole();
@@ -102,26 +100,19 @@ export async function updateProgram(
 ): Promise<ActionState> {
   const id = String(fd.get("id") ?? "").trim();
   const name = String(fd.get("name") ?? "").trim();
-  const slug = String(fd.get("slug") ?? "").trim();
   const description = String(fd.get("description") ?? "").trim();
   const isDefault = fd.get("isDefault") === "on";
   if (!id) return { ok: false, error: "No program selected." };
-  if (!name || !slug) return { ok: false, error: "Enter a name and a slug." };
+  if (!name) return { ok: false, error: "Enter a name." };
 
   try {
-    const before = await apiRequest<Program>(`/programs/${id}`, { programId: null });
+    // The slug is left out, so it survives a rename - and so does the program
+    // cookie, which holds it.
     await apiRequest<Program>(`/programs/${id}`, {
       method: "PATCH",
-      json: { name, slug, description: description || null, isDefault },
+      json: { name, description: description || null, isDefault },
       programId: null,
     });
-
-    // The cookie holds a slug, so renaming the program you are viewing would
-    // otherwise point it at nothing.
-    const selected = (await cookies()).get(PROGRAM_COOKIE)?.value;
-    if (slug !== before.slug && (selected === before.slug || selected === before.id)) {
-      await setProgramCookie(slug);
-    }
 
     refreshConsole();
     return { ok: true, message: "Program updated." };
