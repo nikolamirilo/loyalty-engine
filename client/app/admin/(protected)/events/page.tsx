@@ -8,14 +8,14 @@ import { useEventTypes } from "@/lib/swr/hooks";
 import { EventTypeDialog } from "@/components/events/EventTypeDialog";
 import { TestEventPickerButton } from "@/components/events/TestEventDialog";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClass } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ActiveBadge } from "@/components/ui/StatusBadge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
-import { AlertTriangleIcon, BoltIcon, ChevronRightIcon, PlusIcon } from "@/components/ui/icons";
+import { AlertTriangleIcon, BoltIcon, ChevronRightIcon, ClockIcon, PlusIcon } from "@/components/ui/icons";
 
 const MAX_ATTRIBUTE_CHIPS = 3;
 
@@ -37,6 +37,11 @@ export default function EventsPage() {
         description="Things members do in your systems. Rules decide what each event earns."
         actions={
           <>
+            {/* A Link rather than a Button: a <button> nested in an <a> is
+                invalid HTML, so this borrows the button styling instead. */}
+            <Link href="/admin/events/logs" className={buttonClass({ variant: "secondary" })}>
+              <ClockIcon /> Logs
+            </Link>
             <TestEventPickerButton eventTypes={eventTypes ?? []} />
             {newEventButton}
           </>

@@ -27,7 +27,9 @@ export function useRevalidate() {
     // both this and `members()`.
     memberAttributes: () => byPrefix("/member-attributes"),
     // Rules are embedded in each event type, so this covers rule edits too.
-    // Events received by a member live under /members and refresh with it.
     eventTypes: () => byPrefix("/event-types"),
+    // The program-wide event log. A member's own events live under /members
+    // and refresh with `members()`, so sending an event revalidates both.
+    events: () => byPrefix("/events"),
   };
 }

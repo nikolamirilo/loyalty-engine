@@ -51,4 +51,6 @@ export const keys = {
   eventTypes: () => `/event-types`,
   eventType: (id: string) => `/event-types/${id}`,
   memberEvents: (id: string) => `/members/${id}/events${qs({ limit: 200 })}`,
+  /** Every event received in the program; `type` narrows it to one event key. */
+  events: (type?: string) => `/events${qs({ type, limit: 200 })}`,
 } as const;

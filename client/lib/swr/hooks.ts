@@ -5,6 +5,7 @@ import useSWR from "swr";
 import type {
   Challenge,
   ChallengeAssignment,
+  EventLogEntry,
   EventType,
   Member,
   MemberAttribute,
@@ -107,4 +108,8 @@ export function useEventType(id: string | undefined) {
 
 export function useMemberEvents(id: string | undefined) {
   return useSWR<MemberEvent[]>(id ? keys.memberEvents(id) : null);
+}
+
+export function useEvents(type?: string) {
+  return useSWR<EventLogEntry[]>(keys.events(type));
 }

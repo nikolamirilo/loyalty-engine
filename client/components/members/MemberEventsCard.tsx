@@ -7,7 +7,7 @@ import { sendEvent } from "@/lib/events/actions";
 import { formatDateTime } from "@/lib/format";
 import { useEventTypes, useMemberEvents } from "@/lib/swr/hooks";
 import { useRevalidate } from "@/lib/swr/revalidate";
-import type { CustomAttributeValue, EventType } from "@/lib/types";
+import type { EventType } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Field, Select } from "@/components/ui/Field";
@@ -16,17 +16,13 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
 import { MemberWidget } from "@/components/members/MemberWidget";
 import { EventAttributeFields } from "@/components/events/EventAttributeFields";
-import { BoltIcon, CheckCircleIcon } from "@/components/ui/icons";
+import { EventEffects, eventDetails } from "@/components/events/EventEffects";
+import { BoltIcon } from "@/components/ui/icons";
 
 /** A member's events, newest first, each with what its rules did. */
 export function MemberEventsCard({ memberId }: { memberId: string }) {
   const { data: events } = useMemberEvents(memberId);
   const { data: eventTypes } = useEventTypes();
-
-  // Events store attribute keys; show the labels the admin defined, when the
-  // event type still exists.
-  const labelOf = (typeKey: string, key: string) =>
-    eventTypes?.find((t) => t.key === typeKey)?.attributes.find((a) => a.key === key)?.label ?? key;
 
   return (
     <MemberWidget
@@ -61,9 +57,7 @@ export function MemberEventsCard({ memberId }: { memberId: string }) {
           </THead>
           <TBody>
             {events.map((event) => {
-              const details = Object.entries(event.attributes)
-                .map(([key, value]) => `${labelOf(event.type, key)} ${display(value)}`)
-                .join(" · ");
+              const details = eventDetails(event, eventTypes);
               return (
                 <TR key={event.id} className="align-top hover:bg-surface-2/60">
                   <TD>
@@ -71,28 +65,7 @@ export function MemberEventsCard({ memberId }: { memberId: string }) {
                     {details && <p className="mt-0.5 max-w-56 text-[0.8125rem] text-muted">{details}</p>}
                   </TD>
                   <TD>
-                    {event.effects.length === 0 ? (
-                      <span className="text-[0.8125rem] text-muted">No rules matched</span>
-                    ) : (
-                      <ul className="space-y-1 text-[0.8125rem]">
-                        {event.effects.map((effect, i) => (
-                          <li
-                            key={i}
-                            title={effect.ruleName}
-                            className={effect.skipped ? "text-muted" : "flex items-start gap-1.5 text-foreground"}
-                          >
-                            {effect.skipped ? (
-                              `Skipped: ${effect.summary}`
-                            ) : (
-                              <>
-                                <CheckCircleIcon className="mt-0.5 shrink-0 text-success-fg" />
-                                {effect.summary}
-                              </>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    <EventEffects effects={event.effects} />
                   </TD>
                   <TD className="text-right whitespace-nowrap text-muted">{formatDateTime(event.createdAt)}</TD>
                 </TR>
@@ -103,11 +76,6 @@ export function MemberEventsCard({ memberId }: { memberId: string }) {
       )}
     </MemberWidget>
   );
-}
-
-function display(value: CustomAttributeValue): string {
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  return value === null ? "-" : String(value);
 }
 
 function SendEventButton({ memberId, eventTypes }: { memberId: string; eventTypes: EventType[] }) {
@@ -127,6 +95,7 @@ function SendEventButton({ memberId, eventTypes }: { memberId: string; eventType
         // Rules can move points, prizes, challenges and segments.
         revalidate.members();
         revalidate.segments();
+        revalidate.events();
       }}
     >
       <input type="hidden" name="memberId" value={memberId} />

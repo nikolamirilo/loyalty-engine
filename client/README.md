@@ -44,6 +44,7 @@ how this fits with the rest of the platform.
 | `/admin/segments` | Manage segments and bulk assign members to them. |
 | `/admin/challenges` | Create challenges and hand them out. |
 | `/admin/events` | Define events and the rules that decide what each one earns. A member's events show on their detail page. |
+| `/admin/events/logs` | Every event received in the program and what its rules did, filterable by event type. |
 | `/admin/rewards`, `/admin/products`, `/admin/tiers` | Catalog and program setup. |
 
 `/verify` sits outside the protected groups on purpose. The people opening it are
@@ -115,7 +116,7 @@ components/
 ├── members/     list, detail, points actions, grant reward, assign challenge,
 │                custom attribute fields, events card
 ├── challenges/  ChallengeCard, ChallengeFields
-├── events/      event list and detail, the rule builder (RuleEditorDialog), rules.ts
+├── events/      event list, detail and logs, the rule builder (RuleEditorDialog), rules.ts
 ├── campaigns/   CampaignContext, CampaignFrame, CampaignLauncher
 ├── products/    catalog, cards, buy button, purchase history
 ├── segments/    incl. AssignMembersDialog

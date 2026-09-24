@@ -282,6 +282,7 @@ own, and `POST /complete` forces it regardless of progress or deadline.
 | `GET` `POST` | `/event-types/{id}/rules` | List, create rules |
 | `PATCH` `DELETE` | `/event-types/{id}/rules/{ruleId}` | Update, delete a rule |
 | `POST` | `/events` | Record an event and run its rules, see [Events and rules](#events-and-rules) |
+| `GET` | `/events` | Every event in the program, newest first, with its member. `?type=<key>` filters by event type |
 | `GET` | `/members/{id}/events` | A member's events, with what their rules did |
 
 **Email and member sign in**
@@ -396,6 +397,9 @@ the ones that fit the field's type.
 | `addToSegment` | Adds the member to `segmentId`, which also hands them that segment's challenges. |
 | `removeFromSegment` | Takes the member out of `segmentId`. Challenges it handed them are kept. |
 | `updateMember` | Sets one or more of `member.name`, `member.phone` and `member.customAttributes.<key>`, each to a fixed `value` (null clears it) or to the event attribute named in `fromAttribute`. Email can't be set by a rule. |
+
+Points earned or burned by a rule show in the member's transactions as
+`Effect of event <event name>`.
 
 A rule is checked when it is saved, so a missing reward or an attribute of the
 wrong type is a `400` then rather than a silent miss later. An effect whose

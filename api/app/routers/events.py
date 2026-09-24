@@ -1,12 +1,13 @@
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Response
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.core.database import get_db
 from app.core.program import get_program
 from app.models import Member, MemberEvent, Program
-from app.schemas import MemberEventOut, TrackEventRequest
+from app.schemas import EventLogOut, MemberEventOut, TrackEventRequest
 from app.services.events import track_event
 from app.services.scoping import get_scoped_or_404
 
@@ -30,6 +31,30 @@ def receive_event(
     if not created:
         response.status_code = 200
     return event
+
+
+@router.get("/events", response_model=list[EventLogOut])
+def list_events(
+    type: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    """Every event received in the program, newest first, with the member it
+    was for. `type` narrows it to one event type's key."""
+    q = (
+        db.query(MemberEvent)
+        .join(Member, MemberEvent.member_id == Member.id)
+        .options(
+            joinedload(MemberEvent.event_type),
+            contains_eager(MemberEvent.member).joinedload(Member.identity),
+        )
+        .filter(Member.program_id == program.id)
+    )
+    if type:
+        q = q.filter(MemberEvent.type == type)
+    return q.order_by(MemberEvent.created_at.desc()).offset(skip).limit(limit).all()
 
 
 @router.get("/members/{member_id}/events", response_model=list[MemberEventOut])

@@ -369,3 +369,8 @@ export interface MemberEvent {
   eventId: string | null;
   createdAt: string;
 }
+
+/** An event in the program-wide log, with the member it was for. */
+export interface EventLogEntry extends MemberEvent {
+  member: { id: UUID; name: string; email: string };
+}

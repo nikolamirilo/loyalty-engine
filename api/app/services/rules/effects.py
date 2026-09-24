@@ -119,7 +119,7 @@ def _check_points(event_type: EventType, effect: Any) -> None:
 
 
 def _ledger_note(ctx: EffectContext) -> str:
-    return f"{ctx.event_type.name}: {ctx.rule.name}"
+    return f"Effect of event {ctx.event_type.name}"
 
 
 class AddPoints(EffectHandler):

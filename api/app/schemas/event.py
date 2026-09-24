@@ -208,3 +208,15 @@ class MemberEventOut(CamelModel):
     effects: List[AppliedEffectOut]
     event_id: Optional[str] = Field(default=None, validation_alias="external_id")
     created_at: datetime
+
+
+class EventLogMemberOut(CamelModel):
+    id: UUID
+    name: str
+    email: str
+
+
+class EventLogOut(MemberEventOut):
+    """An event in the program-wide log, with the member it was for."""
+
+    member: EventLogMemberOut

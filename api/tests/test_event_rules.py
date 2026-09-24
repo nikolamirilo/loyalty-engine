@@ -298,9 +298,17 @@ def main() -> None:
     check(history[0]["id"] == fourth["id"], "history is not newest first")
     transactions = call("GET", f"/members/{member}/transactions").json()
     check(
-        any(t["description"] == "Order placed: 1 point per euro" for t in transactions),
+        any(t["description"] == "Effect of event Order placed" for t in transactions),
         "event points left no readable transaction",
     )
+
+    # ── the program-wide log ────────────────────────────────────────────────
+    log = call("GET", "/events").json()
+    check(len(log) == 4 and log[0]["id"] == fourth["id"], f"the log holds {len(log)} events, expected 4 newest first")
+    check(log[0]["member"]["id"] == member and log[0]["member"]["email"] == "ada@example.com", "the log lost the member")
+    check(len(call("GET", "/events?type=orderPlaced").json()) == 4, "filtering the log by type dropped events")
+    check(call("GET", "/events?type=pausedThing").json() == [], "filtering the log by type kept other events")
+    check(call("GET", "/events", program="other").json() == [], "events leaked into another program's log")
 
     # ── editing the definition and the rules ────────────────────────────────
     keep = [
