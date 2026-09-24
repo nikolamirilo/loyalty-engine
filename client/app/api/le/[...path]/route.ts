@@ -23,8 +23,10 @@ export const dynamic = "force-dynamic";
 
 const MAX_ATTEMPTS = 3;
 const RETRY_BASE_MS = 150;
-/** Transient upstream statuses worth retrying (matches lib/api.ts). */
-const RETRY_STATUSES = new Set([500, 502, 503, 504]);
+/** Vercel kills this function at 10s with a bodyless 504; give up before that. */
+const UPSTREAM_DEADLINE_MS = 8_000;
+/** Transient upstream statuses (matches lib/api.ts). Not 500: retrying an API bug only burns the deadline. */
+const RETRY_STATUSES = new Set([502, 503, 504]);
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -59,7 +61,13 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
   const contentType = request.headers.get("content-type");
   if (hasBody && contentType) headers["Content-Type"] = contentType;
 
+  const deadline = Date.now() + UPSTREAM_DEADLINE_MS;
+
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const backoff = RETRY_BASE_MS * 2 ** (attempt - 1);
+    const canRetry = () =>
+      attempt < MAX_ATTEMPTS && Date.now() + backoff < deadline;
+
     let upstream: Response;
     try {
       upstream = await fetch(target, {
@@ -67,10 +75,17 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
         headers,
         body,
         cache: "no-store",
+        signal: AbortSignal.timeout(Math.max(0, deadline - Date.now())),
       });
-    } catch {
-      if (attempt < MAX_ATTEMPTS) {
-        await sleep(RETRY_BASE_MS * 2 ** (attempt - 1));
+    } catch (err) {
+      if ((err as Error)?.name === "TimeoutError") {
+        return NextResponse.json(
+          { detail: "The API took too long to respond. Please try again." },
+          { status: 504 },
+        );
+      }
+      if (canRetry()) {
+        await sleep(backoff);
         continue;
       }
       return NextResponse.json(
@@ -79,9 +94,9 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
       );
     }
 
-    if (RETRY_STATUSES.has(upstream.status) && attempt < MAX_ATTEMPTS) {
+    if (RETRY_STATUSES.has(upstream.status) && canRetry()) {
       await upstream.body?.cancel();
-      await sleep(RETRY_BASE_MS * 2 ** (attempt - 1));
+      await sleep(backoff);
       continue;
     }
 

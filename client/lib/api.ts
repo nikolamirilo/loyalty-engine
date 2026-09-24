@@ -31,8 +31,8 @@ import { activeProgramId } from "@/lib/server/program";
 const MAX_ATTEMPTS = 3;
 /** Base delay for exponential backoff (ms). */
 const RETRY_BASE_MS = 150;
-/** Only retry on these statuses (server hiccups, gateway issues, our own 0). */
-const RETRY_STATUSES = new Set([0, 500, 502, 503, 504]);
+/** Only retry transient failures (gateway issues, DB unavailable, our own 0). Not 500: retrying an API bug only delays the error. */
+const RETRY_STATUSES = new Set([0, 502, 503, 504]);
 
 export class ApiError extends Error {
   status: number;
