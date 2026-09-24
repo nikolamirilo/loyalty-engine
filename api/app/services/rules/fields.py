@@ -7,15 +7,23 @@ and effects both resolve their paths here, so they always agree on what exists.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
 from app.models import EventType, Member, MemberAttribute, Program
 from app.services.custom_attributes import coerce
+from app.services.products import get_purchase_totals
 
 EVENT_PREFIX = "event.attributes."
 CUSTOM_PREFIX = "member.customAttributes."
+
+# Paths into a member's purchase history. Lifetime totals only - a tier
+# doesn't re-evaluate on a schedule, only when something it can read changes,
+# and a windowed figure (e.g. "spend in the last 30 days") would silently go
+# stale between one triggering change and the next.
+PURCHASE_SPEND = "member.purchaseSpendCents"
+PURCHASE_COUNT = "member.purchaseCount"
 
 # Field types beyond the member attribute types, for member values that
 # reference another row.
@@ -95,6 +103,42 @@ def build_context(member: Member, attributes: Dict[str, Any]) -> Dict[str, Any]:
         **{EVENT_PREFIX + k: v for k, v in attributes.items()},
         "member.pointsBalance": member.total_points,
         "member.tier": str(member.tier_id) if member.tier_id else None,
+        "member.segments": [str(sa.segment_id) for sa in member.segment_assignments],
+        **{CUSTOM_PREFIX + k: v for k, v in (member.custom_attributes or {}).items()},
+    }
+
+
+def tier_fields(db: Session, program: Program) -> Dict[str, FieldSpec]:
+    """Everything a tier's conditions can test.
+
+    Deliberately leaves out ``member.tier``: a tier can't be defined in terms
+    of the tier it is itself deciding.
+    """
+    return {
+        "member.pointsBalance": FieldSpec("member.pointsBalance", "Points balance", "number"),
+        PURCHASE_SPEND: FieldSpec(PURCHASE_SPEND, "Lifetime purchase spend (cents)", "number"),
+        PURCHASE_COUNT: FieldSpec(PURCHASE_COUNT, "Lifetime purchase count", "number"),
+        "member.segments": FieldSpec("member.segments", "Segments", SEGMENTS),
+        **_custom_fields(db, program),
+    }
+
+
+def build_tier_context(
+    db: Session, member: Member, purchase_totals: Optional[Tuple[int, int]] = None
+) -> Dict[str, Any]:
+    """Every value a tier's conditions can test for `member`, keyed by path.
+
+    `purchase_totals` is `(count, spend_cents)`; pass it when the caller
+    already has totals for several members at once (see
+    `app.services.products.get_purchase_totals_by_member`) so this doesn't
+    issue one purchase query per member. Left out, it is fetched for just
+    this one.
+    """
+    count, spend_cents = purchase_totals if purchase_totals is not None else get_purchase_totals(db, member.id)
+    return {
+        "member.pointsBalance": member.total_points,
+        PURCHASE_SPEND: spend_cents,
+        PURCHASE_COUNT: count,
         "member.segments": [str(sa.segment_id) for sa in member.segment_assignments],
         **{CUSTOM_PREFIX + k: v for k, v in (member.custom_attributes or {}).items()},
     }

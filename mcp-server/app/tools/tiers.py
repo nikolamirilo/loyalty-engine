@@ -13,7 +13,9 @@ from app.mcp_instance import mcp
 
 @mcp.tool(title="List Tiers", annotations=ann.READ)
 async def list_tiers(program: Optional[str] = None) -> List[Dict[str, Any]]:
-    """List point-threshold tiers in ascending order of `minPoints`.
+    """List tiers in ascending order of `rank`, each with the conditions
+    (points balance, purchase spend/count, segments, custom attributes) a
+    member must meet to hold it.
 
     `program` is the program slug or id to act in; defaults to the server's
     configured program.

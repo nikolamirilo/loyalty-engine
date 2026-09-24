@@ -3,8 +3,8 @@
 import Link from "next/link";
 
 import { usePreload } from "@/lib/swr/preload";
-import { formatNumber, memberTier } from "@/lib/format";
-import type { Member, Tier } from "@/lib/types";
+import { formatNumber } from "@/lib/format";
+import type { Member } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
@@ -12,16 +12,10 @@ import { ChevronRightIcon } from "@/components/ui/icons";
 
 /**
  * Presentational members table. The parent (MembersView) supplies the already
- * paginated + searched page of members plus the tiers, and owns the search box
- * and pager - this component just renders rows.
+ * paginated + searched page of members, and owns the search box and pager -
+ * this component just renders rows.
  */
-export function MembersTable({
-  members,
-  tiers,
-}: {
-  members: Member[];
-  tiers: Tier[];
-}) {
+export function MembersTable({ members }: { members: Member[] }) {
   const preload = usePreload();
   return (
     <Table>
@@ -36,7 +30,7 @@ export function MembersTable({
       </THead>
       <TBody>
         {members.map((member) => {
-          const tier = memberTier(tiers, member);
+          const tier = member.tier;
           return (
             <TR key={member.id} className="group hover:bg-surface-2/60">
               <TD>

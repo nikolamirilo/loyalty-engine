@@ -36,7 +36,13 @@ export interface MemberProgram extends Program {
 export interface Tier {
   id: UUID;
   name: string;
-  minPoints: number;
+  /** Tiers are tried highest rank first; a member is assigned to the first
+   *  whose conditions all match. Ties break by creation order. */
+  rank: number;
+  /** All must match - the same rule an event rule's conditions follow. No
+   *  conditions matches every member, so a tier with none is a catch-all
+   *  wherever it sits in the rank order (typically the lowest). */
+  conditions: RuleCondition[];
   multiplier: number;
 }
 
@@ -88,8 +94,9 @@ export interface Member {
   phone: string | null;
   segments: SegmentSummary[];
   /** The tier the API last assigned (`apply_tier`), or null when the member
-   * hasn't met the lowest threshold / no tiers are defined. Authoritative -
-   * prefer this over recomputing with `tierForBalance`. */
+   * doesn't meet any tier's conditions / no tiers are defined. A tier's
+   * conditions can reach beyond the points balance, so this is the only
+   * correct source - there is no client-side way to recompute it. */
   tier: Tier | null;
   /** Serialized by the API as `pointsBalance` (aliased from `total_points`). */
   pointsBalance: number;

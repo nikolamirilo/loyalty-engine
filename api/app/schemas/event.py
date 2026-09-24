@@ -6,6 +6,7 @@ from pydantic import Field
 
 from app.models.enums import MemberAttributeType
 from app.schemas.base import CamelModel
+from app.schemas.conditions import Operator, RuleCondition
 
 # ── event types ──────────────────────────────────────────────────────────────
 
@@ -49,18 +50,9 @@ class EventTypeUpdate(CamelModel):
 
 
 # ── rules ────────────────────────────────────────────────────────────────────
-
-Operator = Literal["eq", "neq", "gt", "gte", "lt", "lte", "contains"]
-
-
-class RuleCondition(CamelModel):
-    """``field`` is a path: ``event.attributes.<key>``, ``member.pointsBalance``,
-    ``member.tier`` (a tier id), ``member.segments`` (a segment id, with
-    ``contains``) or ``member.customAttributes.<key>``."""
-
-    field: str
-    operator: Operator
-    value: Any
+# `Operator` and `RuleCondition` live in `app.schemas.conditions` (imported
+# above) - tier definitions use the same two types, and re-exporting them here
+# keeps every existing `from app.schemas.event import RuleCondition` working.
 
 
 class AddPointsEffect(CamelModel):

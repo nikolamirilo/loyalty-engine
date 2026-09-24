@@ -100,14 +100,19 @@ def main() -> None:
 
     # 4. The same name in two programs, which the old global unique constraints
     # made impossible.
-    gold_retail = post("/tiers", {"name": "Gold", "minPoints": 0, "multiplier": 2.0}, "retail-demo")
-    gold_airline = post("/tiers", {"name": "Gold", "minPoints": 5000}, "airline-demo")
+    def at_least(points: int) -> list[dict]:
+        return [{"field": "member.pointsBalance", "operator": "gte", "value": points}]
+
+    gold_retail = post(
+        "/tiers", {"name": "Gold", "conditions": at_least(0), "multiplier": 2.0}, "retail-demo"
+    )
+    gold_airline = post("/tiers", {"name": "Gold", "conditions": at_least(5000)}, "airline-demo")
     check(gold_retail.status_code == 201, f"first Gold tier answered {gold_retail.status_code}")
     check(
         gold_airline.status_code == 201,
         f"second Gold tier answered {gold_airline.status_code}: {gold_airline.text}",
     )
-    duplicate = post("/tiers", {"name": "Gold", "minPoints": 10}, "retail-demo")
+    duplicate = post("/tiers", {"name": "Gold", "conditions": at_least(10)}, "retail-demo")
     check(duplicate.status_code == 400, f"duplicate tier within one program answered {duplicate.status_code}")
 
     # 5. One person, a membership in every program, separate balances.

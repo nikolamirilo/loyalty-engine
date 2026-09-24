@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import type { ActionState } from "./action-state";
-import type { MemberAttribute } from "./types";
+import type { MemberAttribute, RuleCondition } from "./types";
 import { ApiError, apiRequest } from "./api";
 
 function fail(error: unknown): ActionState {
@@ -587,22 +587,37 @@ export async function unassignChallenge(
 
 // ── Tiers ────────────────────────────────────────────────────────────────────
 
+/** `TierFields` serializes its condition rows into this hidden input as JSON;
+ *  the API re-validates and coerces every condition's value again on save, so
+ *  this only needs to catch a malformed payload, not check each one. */
+function parseConditions(fd: FormData): RuleCondition[] | null {
+  const raw = str(fd, "conditions");
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function createTier(
   _prev: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
   const name = str(fd, "name");
-  const minPoints = parseNumber(fd, "minPoints");
+  const rank = parseNumber(fd, "rank");
   const multiplier = parseNumber(fd, "multiplier");
+  const conditions = parseConditions(fd);
   if (!name) return { ok: false, error: "Name is required." };
-  if (minPoints === null || minPoints < 0)
-    return { ok: false, error: "Min points must be 0 or greater." };
+  if (rank === null) return { ok: false, error: "Rank must be a number." };
   if (!multiplier || multiplier <= 0)
     return { ok: false, error: "Multiplier must be greater than 0." };
+  if (conditions === null) return { ok: false, error: "Couldn't read the tier's conditions." };
   try {
     await apiRequest("/tiers", {
       method: "POST",
-      json: { name, minPoints: minPoints, multiplier },
+      json: { name, rank, conditions, multiplier },
     });
     revalidatePath("/admin/dashboard");
     revalidatePath("/admin/tiers");
@@ -618,18 +633,19 @@ export async function updateTier(
 ): Promise<ActionState> {
   const id = str(fd, "id");
   const name = str(fd, "name");
-  const minPoints = parseNumber(fd, "minPoints");
+  const rank = parseNumber(fd, "rank");
   const multiplier = parseNumber(fd, "multiplier");
+  const conditions = parseConditions(fd);
   if (!id) return { ok: false, error: "Missing tier id." };
   if (!name) return { ok: false, error: "Name is required." };
-  if (minPoints === null || minPoints < 0)
-    return { ok: false, error: "Min points must be 0 or greater." };
+  if (rank === null) return { ok: false, error: "Rank must be a number." };
   if (!multiplier || multiplier <= 0)
     return { ok: false, error: "Multiplier must be greater than 0." };
+  if (conditions === null) return { ok: false, error: "Couldn't read the tier's conditions." };
   try {
     await apiRequest(`/tiers/${id}`, {
       method: "PATCH",
-      json: { name, minPoints: minPoints, multiplier },
+      json: { name, rank, conditions, multiplier },
     });
     revalidatePath("/admin/dashboard");
     revalidatePath("/admin/tiers");

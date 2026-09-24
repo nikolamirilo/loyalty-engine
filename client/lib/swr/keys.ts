@@ -18,6 +18,7 @@ function qs(params: Record<string, QueryValue>): string {
 }
 
 export const keys = {
+  programs: () => `/programs`,
   members: ({
     skip,
     limit = 1000,

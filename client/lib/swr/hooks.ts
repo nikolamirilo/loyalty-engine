@@ -12,6 +12,7 @@ import type {
   MemberStats,
   PointsTransaction,
   Product,
+  Program,
   Purchase,
   PurchaseStats,
   Redemption,
@@ -27,6 +28,12 @@ import { keys } from "./keys";
  * (SWRConfig), so hooks only supply the key. Passing `undefined`/empty id
  * yields a `null` key, which tells SWR not to fetch yet.
  */
+
+/** Every program that exists, not just the console's active one — `/programs`
+ *  itself isn't program-scoped (see lib/api.ts's `getPrograms`). */
+export function usePrograms() {
+  return useSWR<Program[]>(keys.programs());
+}
 
 export function useMembers(
   opts: { skip?: number; limit?: number; q?: string } = {},

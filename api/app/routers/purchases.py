@@ -9,6 +9,7 @@ from app.models import Member, Program, Purchase
 from app.schemas import PurchaseCreate, PurchaseOut, PurchaseStatsOut
 from app.services.products import assert_purchasable, get_product_or_404, get_purchase_stats, record_purchase
 from app.services.scoping import get_scoped_or_404
+from app.services.tiers import apply_tier
 
 router = APIRouter(tags=["Purchases"])
 
@@ -22,7 +23,7 @@ def purchase_product(
     db: Session = Depends(get_db),
     program: Program = Depends(get_program),
 ):
-    get_scoped_or_404(db, Member, member_id, program, "Member")
+    member = get_scoped_or_404(db, Member, member_id, program, "Member")
 
     product = get_product_or_404(db, body.product_id, program)
     assert_purchasable(product)
@@ -31,6 +32,10 @@ def purchase_product(
     # card" with unlimited funds, so a purchase always succeeds once the
     # product itself is purchasable.
     purchase = record_purchase(db, member_id, product, body.quantity)
+    # A tier's conditions can read lifetime purchase spend/count; flush so the
+    # aggregate query inside `apply_tier` sees the purchase just added.
+    db.flush()
+    apply_tier(db, member)
     db.commit()
     db.refresh(purchase)
     return purchase

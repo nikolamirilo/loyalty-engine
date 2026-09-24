@@ -32,7 +32,7 @@ function NewTierButton() {
         </Button>
       }
       title="New tier"
-      description="Members reaching the point threshold earn at this multiplier."
+      description="Members meeting every condition below earn at this multiplier."
       action={createTier}
       submitLabel="Create tier"
       onSuccess={onChange}
@@ -53,7 +53,7 @@ export default function TiersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Tiers"
-        description="Point thresholds that apply an earn-rate multiplier."
+        description="Points, purchase spend, segments and custom attributes, combined however you like, applying an earn-rate multiplier."
         actions={<NewTierButton />}
       />
 

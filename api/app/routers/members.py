@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.database import get_db
 from app.core.program import get_program
-from app.models import Member, MemberIdentity, MemberSegment, Program, Segment, Tier
+from app.models import Member, MemberIdentity, MemberSegment, Program, Segment
 from app.schemas import (
     MemberCountOut,
     MemberCreate,
@@ -169,39 +169,34 @@ def member_stats(
     every member just to tally them: total count, points in circulation, and the
     member-count-per-tier distribution.
 
-    Tiers are bucketed by balance (the highest tier whose ``min_points`` the
-    balance meets), matching the client's ``tierForBalance`` rule."""
-    tiers = (
-        db.query(Tier)
-        .filter(Tier.program_id == program.id)
-        .order_by(Tier.min_points.asc())
-        .all()
+    Grouped by each member's stored ``tier_id`` rather than recomputed live: a
+    tier's conditions can now reach beyond the points balance (purchase spend,
+    segments, custom attributes), and `apply_tier` already re-runs on every
+    change any of those can come from, plus whenever a tier definition itself
+    changes (`app.services.tiers.reapply_tiers`). The stored value is always
+    current, and grouping by it is one cheap query instead of re-evaluating
+    every member's conditions on every dashboard load.
+    """
+    count = db.query(func.count(Member.id)).filter(Member.program_id == program.id).scalar() or 0
+    points_in_circulation = (
+        db.query(func.coalesce(func.sum(Member.total_points), 0))
+        .filter(Member.program_id == program.id)
+        .scalar()
+        or 0
     )
 
-    count = 0
-    points_in_circulation = 0
     by_tier: dict[str, int] = {}
     untiered = 0
-
-    # Scan only the balance column (compact) rather than whole member rows.
-    for (total_points,) in (
-        db.query(Member.total_points).filter(Member.program_id == program.id).all()
+    for tier_id, tier_count in (
+        db.query(Member.tier_id, func.count(Member.id))
+        .filter(Member.program_id == program.id)
+        .group_by(Member.tier_id)
+        .all()
     ):
-        balance = total_points or 0
-        count += 1
-        points_in_circulation += balance
-
-        assigned = None
-        for tier in tiers:  # ascending by min_points
-            if balance >= tier.min_points:
-                assigned = tier
-            else:
-                break
-        if assigned is not None:
-            key = str(assigned.id)
-            by_tier[key] = by_tier.get(key, 0) + 1
+        if tier_id is None:
+            untiered = tier_count
         else:
-            untiered += 1
+            by_tier[str(tier_id)] = tier_count
 
     return {
         "count": count,
@@ -315,6 +310,10 @@ def update_member(
     if body.segment_ids is not None:
         _sync_member_segments(db, member, program, body.segment_ids)
         sync_assignments_for_segments(db, program, set(body.segment_ids), {member_id})
+    # A tier's conditions can read segments or custom attributes, so either
+    # changing can move the member into a different one.
+    if body.segment_ids is not None or body.custom_attributes is not None:
+        apply_tier(db, member)
     db.commit()
     db.refresh(member)
     return member

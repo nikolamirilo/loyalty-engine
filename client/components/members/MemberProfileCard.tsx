@@ -7,7 +7,7 @@ import { deleteMember, updateMember } from "@/lib/actions";
 import { idleState } from "@/lib/action-state";
 import { formatDateTime } from "@/lib/format";
 import { useSegments } from "@/lib/swr/hooks";
-import type { Member, Reward, Tier } from "@/lib/types";
+import type { Member, Reward } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -47,14 +47,10 @@ const GrantRewardDialog = dynamic(
  */
 export function MemberProfileCard({
   member,
-  tier,
-  tiersLoading,
   rewards,
   onMutated,
 }: {
   member?: Member;
-  tier: Tier | null;
-  tiersLoading: boolean;
   rewards: Reward[];
   onMutated: () => void;
 }) {
@@ -65,8 +61,6 @@ export function MemberProfileCard({
   return (
     <ProfileCardForm
       member={member}
-      tier={tier}
-      tiersLoading={tiersLoading}
       rewards={rewards}
       editing={editing}
       onEdit={() => setEditing(true)}
@@ -86,8 +80,6 @@ export function MemberProfileCard({
  */
 function ProfileCardForm({
   member,
-  tier,
-  tiersLoading,
   rewards,
   editing,
   onEdit,
@@ -96,8 +88,6 @@ function ProfileCardForm({
   onMutated,
 }: {
   member: Member;
-  tier: Tier | null;
-  tiersLoading: boolean;
   rewards: Reward[];
   editing: boolean;
   onEdit: () => void;
@@ -152,11 +142,9 @@ function ProfileCardForm({
                 </h1>
                 <p className="text-sm text-muted">{member.email}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  {tiersLoading ? (
-                    <Skeleton className="h-5 w-20 rounded-full" />
-                  ) : tier ? (
+                  {member.tier ? (
                     <Badge tone="primary">
-                      <LayersIcon className="text-[0.8125rem]" /> {tier.name}
+                      <LayersIcon className="text-[0.8125rem]" /> {member.tier.name}
                     </Badge>
                   ) : (
                     <Badge tone="neutral">No tier</Badge>
@@ -248,16 +236,10 @@ function ProfileCardForm({
           </ProfileField>
 
           <ProfileField label="Tier" hint="auto" className="w-40">
-            {tiersLoading ? (
-              <Skeleton className="h-5 w-16 rounded-full" />
-            ) : tier ? (
-              <Badge tone="primary">{tier.name}</Badge>
-            ) : (
-              <Empty />
-            )}
+            {member.tier ? <Badge tone="primary">{member.tier.name}</Badge> : <Empty />}
             {editing && (
               <p className="mt-1 text-xs text-faint">
-                Assigned automatically from points balance.
+                Assigned automatically from points balance, purchases, segments and custom attributes.
               </p>
             )}
           </ProfileField>

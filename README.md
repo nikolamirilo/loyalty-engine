@@ -42,7 +42,7 @@ keeps one set of rules in one place.
 | **Members** | People in the program. Name, email, phone, segments, points balance, custom attributes. |
 | **Segments** | Named groups such as "VIP" or "Newsletter". A member can be in any number of them. |
 | **Points** | Earned, spent, or adjusted by an admin. Every change is written to a transaction history. |
-| **Tiers** | Point thresholds that apply an earn rate multiplier. Assigned automatically as a balance moves. |
+| **Tiers** | Conditions on points balance, purchase spend, segments and custom attributes, combined however a program likes, that apply an earn rate multiplier. Assigned automatically whenever any of them changes. |
 | **Rewards** | The catalog members spend points on, with optional stock limits. |
 | **Redemptions** | A reward a member took. Either `redeemed` (they paid points) or `assigned` (granted free). |
 | **Challenges** | Goals a member works toward. Progress accumulates, and finishing pays out points, a reward, or both. |

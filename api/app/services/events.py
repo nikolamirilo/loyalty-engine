@@ -17,6 +17,7 @@ from app.services.custom_attributes import normalize_options, slugify
 from app.services.rules.conditions import matches
 from app.services.rules.effects import EffectContext, apply_effect
 from app.services.rules.fields import EVENT_PREFIX, build_context, coerce_value, event_fields
+from app.services.tiers import apply_tier
 
 # ── event type attributes ────────────────────────────────────────────────────
 
@@ -134,6 +135,14 @@ def _run_rules(
                     "rewardId": str(outcome.reward_id) if outcome.reward_id else None,
                 }
             )
+
+    # A tier's conditions can read segments and custom attributes as well as
+    # points, and an addToSegment/removeFromSegment/updateMember effect above
+    # doesn't re-apply the tier itself (addPoints/burnPoints already do, via
+    # `record_transaction`). One re-check per event, after every effect has
+    # run, covers all of them.
+    if applied:
+        apply_tier(db, member)
     return applied
 
 

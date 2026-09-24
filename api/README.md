@@ -14,7 +14,7 @@ Every route except `/health` and the docs requires a bearer token.
 | **Members** | Name, email, phone, segment memberships, points balance, custom attributes. |
 | **Segments** | Named groups such as "VIP". A member belongs to any number of them, and members can be bulk assigned. |
 | **Points** | Earn, spend, and admin adjustments, each written to a transaction history. |
-| **Tiers** | Point thresholds that apply an earn rate multiplier, assigned automatically as a balance moves. |
+| **Tiers** | Conditions - points balance, lifetime purchase spend/count, segments, custom attributes, ANDed together - that apply an earn rate multiplier, assigned automatically whenever any of them changes. |
 | **Rewards** | The redeemable catalog, with optional stock limits. |
 | **Redemptions and prizes** | Members spend points on a reward, or staff grant one for free. |
 | **Challenges** | Goals with a target value. Progress accrues, and completion pays out points, a reward, or both. Can be pushed to a whole segment at once. |
@@ -62,7 +62,7 @@ api/
     ├── models/                   # One module per resource
     ├── schemas/                  # Pydantic shapes, mirrored with models/
     ├── services/
-    │   ├── tiers.py              # apply_tier, re-applied on every balance change
+    │   ├── tiers.py              # apply_tier, re-run whenever a tier's conditions can shift
     │   ├── points.py             # record_transaction, the only path that moves total_points
     │   ├── rewards.py            # availability checks and prize granting
     │   ├── challenges.py         # expiry, segment fan out, progress, completion rewards
@@ -166,33 +166,40 @@ from snake_case Python fields by a shared `CamelModel` base in
 `app/schemas/base.py`. Request bodies accept either casing, so older snake_case
 payloads keep working.
 
-## How points and tiers stay in sync
+## How tiers stay in sync
 
-Every change to a balance funnels through one function. That is what keeps the
-tier correct without each caller remembering to recalculate it.
+A tier's conditions (`app/services/rules/fields.py:tier_fields`) can test the
+points balance, lifetime purchase spend and count, segments, and custom
+attributes - all of them, ANDed together, the same "if" language event rules
+use. Every path that can move one of those calls `apply_tier` (or its batched
+sibling `reapply_tiers`), so the member's stored tier never goes stale:
 
 ```mermaid
 flowchart TB
-    Earn["Earn points"]
-    Burn["Burn points"]
-    Adjust["Admin adjustment"]
+    Earn["Earn / burn / adjust points"]
     Redeem["Reward redeemed"]
     Challenge["Challenge completed"]
+    Purchase["Purchase recorded"]
+    Segment["Segment membership changed"]
+    Attr["Custom attributes changed"]
+    TierEdit["A tier is created, edited or deleted"]
 
-    RT["services.points.record_transaction()<br/>writes the transaction<br/>and moves total_points"]
-    AT["services.tiers.apply_tier()<br/>picks the tier for the new balance"]
+    AT["services.tiers.apply_tier() / reapply_tiers()<br/>tries every tier highest rank first,<br/>assigns the first whose conditions all match"]
 
-    Earn --> RT
-    Burn --> RT
-    Adjust --> RT
-    Redeem --> RT
-    Challenge --> RT
-    RT --> AT
+    Earn --> AT
+    Redeem --> AT
+    Challenge --> AT
+    Purchase --> AT
+    Segment --> AT
+    Attr --> AT
+    TierEdit -->|"re-checks every member<br/>in the program"| AT
 ```
 
-Earning applies the member's tier multiplier, so the points credited can be more
-than the points asked for. Tiers are picked automatically when the balance
-crosses `minPoints`.
+Earning applies the member's tier multiplier, so the points credited can be
+more than the points asked for. Tiers are tried from the highest `rank` down;
+a member is assigned to the first tier whose conditions all match, or to none
+if no tier's do. A tier with no conditions matches everyone, so one with the
+lowest rank acts as a catch-all default.
 
 Completing a challenge is the one action that can pay out twice: `rewardPoints`
 become an `earn` transaction, and `rewardId`, if set, becomes a redemption with

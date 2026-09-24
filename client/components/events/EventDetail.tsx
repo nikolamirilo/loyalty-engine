@@ -37,6 +37,7 @@ import {
 import { EventTypeDialog } from "./EventTypeDialog";
 import { RuleEditorDialog } from "./RuleEditorDialog";
 import { RuleItem } from "./RuleItem";
+import { TestEventButton } from "./TestEventDialog";
 import { curlExample, type Catalog } from "./rules";
 
 /** One event type: its rules on the left, its shape and how to send it on the right. */
@@ -126,6 +127,7 @@ export function EventDetail({ id }: { id: string }) {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <ActiveToggle eventType={eventType} />
+          <TestEventButton eventType={eventType} />
           <Button variant="secondary" onClick={() => setEditingEvent(true)}>
             <PencilIcon /> Edit event
           </Button>

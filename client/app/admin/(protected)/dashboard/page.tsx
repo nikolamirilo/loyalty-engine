@@ -9,7 +9,7 @@ import {
   useRewards,
   useTiers,
 } from "@/lib/swr/hooks";
-import { formatNumber, memberTier } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -134,7 +134,7 @@ export default function DashboardPage() {
               </THead>
               <TBody>
                 {recentMembers.map((member) => {
-                  const tier = tiers ? memberTier(tiers, member) : null;
+                  const tier = member.tier;
                   return (
                     <TR key={member.id} className="group hover:bg-surface-2/60">
                       <TD>

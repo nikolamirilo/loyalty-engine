@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { useEventTypes } from "@/lib/swr/hooks";
 import { EventTypeDialog } from "@/components/events/EventTypeDialog";
+import { TestEventPickerButton } from "@/components/events/TestEventDialog";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -34,7 +35,12 @@ export default function EventsPage() {
       <PageHeader
         title="Events"
         description="Things members do in your systems. Rules decide what each event earns."
-        actions={newEventButton}
+        actions={
+          <>
+            <TestEventPickerButton eventTypes={eventTypes ?? []} />
+            {newEventButton}
+          </>
+        }
       />
 
       <Card className="overflow-hidden">

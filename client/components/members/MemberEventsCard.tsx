@@ -7,14 +7,15 @@ import { sendEvent } from "@/lib/events/actions";
 import { formatDateTime } from "@/lib/format";
 import { useEventTypes, useMemberEvents } from "@/lib/swr/hooks";
 import { useRevalidate } from "@/lib/swr/revalidate";
-import type { CustomAttributeValue, EventAttribute, EventType } from "@/lib/types";
+import type { CustomAttributeValue, EventType } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Field, Input, Select } from "@/components/ui/Field";
+import { Field, Select } from "@/components/ui/Field";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
 import { MemberWidget } from "@/components/members/MemberWidget";
+import { EventAttributeFields } from "@/components/events/EventAttributeFields";
 import { BoltIcon, CheckCircleIcon } from "@/components/ui/icons";
 
 /** A member's events, newest first, each with what its rules did. */
@@ -166,44 +167,8 @@ function SendEventFields({ eventTypes }: { eventTypes: EventType[] }) {
       </Field>
       {/* Keyed by event type so switching types clears the inputs. */}
       <div key={typeKey} className="space-y-4">
-        {eventType?.attributes.map((attribute) => (
-          <Field key={attribute.key} label={attribute.label} htmlFor={`attr-${attribute.key}`} hint="optional">
-            <AttributeInput attribute={attribute} />
-          </Field>
-        ))}
+        <EventAttributeFields attributes={eventType?.attributes ?? []} />
       </div>
     </>
-  );
-}
-
-function AttributeInput({ attribute }: { attribute: EventAttribute }) {
-  const name = `attr.${attribute.key}`;
-  const id = `attr-${attribute.key}`;
-  if (attribute.type === "select" || attribute.type === "boolean") {
-    const options =
-      attribute.type === "boolean"
-        ? [
-            { value: "true", label: "Yes" },
-            { value: "false", label: "No" },
-          ]
-        : (attribute.options ?? []).map((o) => ({ value: o, label: o }));
-    return (
-      <Select id={id} name={name} defaultValue="">
-        <option value="">Not sent</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </Select>
-    );
-  }
-  return (
-    <Input
-      id={id}
-      name={name}
-      type={attribute.type === "number" ? "number" : attribute.type === "date" ? "date" : "text"}
-      step={attribute.type === "number" ? "any" : undefined}
-    />
   );
 }

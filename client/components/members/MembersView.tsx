@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { useMembers, useMembersCount, useTiers } from "@/lib/swr/hooks";
+import { useMembers, useMembersCount } from "@/lib/swr/hooks";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Field";
@@ -40,7 +40,6 @@ export function MembersView() {
     q,
   });
   const { data: countData } = useMembersCount(q);
-  const { data: tiers } = useTiers();
 
   const total = countData?.count ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -70,7 +69,7 @@ export function MembersView() {
         <MembersTableSkeleton />
       ) : members && members.length > 0 ? (
         <>
-          <MembersTable members={members} tiers={tiers ?? []} />
+          <MembersTable members={members} />
           <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
         </>
       ) : (

@@ -15,6 +15,7 @@ from app.schemas import (
 )
 from app.services.challenges import sync_assignments_for_segments
 from app.services.segments import get_segment_or_404
+from app.services.tiers import reapply_tiers
 
 router = APIRouter(prefix="/segments", tags=["Segments"])
 
@@ -129,17 +130,26 @@ def assign_segment_to_members(
 
     assigned = 0
     skipped = 0
+    newly_assigned: set[UUID] = set()
     for member_id in member_ids:
         if member_id in already:
             skipped += 1
             continue
         db.add(MemberSegment(member_id=member_id, segment_id=segment_id))
+        newly_assigned.add(member_id)
         assigned += 1
 
     # Covers both newly-assigned members and pre-existing ones, so it also
     # backfills any challenge that was bulk-assigned to this segment before
     # this endpoint carried the sync.
     sync_assignments_for_segments(db, program, {segment_id}, member_ids)
+
+    if newly_assigned:
+        # A tier's conditions can read segments; flush so each member's
+        # `segment_assignments` reflects the rows just added above.
+        db.flush()
+        members = db.query(Member).filter(Member.id.in_(newly_assigned)).all()
+        reapply_tiers(db, program.id, members)
 
     db.commit()
     return MemberAssignResult(segment_id=segment_id, assigned=assigned, skipped=skipped)

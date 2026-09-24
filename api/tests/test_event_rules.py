@@ -88,8 +88,17 @@ def main() -> None:
     created(client.post("/programs", json={"name": "Events", "slug": PROGRAM}, headers=AUTH), "a program")
     created(client.post("/programs", json={"name": "Other", "slug": "other"}, headers=AUTH), "a program")
 
-    created(call("POST", "/tiers", {"name": "Base", "minPoints": 0, "multiplier": 1.0}), "a tier")
-    created(call("POST", "/tiers", {"name": "Gold", "minPoints": 500, "multiplier": 2.0}), "a tier")
+    def at_least(points: int) -> list[dict]:
+        return [{"field": "member.pointsBalance", "operator": "gte", "value": points}]
+
+    created(
+        call("POST", "/tiers", {"name": "Base", "rank": 0, "conditions": at_least(0), "multiplier": 1.0}),
+        "a tier",
+    )
+    created(
+        call("POST", "/tiers", {"name": "Gold", "rank": 500, "conditions": at_least(500), "multiplier": 2.0}),
+        "a tier",
+    )
     vip = created(call("POST", "/segments", {"name": "VIP"}), "a segment")["id"]
     big = created(call("POST", "/segments", {"name": "Big spenders"}), "a segment")["id"]
     coffee = created(call("POST", "/rewards", {"name": "Free coffee", "pointsCost": 100, "stock": 1}), "a reward")["id"]

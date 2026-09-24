@@ -1,7 +1,9 @@
 "use client";
 
+import { capitalize, conditionText } from "@/lib/conditions";
+import { tierConditionFields } from "@/lib/tiers/conditions";
 import { deleteTier, updateTier } from "@/lib/actions";
-import { formatNumber } from "@/lib/format";
+import { useMemberAttributes, useSegments } from "@/lib/swr/hooks";
 import type { Tier } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +22,10 @@ export function TierCard({
   count: number | undefined;
   onChange: () => void;
 }) {
+  const { data: segments } = useSegments();
+  const { data: memberAttributes } = useMemberAttributes();
+  const fields = tierConditionFields({ segments: segments ?? [], memberAttributes: memberAttributes ?? [] });
+
   return (
     <Card className="flex flex-col p-5">
       <div className="flex items-start justify-between gap-3">
@@ -42,7 +48,7 @@ export function TierCard({
               </Button>
             }
             title="Edit tier"
-            description="Members reaching the point threshold earn at this multiplier."
+            description="Members meeting every condition below earn at this multiplier."
             action={updateTier}
             submitLabel="Save changes"
             onSuccess={onChange}
@@ -62,7 +68,7 @@ export function TierCard({
               </Button>
             }
             title={`Delete "${tier.name}"?`}
-            description="Members in this tier will fall back to the next-lowest tier. This cannot be undone."
+            description="Members in this tier are re-checked against every remaining tier and reassigned, or left tierless if none match. This cannot be undone."
             confirmLabel="Delete tier"
             action={deleteTier.bind(null, tier.id)}
             successMessage="Tier deleted."
@@ -72,11 +78,8 @@ export function TierCard({
       </div>
       <div className="mt-5 grid grid-cols-2 gap-3">
         <div className="rounded-lg bg-surface-2 px-3 py-2.5">
-          <p className="text-xs text-muted">From</p>
-          <p className="mt-0.5 font-semibold text-foreground tabular-nums">
-            {formatNumber(tier.minPoints)}
-            <span className="ml-1 text-xs font-normal text-faint">pts</span>
-          </p>
+          <p className="text-xs text-muted">Rank</p>
+          <p className="mt-0.5 font-semibold text-foreground tabular-nums">{tier.rank}</p>
         </div>
         <div className="rounded-lg bg-surface-2 px-3 py-2.5">
           <p className="text-xs text-muted">Earn rate</p>
@@ -84,6 +87,20 @@ export function TierCard({
             {tier.multiplier}×
           </p>
         </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[0.8125rem]">
+        {tier.conditions.length === 0 ? (
+          <span className="text-muted">Every member qualifies</span>
+        ) : (
+          tier.conditions.map((condition, i) => (
+            <span key={i} className="flex items-center gap-1.5">
+              {i > 0 && <span className="text-faint">and</span>}
+              <span className="rounded-md border border-line bg-surface-2 px-2 py-0.5 text-foreground">
+                {capitalize(conditionText(condition, fields))}
+              </span>
+            </span>
+          ))
+        )}
       </div>
       <div className="mt-3">
         <Badge tone="primary">×{tier.multiplier} points on earn</Badge>

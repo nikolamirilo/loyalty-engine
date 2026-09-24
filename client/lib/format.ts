@@ -1,5 +1,3 @@
-import type { Member, Tier } from "./types";
-
 /** Join truthy class names. A tiny stand-in for `clsx`. */
 export function cn(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");
@@ -91,19 +89,3 @@ export function humanize(value: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/**
- * Compute a member's current tier from their balance, mirroring the server's
- * rule: the highest tier whose `minPoints` the balance meets or exceeds.
- * Assumes `tiers` is sorted ascending by `minPoints`.
- */
-export function tierForBalance(tiers: Tier[], balance: number): Tier | null {
-  let current: Tier | null = null;
-  for (const tier of tiers) {
-    if (balance >= tier.minPoints) current = tier;
-  }
-  return current;
-}
-
-export function memberTier(tiers: Tier[], member: Member): Tier | null {
-  return tierForBalance(tiers, member.pointsBalance);
-}

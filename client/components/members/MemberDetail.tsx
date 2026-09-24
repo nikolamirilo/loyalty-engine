@@ -11,7 +11,6 @@ import {
   usePurchaseStats,
   useRedemptions,
   useRewards,
-  useTiers,
   useTransactions,
 } from "@/lib/swr/hooks";
 import { useRevalidate } from "@/lib/swr/revalidate";
@@ -21,7 +20,6 @@ import {
   formatDateTime,
   formatNumber,
   formatPrice,
-  memberTier,
   signedNumber,
 } from "@/lib/format";
 import { Badge } from "@/components/ui/Badge";
@@ -64,7 +62,6 @@ export function MemberDetail({ id }: { id: string }) {
   const onMutated = () => revalidate.members();
 
   const { data: member, error: memberError } = useMember(id);
-  const { data: tiers } = useTiers();
   const { data: transactions } = useTransactions(id);
   const { data: redemptions } = useRedemptions(id);
   const { data: memberChallenges } = useMemberChallenges(id);
@@ -90,7 +87,6 @@ export function MemberDetail({ id }: { id: string }) {
     );
   }
 
-  const tier = member && tiers ? memberTier(tiers, member) : null;
   const totalEarned = transactions
     ? transactions.filter((t) => t.type === "earn").reduce((s, t) => s + t.points, 0)
     : 0;
@@ -114,8 +110,6 @@ export function MemberDetail({ id }: { id: string }) {
       {/* 1 — Profile: standard + custom fields, editable in place */}
       <MemberProfileCard
         member={member}
-        tier={tier}
-        tiersLoading={tiers === undefined}
         rewards={rewards ?? []}
         onMutated={onMutated}
       />
@@ -175,63 +169,62 @@ export function MemberDetail({ id }: { id: string }) {
         )}
       </div>
 
-      {/* Equal-size widgets, two per row from laptop up. Activity and
-          challenges lead, as they did when challenges had its own column. */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* 3 — Points activity */}
-        <MemberWidget
-          title="Points activity"
-          description="Earn, burn, and adjustment history"
-        >
-          {transactions === undefined ? (
-            <TableSkeleton />
-          ) : transactions.length === 0 ? (
-            <EmptyState
-              icon={<CoinsIcon />}
-              title="No activity yet"
-              description="Points transactions will appear here."
-            />
-          ) : (
-            <Table>
-              <THead>
-                <TR>
-                  <TH>Type</TH>
-                  <TH className="text-right">Points</TH>
-                  <TH>Description</TH>
-                  <TH className="text-right">When</TH>
+      {/* 3 — Points activity, across the full width */}
+      <MemberWidget
+        title="Points activity"
+        description="Earn, burn, and adjustment history"
+      >
+        {transactions === undefined ? (
+          <TableSkeleton />
+        ) : transactions.length === 0 ? (
+          <EmptyState
+            icon={<CoinsIcon />}
+            title="No activity yet"
+            description="Points transactions will appear here."
+          />
+        ) : (
+          <Table>
+            <THead>
+              <TR>
+                <TH>Type</TH>
+                <TH className="text-right">Points</TH>
+                <TH>Description</TH>
+                <TH className="text-right">When</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {transactions.map((t) => (
+                <TR key={t.id} className="hover:bg-surface-2/60">
+                  <TD>
+                    <TransactionBadge type={t.type} />
+                  </TD>
+                  <TD
+                    className={cn(
+                      "text-right font-semibold tabular-nums",
+                      t.points > 0
+                        ? "text-success-fg"
+                        : t.points < 0
+                          ? "text-danger-fg"
+                          : "text-muted",
+                    )}
+                  >
+                    {signedNumber(t.points)}
+                  </TD>
+                  <TD className="max-w-xs truncate text-muted">
+                    {t.description ?? "-"}
+                  </TD>
+                  <TD className="text-right whitespace-nowrap text-muted">
+                    {formatDateTime(t.createdAt)}
+                  </TD>
                 </TR>
-              </THead>
-              <TBody>
-                {transactions.map((t) => (
-                  <TR key={t.id} className="hover:bg-surface-2/60">
-                    <TD>
-                      <TransactionBadge type={t.type} />
-                    </TD>
-                    <TD
-                      className={cn(
-                        "text-right font-semibold tabular-nums",
-                        t.points > 0
-                          ? "text-success-fg"
-                          : t.points < 0
-                            ? "text-danger-fg"
-                            : "text-muted",
-                      )}
-                    >
-                      {signedNumber(t.points)}
-                    </TD>
-                    <TD className="max-w-xs truncate text-muted">
-                      {t.description ?? "-"}
-                    </TD>
-                    <TD className="text-right whitespace-nowrap text-muted">
-                      {formatDateTime(t.createdAt)}
-                    </TD>
-                  </TR>
-                ))}
-              </TBody>
-            </Table>
-          )}
-        </MemberWidget>
+              ))}
+            </TBody>
+          </Table>
+        )}
+      </MemberWidget>
 
+      {/* Equal-size widgets, two per row from laptop up */}
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* 4 — Challenges */}
         <MemberWidget
           title="Challenges"
