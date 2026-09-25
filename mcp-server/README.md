@@ -21,7 +21,7 @@ flowchart LR
 
 ## Status
 
-Four phases are done:
+Five phases are done:
 
 1. **Scaffold**, config, auth, HTTP client, server entrypoint.
 2. **Read tools**, members, segments, rewards, tiers, balances, transactions,
@@ -31,9 +31,14 @@ Four phases are done:
 4. **Challenges, prizes, products and purchases**, the full challenge lifecycle
    plus the catalog behind purchase based flows.
 
-Held back for a later admin scope: deleting members, rewards, tiers and segments,
-admin point adjustments, reward, tier and segment writes, and member custom
-attribute definitions.
+5. **Admin console parity**, everything the admin console can read, create,
+   update or delete: programs, rewards, tiers, segments and segment
+   assignment, member attribute definitions, event rules, member deletion,
+   point adjustments, member counts and stats, and the program event log.
+
+Deleting a program is left out on purpose and stays that way. It cascades
+through every member, balance and rule in the program, so it is always a
+manual action in the admin console.
 
 Member sign in (`/auth/signup`, `/auth/login`, `/auth/verify`) is deliberately
 left off. It is a credential flow, and brokering it through an external agent
@@ -85,7 +90,9 @@ mcp-server/
     ├── client/
     │   └── loyalty_api_client.py   # the only module that knows the API
     └── tools/              # one module per resource, mirrors api/app/routers/
+        ├── programs.py
         ├── members.py
+        ├── member_attributes.py
         ├── points.py
         ├── challenges.py
         ├── redemptions.py
@@ -94,6 +101,7 @@ mcp-server/
         ├── purchases.py
         ├── segments.py
         ├── tiers.py
+        ├── events.py
         └── doi.py
 ```
 
@@ -127,19 +135,43 @@ Point a client at `/mcp` with `Authorization: Bearer <one of MCP_CLIENT_TOKENS>`
 
 ## Tool reference
 
-47 tools. Inputs use snake_case field names, outputs pass the API response
+74 tools. Inputs use snake_case field names, outputs pass the API response
 straight through, already camelCase. The headings below group by domain for
 reading only; the title a client actually shows is verb first, see
 [How tools are grouped](#how-tools-are-grouped).
+
+**Programs**
+
+| Scope | Tool | API call |
+|---|---|---|
+| `read` | `list_programs()` | `GET /programs` |
+| `read` | `get_program(program_id)` | `GET /programs/{id}` |
+| `write` | `create_program(name, slug?, description?, is_default?)` | `POST /programs` |
+| `write` | `update_program(program_id, name?, slug?, description?, is_default?)` | `PATCH /programs/{id}` |
+
+No `delete_program`, by design. See [Status](#status).
 
 **Members**
 
 | Scope | Tool | API call |
 |---|---|---|
 | `read` | `list_members(q?, skip?, limit?)` | `GET /members` |
+| `read` | `count_members(q?)` | `GET /members/count` |
+| `read` | `get_member_stats()` | `GET /members/stats` |
 | `read` | `get_member(member_id)` | `GET /members/{id}` |
 | `write` | `create_member(name, email, phone?, segment_ids?, custom_attributes?)` | `POST /members` |
 | `write` | `update_member(member_id, ...)` | `PATCH /members/{id}` |
+| `write` | `delete_member(member_id)` | `DELETE /members/{id}` |
+
+**Member attributes**
+
+| Scope | Tool | API call |
+|---|---|---|
+| `read` | `list_member_attributes()` | `GET /member-attributes` |
+| `read` | `get_member_attribute(attribute_id)` | `GET /member-attributes/{id}` |
+| `write` | `create_member_attribute(label, type, options?, default_value?)` | `POST /member-attributes` |
+| `write` | `update_member_attribute(attribute_id, label?, options?, default_value?)` | `PATCH /member-attributes/{id}` |
+| `write` | `delete_member_attribute(attribute_id)` | `DELETE /member-attributes/{id}` |
 
 **Points**
 
@@ -149,6 +181,7 @@ reading only; the title a client actually shows is verb first, see
 | `read` | `list_transactions(member_id, skip?, limit?)` | `GET /members/{id}/transactions` |
 | `write` | `earn_points(member_id, points, description?)` | `POST /members/{id}/points/earn` |
 | `write` | `burn_points(member_id, points, description?)` | `POST /members/{id}/points/burn` |
+| `write` | `adjust_points(member_id, points, description?)` | `POST /members/{id}/points/adjust` |
 
 **Rewards, redemptions and prizes**
 
@@ -156,6 +189,9 @@ reading only; the title a client actually shows is verb first, see
 |---|---|---|
 | `read` | `list_rewards(active_only?, skip?, limit?)` | `GET /rewards` |
 | `read` | `get_reward(reward_id)` | `GET /rewards/{id}` |
+| `write` | `create_reward(name, points_cost, description?, stock?, is_active?)` | `POST /rewards` |
+| `write` | `update_reward(reward_id, ..., unlimited_stock?)` | `PATCH /rewards/{id}` |
+| `write` | `delete_reward(reward_id)` | `DELETE /rewards/{id}` |
 | `write` | `redeem_reward(member_id, reward_id)` | `POST /members/{id}/redeem/{rewardId}` |
 | `read` | `list_member_redemptions(member_id, skip?, limit?)` | `GET /members/{id}/redemptions` |
 | `write` | `assign_prize(member_id, reward_id)` | `POST /members/{id}/prizes/{rewardId}` |
@@ -197,8 +233,15 @@ reading only; the title a client actually shows is verb first, see
 |---|---|---|
 | `read` | `list_segments()` | `GET /segments` |
 | `read` | `get_segment(segment_id)` | `GET /segments/{id}` |
+| `write` | `create_segment(name, description?, color?)` | `POST /segments` |
+| `write` | `update_segment(segment_id, name?, description?, color?)` | `PATCH /segments/{id}` |
+| `write` | `delete_segment(segment_id)` | `DELETE /segments/{id}` |
+| `write` | `assign_members_to_segment(segment_id, member_ids)` | `POST /segments/{id}/assign` |
 | `read` | `list_tiers()` | `GET /tiers` |
 | `read` | `get_tier(tier_id)` | `GET /tiers/{id}` |
+| `write` | `create_tier(name, rank?, conditions?, multiplier?)` | `POST /tiers` |
+| `write` | `update_tier(tier_id, name?, rank?, conditions?, multiplier?)` | `PATCH /tiers/{id}` |
+| `write` | `delete_tier(tier_id)` | `DELETE /tiers/{id}` |
 | `write` | `trigger_doi(email?, member_id?, type?)` | `POST /doi/trigger` |
 | `write` | `verify_doi(code, email?, member_id?)` | `POST /doi/verify` |
 
@@ -207,9 +250,15 @@ reading only; the title a client actually shows is verb first, see
 | Scope | Tool | API call |
 |---|---|---|
 | `read` | `list_event_types()` | `GET /event-types` |
+| `read` | `get_event_type(event_type_id)` | `GET /event-types/{id}` |
 | `write` | `create_event_type(name, description?, attributes?, is_active?)` | `POST /event-types` |
 | `write` | `update_event_type(event_type_id, name?, description?, is_active?, attributes?)` | `PATCH /event-types/{id}` |
+| `write` | `delete_event_type(event_type_id)` | `DELETE /event-types/{id}` |
+| `write` | `create_event_rule(event_type_id, name, effects, conditions?, limit_per_member?, is_active?)` | `POST /event-types/{id}/rules` |
+| `write` | `update_event_rule(event_type_id, rule_id, ..., remove_limit?)` | `PATCH /event-types/{id}/rules/{id}` |
+| `write` | `delete_event_rule(event_type_id, rule_id)` | `DELETE /event-types/{id}/rules/{id}` |
 | `write` | `track_event(member_id, type, attributes?, event_id?)` | `POST /events` |
+| `read` | `list_events(type?, skip?, limit?)` | `GET /events` |
 | `read` | `list_member_events(member_id, skip?, limit?)` | `GET /members/{id}/events` |
 
 ## Adding a tool
@@ -237,21 +286,22 @@ example `404: Member not found`.
 
 ## How tools are grouped
 
-A client sorts this server's 47 tools along two axes, and they work differently.
+A client sorts this server's 74 tools along two axes, and they work differently.
 
 ### By behaviour, which the protocol does support
 
-Forty-five of the 47 declare `annotations` from `app/core/annotations.py`:
+Seventy-two of the 74 declare `annotations` from `app/core/annotations.py`:
 
 | Preset | Tools | `readOnlyHint` | `destructiveHint` | `openWorldHint` |
 |---|---|---|---|---|
-| `READ` | 24 | `true` | `false` | `false` |
-| `WRITE` | 18 | `false` | `false` | `false` |
-| `DELETE` | 3 | `false` | `true` | `false` |
+| `READ` | 30 | `true` | `false` | `false` |
+| `WRITE` | 32 | `false` | `false` | `false` |
+| `DELETE` | 10 | `false` | `true` | `false` |
 | *(none)* | 2 | — | — | — |
 
-`DELETE` means the tool removes a record and nothing else, which is three of
-them: `delete_challenge`, `delete_product` and `unassign_challenge`.
+`DELETE` means the tool removes a record and nothing else: the nine
+`delete_*` tools for challenges, event types, event rules, member attributes,
+members, products, rewards, segments and tiers, plus `unassign_challenge`.
 `burn_points` is a `WRITE` despite spending a balance, because what it actually
 does is append a transaction; no record goes away. `openWorldHint` is `false`
 throughout, because every tool that declares a preset addresses one loyalty API
@@ -265,12 +315,12 @@ and nothing else, giving three sections:
 
 | Section | Comes from | Tools |
 |---|---|---|
-| **Read-only tools** | `readOnlyHint: true` | 24 |
-| **Write/delete tools** | `readOnlyHint: false` | 21 |
+| **Read-only tools** | `readOnlyHint: true` | 30 |
+| **Write/delete tools** | `readOnlyHint: false` | 42 |
 | **Other tools** | no `annotations` at all | 2 |
 
 Those headings are Claude's. A server cannot rename them or ask for a fourth,
-and `destructiveHint` draws no section of its own, so the three `DELETE` tools
+and `destructiveHint` draws no section of its own, so the ten `DELETE` tools
 sit inside **Write/delete tools** with the writes. What `DELETE` does buy is
 the marking that drives a client's confirmation prompt before an irreversible
 call, which is worth having whether or not it shows up as a heading.

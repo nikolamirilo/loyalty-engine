@@ -1,10 +1,7 @@
-"""Event tools: define event types, send a member event, and read what its
-rules did. Listing event types and a member's events requires the ``read``
-scope; creating or updating an event type and sending an event require
+"""Event tools: define event types and their rules, send a member event, and
+read what its rules did. Reading event types and events requires the ``read``
+scope; managing event types and rules and sending an event require
 ``write``, since an event's rules can move points and hand out rewards.
-
-Rules themselves are still managed in the admin console (and the
-`/event-types/{id}/rules` API).
 """
 
 from typing import Any, Dict, List, Optional
@@ -27,6 +24,17 @@ async def list_event_types(program: Optional[str] = None) -> List[Dict[str, Any]
     return await api.get("/event-types", program=program)
 
 
+@mcp.tool(title="Get Event Type", annotations=ann.READ)
+async def get_event_type(event_type_id: str, program: Optional[str] = None) -> Dict[str, Any]:
+    """Get a single event type by id, with its attributes and rules.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("read")
+    return await api.get(f"/event-types/{event_type_id}", program=program)
+
+
 @mcp.tool(title="Create Event Type", annotations=ann.WRITE)
 async def create_event_type(
     name: str,
@@ -43,7 +51,7 @@ async def create_event_type(
     `{"label": "Amount", "type": "number"}`. `type` is one of `text`,
     `number`, `boolean`, `date` or `select`; a `select` also needs
     `"options": ["Online", "In store"]`. Each attribute's key is derived from
-    its label, like the event's. Rules are added in the admin console.
+    its label, like the event's. Rules are added with `create_event_rule`.
 
     `program` is the program slug or id to act in; defaults to the server's
     configured program.
@@ -92,6 +100,128 @@ async def update_event_type(
     return await api.patch(f"/event-types/{event_type_id}", body, program=program)
 
 
+@mcp.tool(title="Delete Event Type", annotations=ann.DELETE)
+async def delete_event_type(event_type_id: str, program: Optional[str] = None) -> None:
+    """Delete an event type and all its rules. Events already received stay
+    in each member's history. To stop accepting it but keep the rules, use
+    `update_event_type` with `is_active=False` instead.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("write")
+    return await api.delete(f"/event-types/{event_type_id}", program=program)
+
+
+@mcp.tool(title="Create Event Rule", annotations=ann.WRITE)
+async def create_event_rule(
+    event_type_id: str,
+    name: str,
+    effects: List[Dict[str, Any]],
+    conditions: Optional[List[Dict[str, Any]]] = None,
+    limit_per_member: Optional[int] = None,
+    is_active: bool = True,
+    program: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Add a rule to an event type: when an event of that type arrives and
+    every condition holds, each effect runs, in order.
+
+    `conditions` is a list of `{"field", "operator", "value"}` checks, all of
+    which must hold (no OR: use two rules). `field` is one of:
+
+    - `event.attributes.<key>` - one of this event type's attributes
+    - `member.pointsBalance` - operators `eq`, `neq`, `gt`, `gte`, `lt`, `lte`
+    - `member.tier` - `eq` or `neq` a tier id from `list_tiers`
+    - `member.segments` - `contains` a segment id from `list_segments`
+    - `member.customAttributes.<key>` - a key from `list_member_attributes`
+
+    Text takes `eq`, `neq`, `contains`; select `eq`, `neq`; boolean `eq`;
+    date `eq`, `gt`, `lt`; number the number operators above. No conditions
+    means the rule runs on every event of the type.
+
+    `effects` (at least one) are objects with a `type`:
+
+    - `{"type": "addPoints", "points": 50}` or `"fromAttribute": "<key>"` of
+      a number attribute; `burnPoints` takes the same. The tier multiplier
+      applies to `addPoints`.
+    - `{"type": "grantReward", "rewardId": "..."}`
+    - `{"type": "assignChallenge", "challengeId": "..."}`
+    - `{"type": "addChallengeProgress", "challengeId": "...", "amount": 1}`
+      or `"fromAttribute"` instead of `amount`
+    - `{"type": "addToSegment", "segmentId": "..."}`, `removeFromSegment` the
+      same
+    - `{"type": "updateMember", "fields": [{"field": "member.customAttributes.<key>", "value": ...}]}`;
+      `field` may also be `member.name` or `member.phone`, and each item may
+      take `"fromAttribute"` instead of `value`
+
+    `limit_per_member` caps how many times the rule can run for one member;
+    omit it for no limit.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("write")
+    body = {
+        "name": name,
+        "isActive": is_active,
+        "conditions": conditions or [],
+        "effects": effects,
+        "limitPerMember": limit_per_member,
+    }
+    return await api.post(f"/event-types/{event_type_id}/rules", body, program=program)
+
+
+@mcp.tool(title="Update Event Rule", annotations=ann.WRITE)
+async def update_event_rule(
+    event_type_id: str,
+    rule_id: str,
+    name: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    conditions: Optional[List[Dict[str, Any]]] = None,
+    effects: Optional[List[Dict[str, Any]]] = None,
+    limit_per_member: Optional[int] = None,
+    remove_limit: bool = False,
+    program: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Update an event rule (ids from `get_event_type`). Only the fields
+    provided are changed; `conditions` and `effects`, when given, replace
+    the whole list, in the same format as `create_event_rule`. Pass
+    `remove_limit=True` (and no `limit_per_member`) to let the rule run any
+    number of times per member.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("write")
+    if remove_limit and limit_per_member is not None:
+        raise ValueError("Pass either `limit_per_member` or `remove_limit`, not both.")
+    body = {
+        "name": name,
+        "isActive": is_active,
+        "conditions": conditions,
+        "effects": effects,
+        "limitPerMember": limit_per_member,
+    }
+    clear = ("limitPerMember",) if remove_limit else ()
+    return await api.patch(
+        f"/event-types/{event_type_id}/rules/{rule_id}", body, program=program, clear=clear
+    )
+
+
+@mcp.tool(title="Delete Event Rule", annotations=ann.DELETE)
+async def delete_event_rule(
+    event_type_id: str, rule_id: str, program: Optional[str] = None
+) -> None:
+    """Delete an event rule. What it already did to members stays. To pause
+    it instead, use `update_event_rule` with `is_active=False`.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("write")
+    return await api.delete(f"/event-types/{event_type_id}/rules/{rule_id}", program=program)
+
+
 @mcp.tool(title="Track Event", annotations=ann.WRITE)
 async def track_event(
     member_id: str,
@@ -134,4 +264,21 @@ async def list_member_events(
         f"/members/{member_id}/events",
         params={"skip": skip, "limit": limit},
         program=program,
+    )
+
+
+@mcp.tool(title="List Events", annotations=ann.READ)
+async def list_events(
+    type: Optional[str] = None, skip: int = 0, limit: int = 50, program: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """The program's event log: every event received, newest first, with the
+    member it was for and the effects its rules applied. `type` narrows it to
+    one event type key.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("read")
+    return await api.get(
+        "/events", params={"type": type, "skip": skip, "limit": limit}, program=program
     )

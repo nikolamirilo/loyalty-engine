@@ -8,6 +8,7 @@ from app.tools import (  # noqa: F401
     challenges,
     doi,
     events,
+    member_attributes,
     members,
     points,
     products,

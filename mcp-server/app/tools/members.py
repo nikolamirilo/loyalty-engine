@@ -1,6 +1,5 @@
-"""Member tools. Listing/getting requires the ``read`` scope; creating and
-updating a member requires ``write``. Deleting a member is an admin action
-and isn't exposed by this server yet.
+"""Member tools. Listing, counting and getting require the ``read`` scope;
+creating, updating and deleting a member require ``write``.
 """
 
 from typing import Any, Dict, List, Optional
@@ -27,6 +26,30 @@ async def list_members(
     return await api.get(
         "/members", params={"q": q, "skip": skip, "limit": limit}, program=program
     )
+
+
+@mcp.tool(title="Count Members", annotations=ann.READ)
+async def count_members(q: Optional[str] = None, program: Optional[str] = None) -> Dict[str, Any]:
+    """Count members, optionally only those whose name/email contains `q`.
+    Returns `{"count": n}`.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("read")
+    return await api.get("/members/count", params={"q": q}, program=program)
+
+
+@mcp.tool(title="Get Member Stats", annotations=ann.READ)
+async def get_member_stats(program: Optional[str] = None) -> Dict[str, Any]:
+    """Program-wide totals, as the admin dashboard shows them: member `count`,
+    `pointsInCirculation`, `byTier` (member count per tier id) and `untiered`.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("read")
+    return await api.get("/members/stats", program=program)
 
 
 @mcp.tool(title="Get Member", annotations=ann.READ)
@@ -92,3 +115,16 @@ async def update_member(
         "custom_attributes": custom_attributes,
     }
     return await api.patch(f"/members/{member_id}", body, program=program)
+
+
+@mcp.tool(title="Delete Member", annotations=ann.DELETE)
+async def delete_member(member_id: str, program: Optional[str] = None) -> None:
+    """Remove a member from this program, along with their balance, history,
+    challenges and redemptions here. The person keeps their memberships in
+    other programs, and their email stays registered.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("write")
+    return await api.delete(f"/members/{member_id}", program=program)

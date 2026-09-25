@@ -13,7 +13,7 @@ Responses are returned exactly as the API sends them (already camelCase) and
 passed straight through by the calling tool.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import httpx
 
@@ -100,11 +100,17 @@ async def post(
 
 
 async def patch(
-    path: str, json_body: Optional[dict] = None, *, program: Optional[str] = None
+    path: str,
+    json_body: Optional[dict] = None,
+    *,
+    program: Optional[str] = None,
+    clear: Tuple[str, ...] = (),
 ) -> Any:
-    return await _request(
-        "PATCH", path, json_body=_drop_none(json_body or {}), program=program
-    )
+    """`clear` names fields to send as an explicit null - how a PATCH resets a
+    value (e.g. unlimited stock) now that every other None is dropped as
+    "leave unchanged"."""
+    body = {**_drop_none(json_body or {}), **{field: None for field in clear}}
+    return await _request("PATCH", path, json_body=body, program=program)
 
 
 async def delete(path: str, *, program: Optional[str] = None) -> Any:

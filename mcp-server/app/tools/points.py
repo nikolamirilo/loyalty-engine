@@ -1,6 +1,5 @@
-"""Points balance/transaction tools. Earning and burning points require the
-``write`` scope; admin balance adjustments (`/points/adjust`) aren't exposed
-by this server yet.
+"""Points balance/transaction tools. Earning, burning and adjusting points
+require the ``write`` scope.
 """
 
 from typing import Any, Dict, List, Optional
@@ -77,6 +76,28 @@ async def burn_points(
     require_scope("write")
     return await api.post(
         f"/members/{member_id}/points/burn",
+        {"points": points, "description": description},
+        program=program,
+    )
+
+
+@mcp.tool(title="Adjust Points", annotations=ann.WRITE)
+async def adjust_points(
+    member_id: str,
+    points: int,
+    description: Optional[str] = None,
+    program: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Correct a member's balance by `points`, positive or negative, recorded
+    as an `adjust` transaction. Unlike `earn_points`, no tier multiplier is
+    applied. Fails if the balance would go below zero.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("write")
+    return await api.post(
+        f"/members/{member_id}/points/adjust",
         {"points": points, "description": description},
         program=program,
     )
