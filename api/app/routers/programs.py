@@ -7,16 +7,35 @@ which programs exist and creates new ones, so it cannot itself require an
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models import Program
 from app.schemas import ProgramCreate, ProgramOut, ProgramUpdate
 from app.services.memberships import enrol_all_identities
+from app.services.program_branding import detect_logo_type, logo_path
 from app.services.programs import unique_slug
+from app.services.storage import ObjectStorage, get_optional_storage, get_storage
 
 router = APIRouter(prefix="/programs", tags=["Programs"])
+
+# Nullable columns a PATCH may clear by sending an explicit null. Any other
+# null (name, slug, isDefault) means "leave unchanged", as it always has.
+_CLEARABLE_FIELDS = {"description", "primary_color", "secondary_color"}
+
+# The logo upload takes the raw image as the request body, so document that
+# rather than leaving the endpoint looking body-less in /docs.
+_LOGO_BODY = {
+    "requestBody": {
+        "required": True,
+        "content": {
+            media_type: {"schema": {"type": "string", "format": "binary"}}
+            for media_type in ("image/png", "image/jpeg", "image/webp", "image/svg+xml")
+        },
+    }
+}
 
 
 def _get_program_or_404(db: Session, program_id: UUID) -> Program:
@@ -88,15 +107,68 @@ def update_program(program_id: UUID, body: ProgramUpdate, db: Session = Depends(
             400,
             "Cannot unset the default program. Make another program the default instead.",
         )
-    for field, value in body.model_dump(exclude_none=True).items():
+    for field, value in body.model_dump(exclude_unset=True).items():
+        if value is None and field not in _CLEARABLE_FIELDS:
+            continue
         setattr(program, field, value)
     db.commit()
     db.refresh(program)
     return program
 
 
+@router.put("/{program_id}/logo", response_model=ProgramOut, openapi_extra=_LOGO_BODY)
+async def upload_program_logo(
+    program_id: UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    storage: ObjectStorage = Depends(get_storage),
+):
+    """Replace the program's logo with the image sent as the raw request body.
+
+    PNG, JPEG, WebP or SVG, up to 2 MB. The file goes to the public Supabase
+    Storage bucket and ``logoUrl`` points at it; the previous logo is removed.
+    """
+    program = _get_program_or_404(db, program_id)
+    data = await request.body()
+    content_type = detect_logo_type(data)
+
+    new_url = await run_in_threadpool(
+        storage.upload, logo_path(program.id, content_type), data, content_type
+    )
+    old_url = program.logo_url
+    program.logo_url = new_url
+    db.commit()
+    db.refresh(program)
+    # Only once the program points at the new file, so a failure in between
+    # never leaves it pointing at nothing.
+    if old_url:
+        await run_in_threadpool(storage.delete_url, old_url)
+    return program
+
+
+@router.delete("/{program_id}/logo", response_model=ProgramOut)
+def remove_program_logo(
+    program_id: UUID,
+    db: Session = Depends(get_db),
+    storage: ObjectStorage | None = Depends(get_optional_storage),
+):
+    """Go back to the stock logo. The stored file is deleted too."""
+    program = _get_program_or_404(db, program_id)
+    old_url = program.logo_url
+    program.logo_url = None
+    db.commit()
+    db.refresh(program)
+    if old_url and storage is not None:
+        storage.delete_url(old_url)
+    return program
+
+
 @router.delete("/{program_id}", status_code=204)
-def delete_program(program_id: UUID, db: Session = Depends(get_db)):
+def delete_program(
+    program_id: UUID,
+    db: Session = Depends(get_db),
+    storage: ObjectStorage | None = Depends(get_optional_storage),
+):
     """Delete a program and everything inside it.
 
     Every program-owned table cascades, which is the fast way to reset after
@@ -109,5 +181,8 @@ def delete_program(program_id: UUID, db: Session = Depends(get_db)):
             400,
             "Cannot delete the default program. Make another program the default first.",
         )
+    logo_url = program.logo_url
     db.delete(program)
     db.commit()
+    if logo_url and storage is not None:
+        storage.delete_url(logo_url)

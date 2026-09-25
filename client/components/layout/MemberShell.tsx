@@ -1,11 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 
 import { cn } from "@/lib/format";
+import type { Program } from "@/lib/types";
+import { BrandLogo } from "@/components/branding/BrandLogo";
 import { CampaignProvider } from "@/components/campaigns/CampaignContext";
 import { CampaignFrame } from "@/components/campaigns/CampaignFrame";
 import { memberLogout } from "@/lib/memberAuth/actions";
@@ -77,9 +78,13 @@ const TABS = [
  */
 export function MemberShell({
   memberId,
+  program,
   children,
 }: {
   memberId: string;
+  /** The member's program: its logo and name head the app. Null (the API was
+   *  unreachable) falls back to the stock logo and "Loyalty App". */
+  program: Pick<Program, "name" | "logoUrl"> | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -158,17 +163,11 @@ export function MemberShell({
                     center of the bar even though the logo and the button are not
                     the same width. */}
                 <div className="flex flex-1 items-center">
-                  <Image
-                    className="h-8 w-8 shrink-0"
-                    src="/logo.svg"
-                    alt="Loyalty App"
-                    width={32}
-                    height={32}
-                    unoptimized
-                  />
+                  {/* Decorative: the program name beside it says the same. */}
+                  <BrandLogo src={program?.logoUrl} alt="" className="h-8 max-w-20" />
                 </div>
                 <span className="truncate text-lg font-semibold tracking-tight text-primary">
-                  Loyalty App
+                  {program?.name ?? "Loyalty App"}
                 </span>
                 <div className="flex flex-1 justify-end">
                   <form action={memberLogout}>

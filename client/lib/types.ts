@@ -22,6 +22,14 @@ export interface Program {
   slug: string;
   description: string | null;
   isDefault: boolean;
+  /** Public URL in the Supabase Storage bucket, or null for the stock logo.
+   *  Only ever set through the logo upload, never in a create/update body. */
+  logoUrl: string | null;
+  /** "#rrggbb", or null for the stock theme. Drives buttons, links, the
+   *  active nav item and every other `primary` token (see lib/theme.ts). */
+  primaryColor: string | null;
+  /** "#rrggbb", or null. The accent end of the member app's tier banner. */
+  secondaryColor: string | null;
   createdAt: string;
 }
 

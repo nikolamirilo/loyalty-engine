@@ -135,7 +135,7 @@ Point a client at `/mcp` with `Authorization: Bearer <one of MCP_CLIENT_TOKENS>`
 
 ## Tool reference
 
-74 tools. Inputs use snake_case field names, outputs pass the API response
+76 tools. Inputs use snake_case field names, outputs pass the API response
 straight through, already camelCase. The headings below group by domain for
 reading only; the title a client actually shows is verb first, see
 [How tools are grouped](#how-tools-are-grouped).
@@ -146,8 +146,14 @@ reading only; the title a client actually shows is verb first, see
 |---|---|---|
 | `read` | `list_programs()` | `GET /programs` |
 | `read` | `get_program(program_id)` | `GET /programs/{id}` |
-| `write` | `create_program(name, slug?, description?, is_default?)` | `POST /programs` |
-| `write` | `update_program(program_id, name?, slug?, description?, is_default?)` | `PATCH /programs/{id}` |
+| `write` | `create_program(name, slug?, description?, is_default?, primary_color?, secondary_color?)` | `POST /programs` |
+| `write` | `update_program(program_id, name?, slug?, description?, is_default?, primary_color?, secondary_color?)` | `PATCH /programs/{id}` |
+| `write` | `set_program_logo(program_id, image_url)` | downloads the image, then `PUT /programs/{id}/logo` |
+| `write` | `remove_program_logo(program_id)` | `DELETE /programs/{id}/logo` |
+
+Colours are `#rrggbb`; an empty string in `update_program` resets one to the
+stock theme. The console and member app take on the selected program's logo
+and colours.
 
 No `delete_program`, by design. See [Status](#status).
 
@@ -286,22 +292,23 @@ example `404: Member not found`.
 
 ## How tools are grouped
 
-A client sorts this server's 74 tools along two axes, and they work differently.
+A client sorts this server's 76 tools along two axes, and they work differently.
 
 ### By behaviour, which the protocol does support
 
-Seventy-two of the 74 declare `annotations` from `app/core/annotations.py`:
+Seventy-three of the 76 declare `annotations` from `app/core/annotations.py`:
 
 | Preset | Tools | `readOnlyHint` | `destructiveHint` | `openWorldHint` |
 |---|---|---|---|---|
 | `READ` | 30 | `true` | `false` | `false` |
 | `WRITE` | 32 | `false` | `false` | `false` |
-| `DELETE` | 10 | `false` | `true` | `false` |
-| *(none)* | 2 | — | — | — |
+| `DELETE` | 11 | `false` | `true` | `false` |
+| *(none)* | 3 | — | — | — |
 
 `DELETE` means the tool removes a record and nothing else: the nine
 `delete_*` tools for challenges, event types, event rules, member attributes,
-members, products, rewards, segments and tiers, plus `unassign_challenge`.
+members, products, rewards, segments and tiers, plus `unassign_challenge`
+and `remove_program_logo`.
 `burn_points` is a `WRITE` despite spending a balance, because what it actually
 does is append a transaction; no record goes away. `openWorldHint` is `false`
 throughout, because every tool that declares a preset addresses one loyalty API
@@ -316,22 +323,24 @@ and nothing else, giving three sections:
 | Section | Comes from | Tools |
 |---|---|---|
 | **Read-only tools** | `readOnlyHint: true` | 30 |
-| **Write/delete tools** | `readOnlyHint: false` | 42 |
-| **Other tools** | no `annotations` at all | 2 |
+| **Write/delete tools** | `readOnlyHint: false` | 43 |
+| **Other tools** | no `annotations` at all | 3 |
 
 Those headings are Claude's. A server cannot rename them or ask for a fourth,
-and `destructiveHint` draws no section of its own, so the ten `DELETE` tools
+and `destructiveHint` draws no section of its own, so the eleven `DELETE` tools
 sit inside **Write/delete tools** with the writes. What `DELETE` does buy is
 the marking that drives a client's confirmation prompt before an irreversible
 call, which is worth having whether or not it shows up as a heading.
 
 **Other tools** is the one section a server can aim a tool at, by annotating
-nothing, and the two DOI tools use it on purpose. They are the only tools here
-that reach an address outside the system, so a separate section with its own
-allow/ask toggle is the right place for them, and going unannotated is the only
-way to land there. The cost is real: no hints means no `openWorldHint: true`
-saying why they are different, and no read/write signal at all. That trade is
-worth it for exactly these two. Everything else declares a preset.
+nothing, and three tools use it on purpose: the two DOI tools and
+`set_program_logo`. They are the only tools here that reach an address outside
+the system (an email inbox, or the URL an image is downloaded from), so a
+separate section with its own allow/ask toggle is the right place for them,
+and going unannotated is the only way to land there. The cost is real: no
+hints means no `openWorldHint: true` saying why they are different, and no
+read/write signal at all. That trade is worth it for exactly these three.
+Everything else declares a preset.
 
 The hints are hints. `require_scope(...)` on the tool's first line is the
 actual gate, and it runs whatever a client believes.

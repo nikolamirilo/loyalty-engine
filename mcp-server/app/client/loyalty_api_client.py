@@ -63,13 +63,17 @@ async def _request(
     json_body: Optional[dict] = None,
     params: Optional[dict] = None,
     program: Optional[str] = None,
+    content: Optional[bytes] = None,
+    content_type: Optional[str] = None,
 ) -> Any:
     program = program or settings.default_program
     # httpx merges request headers into the client's, so the Authorization
     # header set once in _get_client() survives.
-    headers = {"X-Program-Id": program} if program else None
+    headers = {"X-Program-Id": program} if program else {}
+    if content_type:
+        headers["Content-Type"] = content_type
     response = await _get_client().request(
-        method, path, json=json_body, params=params, headers=headers
+        method, path, json=json_body, params=params, content=content, headers=headers or None
     )
     if response.status_code >= 400:
         detail = response.text
@@ -111,6 +115,15 @@ async def patch(
     "leave unchanged"."""
     body = {**_drop_none(json_body or {}), **{field: None for field in clear}}
     return await _request("PATCH", path, json_body=body, program=program)
+
+
+async def put_file(
+    path: str, content: bytes, content_type: str, *, program: Optional[str] = None
+) -> Any:
+    """PUT a raw binary body, e.g. a program logo."""
+    return await _request(
+        "PUT", path, content=content, content_type=content_type, program=program
+    )
 
 
 async def delete(path: str, *, program: Optional[str] = None) -> Any:

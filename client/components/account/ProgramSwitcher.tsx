@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { cn } from "@/lib/format";
 import { switchMemberProgram } from "@/lib/member/programs";
 import type { MemberProgram } from "@/lib/types";
-import { Avatar } from "@/components/ui/Avatar";
+import { ProgramMark } from "@/components/branding/ProgramMark";
 import { Card } from "@/components/ui/Card";
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/DropdownMenu";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -22,8 +22,8 @@ import { CheckIcon, ChevronDownIcon } from "@/components/ui/icons";
  * have never used simply shows zero rather than being absent.
  *
  * The closed trigger doubles as the answer to "which program am I in", which
- * is why it carries the program's own colour and initials rather than just its
- * name - two brands then differ at a glance instead of by reading.
+ * is why it carries the program's logo (or its colour and initials) rather
+ * than just its name - two brands then differ at a glance instead of by reading.
  *
  * Owns its own card so the whole block disappears together when there is
  * nowhere to switch to.
@@ -74,7 +74,7 @@ export function ProgramSwitcher({
             aria-haspopup="menu"
             className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {current && <Avatar name={current.name} />}
+            {current && <ProgramMark program={current} />}
             <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
               {current?.name ?? "Choose a program"}
             </span>
@@ -102,7 +102,7 @@ export function ProgramSwitcher({
               // class join leaves the winner up to stylesheet order.
               className={cn(active && "bg-primary-subtle")}
             >
-              <Avatar name={program.name} />
+              <ProgramMark program={program} />
               <span
                 className={cn(
                   "min-w-0 flex-1 truncate text-sm",

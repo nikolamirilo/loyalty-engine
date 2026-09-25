@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import type { ActionState } from "@/lib/action-state";
 import { ApiError, apiRequest } from "@/lib/api";
 import { PROGRAM_COOKIE } from "@/lib/server/program";
+import { HEX_COLOR } from "@/lib/theme";
 import type { Program } from "@/lib/types";
 
 /**
@@ -72,6 +73,56 @@ export async function clearProgramSelection(): Promise<void> {
   cookieStore.delete(PROGRAM_COOKIE);
 }
 
+/** The API's own limit (api/app/services/program_branding.py), checked here
+ * too so an oversized file fails with a clear message before it is sent. */
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+
+interface Branding {
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  /** A newly chosen file, or null to leave the logo as it is. */
+  logo: File | null;
+  removeLogo: boolean;
+}
+
+/** "#0050AA", "0050aa" -> "#0050aa"; blank -> null (the stock colour). */
+function readColor(fd: FormData, key: string): string | null | undefined {
+  const raw = String(fd.get(key) ?? "").trim();
+  if (!raw) return null;
+  const hex = (raw.startsWith("#") ? raw : `#${raw}`).toLowerCase();
+  return HEX_COLOR.test(hex) ? hex : undefined;
+}
+
+/** The branding fields of ProgramFields, or the message for the first bad one. */
+function readBranding(fd: FormData): Branding | { error: string } {
+  const primaryColor = readColor(fd, "primaryColor");
+  const secondaryColor = readColor(fd, "secondaryColor");
+  if (primaryColor === undefined) return { error: "Enter the primary colour as a hex code, like #0050aa." };
+  if (secondaryColor === undefined) return { error: "Enter the secondary colour as a hex code, like #fff000." };
+
+  const file = fd.get("logo");
+  const logo = file instanceof File && file.size > 0 ? file : null;
+  if (logo && logo.size > MAX_LOGO_BYTES) return { error: "The logo must be 2 MB or smaller." };
+
+  return { primaryColor, secondaryColor, logo, removeLogo: fd.get("removeLogo") === "on" };
+}
+
+/** Upload the new logo, or remove the old one, as the form asked. */
+async function applyLogo(programId: string, branding: Branding): Promise<void> {
+  if (branding.logo) {
+    await apiRequest<Program>(`/programs/${programId}/logo`, {
+      method: "PUT",
+      file: branding.logo,
+      programId: null,
+    });
+  } else if (branding.removeLogo) {
+    await apiRequest<Program>(`/programs/${programId}/logo`, {
+      method: "DELETE",
+      programId: null,
+    });
+  }
+}
+
 export async function createProgram(
   _prev: ActionState,
   fd: FormData,
@@ -79,19 +130,37 @@ export async function createProgram(
   const name = String(fd.get("name") ?? "").trim();
   const description = String(fd.get("description") ?? "").trim();
   if (!name) return { ok: false, error: "Enter a name." };
+  const branding = readBranding(fd);
+  if ("error" in branding) return { ok: false, error: branding.error };
 
+  let program: Program;
   try {
     // No slug: the API derives one from the name.
-    await apiRequest<Program>("/programs", {
+    program = await apiRequest<Program>("/programs", {
       method: "POST",
-      json: { name, description: description || null },
+      json: {
+        name,
+        description: description || null,
+        primaryColor: branding.primaryColor,
+        secondaryColor: branding.secondaryColor,
+      },
       programId: null,
     });
-    refreshConsole();
-    return { ok: true };
   } catch (e) {
     return fail(e);
   }
+
+  try {
+    await applyLogo(program.id, branding);
+  } catch (e) {
+    // The program exists now, so keeping the dialog open for a retry would
+    // create a second one. Close it and say where to finish the job.
+    refreshConsole();
+    const reason = e instanceof ApiError ? e.message : "Something went wrong.";
+    return { ok: true, message: `Program created, but the logo was not saved: ${reason} Add it with Edit.` };
+  }
+  refreshConsole();
+  return { ok: true, message: "Program created." };
 }
 
 export async function updateProgram(
@@ -104,19 +173,30 @@ export async function updateProgram(
   const isDefault = fd.get("isDefault") === "on";
   if (!id) return { ok: false, error: "No program selected." };
   if (!name) return { ok: false, error: "Enter a name." };
+  const branding = readBranding(fd);
+  if ("error" in branding) return { ok: false, error: branding.error };
 
   try {
     // The slug is left out, so it survives a rename - and so does the program
-    // cookie, which holds it.
+    // cookie, which holds it. A null colour resets it to the stock theme.
     await apiRequest<Program>(`/programs/${id}`, {
       method: "PATCH",
-      json: { name, description: description || null, isDefault },
+      json: {
+        name,
+        description: description || null,
+        isDefault,
+        primaryColor: branding.primaryColor,
+        secondaryColor: branding.secondaryColor,
+      },
       programId: null,
     });
+    await applyLogo(id, branding);
 
     refreshConsole();
     return { ok: true, message: "Program updated." };
   } catch (e) {
+    // The fields may have saved before the logo failed; show what did.
+    refreshConsole();
     return fail(e);
   }
 }

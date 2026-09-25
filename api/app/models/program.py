@@ -33,4 +33,12 @@ class Program(Base):
     # The program a request without an X-Program-Id header falls back to.
     # At most one row may set this (enforced by a partial unique index).
     is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Branding for demos: the console and the member app both take on the
+    # selected program's logo and colours. All optional - a program without
+    # them keeps the stock look. Colours are "#rrggbb"; the logo is a public
+    # URL in the Supabase Storage bucket (app.services.storage), only ever set
+    # by the upload endpoint so it always points at a file we own.
+    logo_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    primary_color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
+    secondary_color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))

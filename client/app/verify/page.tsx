@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 
+import { BrandLogo } from "@/components/branding/BrandLogo";
+import { ProgramTheme } from "@/components/branding/ProgramTheme";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { cn } from "@/lib/format";
+import { memberBrandProgram } from "@/lib/server/branding";
 import { VerifyForm } from "./VerifyForm";
 
 export const dynamic = "force-dynamic";
@@ -35,18 +38,19 @@ export default async function VerifyPage({
   const memberId = param(params.memberId);
   const code = param(params.code);
   const linkComplete = memberId !== "" && code !== "";
+  // Best guess at the member's program: the cookie from their last visit, or
+  // the deployment's MEMBER_PROGRAM. The link itself does not carry one.
+  const program = await memberBrandProgram();
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-surface-2 px-4 py-10">
+      <ProgramTheme program={program} />
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <Image
-            src="/logo.svg"
-            alt="Loyalty App"
-            width={48}
-            height={48}
-            className="h-12 w-12 shadow-sm"
-            priority
+          <BrandLogo
+            src={program?.logoUrl}
+            alt={program?.name ?? "Loyalty App"}
+            className={cn("h-12 max-w-40", !program?.logoUrl && "shadow-sm")}
           />
           <div>
             <h1 className="text-lg font-semibold tracking-tight text-foreground">

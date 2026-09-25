@@ -4,13 +4,16 @@ import { AwardIcon } from "@/components/ui/icons";
 /**
  * The member's current tier, as a gradient banner at the top of Account.
  *
+ * Runs from the program's primary to its secondary brand colour, so a branded
+ * program's banner is in its own colours (stock: violet to orange).
+ *
  * Text is hardcoded white rather than `text-primary-fg`: that token inverts to
  * near-black in dark mode, which would be unreadable on this always-saturated
  * gradient.
  */
 export function TierBadge({ tier }: { tier: Tier }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-accent-violet to-accent-orange p-5 text-white shadow-sm">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-secondary p-5 text-white shadow-sm">
       {/* Soft corner highlight, so the gradient reads as a lit surface rather
           than a flat fill. */}
       <span

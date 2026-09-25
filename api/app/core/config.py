@@ -39,6 +39,12 @@ class Settings:
     # sends nothing but codes must not fail to boot for want of it - it is
     # checked where it is used instead (app/services/email_verification.py).
     client_base_url: str = ""
+    # Supabase Storage, where program logos are uploaded. Optional for the same
+    # reason: only the logo upload needs it (app/services/storage.py). The
+    # service role key bypasses Storage RLS, so it must stay server-side.
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
+    storage_bucket: str = "program-assets"
 
     project_name: str = "Loyalty Engine"
     version: str = "1.0.0"
@@ -67,6 +73,9 @@ def get_settings() -> Settings:
         # Trailing slashes stripped so links are built as `{base}/verify?...`
         # without doubling up the separator.
         client_base_url=_optional("CLIENT_BASE_URL").rstrip("/"),
+        supabase_url=_optional("SUPABASE_URL").rstrip("/"),
+        supabase_service_role_key=_optional("SUPABASE_SERVICE_ROLE_KEY"),
+        storage_bucket=_optional("STORAGE_BUCKET", "program-assets"),
     )
 
 

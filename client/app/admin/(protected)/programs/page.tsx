@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { switchProgram } from "@/lib/programs/actions";
 import { Button } from "@/components/ui/Button";
+import { ProgramMark } from "@/components/branding/ProgramMark";
 import {
   CopyProgramIdButton,
   DeleteProgramButton,
@@ -42,7 +43,8 @@ export default async function ProgramsPage() {
             return (
               <li key={program.id}>
                 <Card className="flex items-center justify-between gap-4 p-4">
-                  <div className="min-w-0">
+                  <ProgramMark program={program} />
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-semibold text-foreground">
                         {program.name}

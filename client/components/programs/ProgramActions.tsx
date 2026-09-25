@@ -4,13 +4,15 @@ import { createProgram, removeProgram, updateProgram } from "@/lib/programs/acti
 import type { Program } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import { BrandingFields } from "@/components/programs/BrandingFields";
 import { Field, Input } from "@/components/ui/Field";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { useToast } from "@/components/ui/Toast";
 import { CopyIcon, PencilIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 
 /** Shared between the create and edit dialogs. The slug is not asked for: the
- * API derives it from the name on create and keeps it on rename. */
+ * API derives it from the name on create and keeps it on rename. Branding sits
+ * in both, so a demo program can be set up in one go. */
 function ProgramFields({ program }: { program?: Program }) {
   return (
     <>
@@ -29,6 +31,7 @@ function ProgramFields({ program }: { program?: Program }) {
           defaultValue={program?.description ?? ""}
         />
       </Field>
+      <BrandingFields program={program} />
     </>
   );
 }

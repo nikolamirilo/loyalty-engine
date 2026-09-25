@@ -4,10 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import Image from "next/image";
-
 import { cn } from "@/lib/format";
+import { BrandLogo } from "@/components/branding/BrandLogo";
 import { logout } from "@/lib/auth/actions";
+import type { Program } from "@/lib/types";
 import { usePreload, type PreloadRoute } from "@/lib/swr/preload";
 import {
   BoltIcon,
@@ -48,20 +48,18 @@ function isActive(pathname: string, href: string, exact?: boolean): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function Brand() {
+type ShellProgram = Pick<Program, "name" | "logoUrl"> | null;
+
+/** The selected program's logo when it has one, beside the product name - a
+ * branded demo reads as "Lidl's loyalty engine" rather than ours. */
+function Brand({ program }: { program: ShellProgram }) {
+  const logoUrl = program?.logoUrl;
   return (
-    <Link href="/admin/dashboard" className="flex items-center gap-2.5">
-      {/* `unoptimized` skips the Image Optimizer, which rejects SVGs by
-          default (returns HTTP 400) - that broken response is what flooded the
-          dev console and, together with a briefly-missing `alt`, triggered the
-          Fast Refresh full-reload loop. SVGs need no optimization anyway. */}
-      <Image
-        className="h-9 w-9 shrink-0 shadow-sm"
-        src="/logo.svg"
-        alt="Loyalty Engine"
-        width={36}
-        height={36}
-        unoptimized
+    <Link href="/admin/dashboard" className="flex min-w-0 items-center gap-2.5">
+      <BrandLogo
+        src={logoUrl}
+        alt={logoUrl && program ? program.name : "Loyalty Engine"}
+        className={cn("h-9 max-w-28", !logoUrl && "shadow-sm")}
       />
       <span className="text-[0.9375rem] font-semibold tracking-tight text-foreground">
         Loyalty Engine
@@ -118,9 +116,12 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function AppShell({
+  program = null,
   programSwitcher,
   children,
 }: {
+  /** The selected program, for its logo; without one the stock logo shows. */
+  program?: ShellProgram;
   /** Rendered above the nav. Built on the server, so it arrives as a node. */
   programSwitcher?: React.ReactNode;
   children: React.ReactNode;
@@ -132,7 +133,7 @@ export function AppShell({
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-line bg-surface lg:flex">
         <div className="flex h-16 items-center border-b border-line px-5">
-          <Brand />
+          <Brand program={program} />
         </div>
         <nav className="flex-1 overflow-y-auto p-3">
           {programSwitcher}
@@ -151,7 +152,7 @@ export function AppShell({
         >
           <MenuIcon />
         </button>
-        <Brand />
+        <Brand program={program} />
       </header>
 
       {/* Mobile drawer */}
@@ -163,7 +164,7 @@ export function AppShell({
           />
           <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col border-r border-line bg-surface shadow-xl">
             <div className="flex h-14 items-center justify-between border-b border-line px-4">
-              <Brand />
+              <Brand program={program} />
               <button
                 type="button"
                 onClick={() => setOpen(false)}

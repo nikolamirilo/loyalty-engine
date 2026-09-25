@@ -106,6 +106,9 @@ that happens to need it.
 | `RESEND_API_KEY` | Yes | Sends DOI and login emails through [Resend](https://resend.com). |
 | `DOI_FROM_EMAIL` | Yes | Sender address, on a domain verified in Resend. |
 | `CLIENT_BASE_URL` | Only for DOI links | Public base URL of the client app, used to build the emailed link. |
+| `SUPABASE_URL` | Only for logo uploads | Supabase project URL, `https://<project-ref>.supabase.co`. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Only for logo uploads | Service role key the API uploads program logos with. Server-side only. |
+| `STORAGE_BUCKET` | No | Public bucket for program logos. Defaults to `program-assets`, which the `program_branding` migration creates. |
 
 ### Connecting to Supabase
 
@@ -209,6 +212,15 @@ own, and `POST /complete` forces it regardless of progress or deadline.
 ## API reference
 
 `/health` is open. Everything below needs the bearer token.
+
+**Programs** (not program-scoped, so no `X-Program-Id`)
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` `GET` | `/programs` | Create, list programs |
+| `GET` `PATCH` `DELETE` | `/programs/{id}` | Get, update, delete a program. `primaryColor` and `secondaryColor` are `#rrggbb`, or `null` for the stock theme |
+| `PUT` | `/programs/{id}/logo` | Upload the logo as the raw request body: PNG, JPEG, WebP or SVG, up to 2 MB. Stored in Supabase Storage, returned as `logoUrl` |
+| `DELETE` | `/programs/{id}/logo` | Remove the logo, back to the stock one |
 
 **Members**
 
@@ -509,6 +521,7 @@ which is why `pytest.ini` points `testpaths` at `tests/integration` only:
 ./venv/bin/python -m tests.test_doi_link_flow          # type="link" mails a working /verify link
 ./venv/bin/python -m tests.test_event_rules            # every rule effect, limits, retries, save-time checks
 ./venv/bin/python -m tests.test_database_url           # DATABASE_URL driver normalization
+./venv/bin/python -m tests.test_program_branding       # brand colours validate, logos upload/replace/delete
 ```
 
 `test_database_url.py` fails with an `ImportError`. It imports a

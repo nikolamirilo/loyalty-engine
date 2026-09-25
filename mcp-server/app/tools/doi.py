@@ -1,13 +1,15 @@
 """Double opt-in email verification tools. Both trigger and verify require
 the ``write`` scope - there's no meaningful read-only DOI operation.
 
-Neither declares ``annotations``, and that is deliberate. These are the only
-two tools that reach an address outside the system, so they deserve a
-permission decision of their own, separate from the writes that stay inside
-the loyalty API. A client has no field to express that - see "How tools are
-grouped" in the README - but Claude does put every unannotated tool in its
-own **Other tools** section, with its own allow/ask toggle. Leaving these two
-unannotated is what buys that section. Nothing else here should follow suit.
+Neither declares ``annotations``, and that is deliberate. Along with
+``set_program_logo``, which downloads an image from a URL, these are the only
+tools that reach an address outside the system, so they deserve a permission
+decision of their own, separate from the writes that stay inside the loyalty
+API. A client has no field to express that - see "How tools are grouped" in
+the README - but Claude does put every unannotated tool in its own **Other
+tools** section, with its own allow/ask toggle. Leaving these unannotated is
+what buys that section. Nothing that stays inside the system should follow
+suit.
 """
 
 from typing import Any, Dict, Optional

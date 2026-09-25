@@ -234,15 +234,9 @@ def list_member_programs(
         for m in db.query(Member).filter(Member.identity_id == member.identity_id).all()
     }
     return [
-        MemberProgramOut(
-            id=p.id,
-            name=p.name,
-            slug=p.slug,
-            description=p.description,
-            is_default=p.is_default,
-            created_at=p.created_at,
-            member_id=joined.get(p.id),
-        )
+        # Every ProgramOut field (branding included) straight off the row, so a
+        # field added to programs later cannot be silently left out here.
+        MemberProgramOut.model_validate(p).model_copy(update={"member_id": joined.get(p.id)})
         for p in db.query(Program).order_by(Program.created_at.asc()).all()
     ]
 

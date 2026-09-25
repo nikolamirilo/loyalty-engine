@@ -46,6 +46,7 @@ how this fits with the rest of the platform.
 | `/admin/events` | Define events and the rules that decide what each one earns. A member's events show on their detail page. |
 | `/admin/events/logs` | Every event received in the program and what its rules did, filterable by event type. |
 | `/admin/rewards`, `/admin/products`, `/admin/tiers` | Catalog and program setup. |
+| `/admin/programs` | Create and edit programs, including their logo and brand colours. The console and the member app are themed by the selected program (`lib/theme.ts`, `components/branding/`). |
 
 `/verify` sits outside the protected groups on purpose. The people opening it are
 members following an email link, not staff, and they will never have a session.

@@ -47,6 +47,9 @@ interface RequestOptions {
   method?: string;
   /** JSON body - serialized and sent with the right Content-Type. */
   json?: unknown;
+  /** Raw binary body (a file upload), sent with the file's own Content-Type.
+   *  Ignored when `json` is set. */
+  file?: Blob;
   /** Extra query params (undefined/null values are dropped). */
   query?: Record<string, string | number | boolean | undefined | null>;
   /**
@@ -95,7 +98,7 @@ export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { method = "GET", json, query, programId } = options;
+  const { method = "GET", json, file, query, programId } = options;
   const url = buildUrl(path, query);
   // `null` means "deliberately unscoped"; `undefined` means "use the active
   // program", which is the common case.
@@ -104,9 +107,13 @@ export async function apiRequest<T>(
     Accept: "application/json",
     Authorization: `Bearer ${TOKEN}`,
     ...(program ? { "X-Program-Id": program } : {}),
-    ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
+    ...(json !== undefined
+      ? { "Content-Type": "application/json" }
+      : file
+        ? { "Content-Type": file.type || "application/octet-stream" }
+        : {}),
   };
-  const body = json !== undefined ? JSON.stringify(json) : undefined;
+  const body = json !== undefined ? JSON.stringify(json) : file;
 
   let lastError: ApiError | null = null;
 

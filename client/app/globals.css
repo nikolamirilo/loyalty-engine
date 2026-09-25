@@ -24,6 +24,10 @@
   --primary-subtle: #efecfd;
   --primary-subtle-fg: #4338ca;
 
+  /* Second brand colour - the accent end of the member tier banner. A program
+     with its own colours overrides this and the primary set (lib/theme.ts). */
+  --secondary: #eb6834;
+
   --success: #0ca30c;
   --success-fg: #056b05;
   --success-subtle: #e5f4e5;
@@ -61,6 +65,8 @@
     --primary-subtle: #23204a;
     --primary-subtle-fg: #c3bafa;
 
+    --secondary: #d95926;
+
     --success: #0ca30c;
     --success-fg: #46c246;
     --success-subtle: #12341a;
@@ -96,6 +102,8 @@
   --color-primary-fg: var(--primary-fg);
   --color-primary-subtle: var(--primary-subtle);
   --color-primary-subtle-fg: var(--primary-subtle-fg);
+
+  --color-secondary: var(--secondary);
 
   --color-success: var(--success);
   --color-success-fg: var(--success-fg);

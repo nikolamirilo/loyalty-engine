@@ -20,11 +20,12 @@ apart:
 merely spends down a value, `burn_points`, stays `WRITE`: the record it writes
 is a new transaction, and nothing is removed.
 
-There is deliberately no preset for the two DOI tools. They declare no
-annotations at all, which is what lands them in a client's separate bucket for
-unhinted tools - the one place this server can put the only two tools that
-reach an address outside it. See `app/tools/doi.py` and "How tools are grouped"
-in the README.
+There is deliberately no preset for the two DOI tools or `set_program_logo`.
+They declare no annotations at all, which is what lands them in a client's
+separate bucket for unhinted tools - the one place this server can put the
+only three tools that reach an address outside it (an inbox, or the URL a logo
+is downloaded from). See `app/tools/doi.py` and "How tools are grouped" in the
+README.
 
 These are hints, not enforcement. `require_scope` is the actual gate.
 """
@@ -33,7 +34,7 @@ from mcp.types import ToolAnnotations
 
 # `openWorldHint=False` throughout: every tool that declares a preset addresses
 # one loyalty API holding a closed, enumerable set of entities, not the open
-# internet. The two tools that don't fit that declare nothing at all.
+# internet. The three tools that don't fit that declare nothing at all.
 
 READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
 

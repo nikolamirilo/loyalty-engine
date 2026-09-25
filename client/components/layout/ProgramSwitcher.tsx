@@ -6,7 +6,7 @@ import Link from "next/link";
 import { cn } from "@/lib/format";
 import { switchProgram } from "@/lib/programs/actions";
 import type { Program } from "@/lib/types";
-import { Avatar } from "@/components/ui/Avatar";
+import { ProgramMark } from "@/components/branding/ProgramMark";
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/DropdownMenu";
 import { Spinner } from "@/components/ui/Spinner";
 import { CheckIcon, ChevronDownIcon } from "@/components/ui/icons";
@@ -17,8 +17,8 @@ import { CheckIcon, ChevronDownIcon } from "@/components/ui/icons";
  * the selected program and changes completely when this does.
  *
  * Same picker as the member app's (components/account/ProgramSwitcher): the
- * closed trigger carries the program's own colour and initials, so the console
- * always says which dataset is on screen without being read.
+ * closed trigger carries the program's logo (or its colour and initials), so
+ * the console always says which dataset is on screen without being read.
  */
 export function ProgramSwitcher({
   programs,
@@ -75,7 +75,7 @@ export function ProgramSwitcher({
             aria-label="Selected program"
             className="flex w-full cursor-pointer items-center gap-2.5 rounded-md border border-line bg-surface px-2 py-1.5 text-left transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {current && <Avatar name={current.name} />}
+            {current && <ProgramMark program={current} />}
             <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
               {current?.name ?? "Choose a program"}
             </span>
@@ -102,7 +102,7 @@ export function ProgramSwitcher({
               // class join leaves the winner up to stylesheet order.
               className={cn(active && "bg-primary-subtle")}
             >
-              <Avatar name={program.name} />
+              <ProgramMark program={program} />
               <span
                 className={cn(
                   "min-w-0 flex-1 truncate text-sm",

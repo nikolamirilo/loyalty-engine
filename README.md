@@ -39,6 +39,7 @@ keeps one set of rules in one place.
 
 | Concept | What it means |
 |---|---|
+| **Programs** | Isolated datasets, one per brand or demo, each with its own members' balances, catalog, tiers and rules. A program can carry a logo and brand colours, which the admin console and member app take on while it is selected. |
 | **Members** | People in the program. Name, email, phone, segments, points balance, custom attributes. |
 | **Segments** | Named groups such as "VIP" or "Newsletter". A member can be in any number of them. |
 | **Points** | Earned, spent, or adjusted by an admin. Every change is written to a transaction history. |
