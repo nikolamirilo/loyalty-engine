@@ -42,7 +42,47 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title=settings.project_name, version=settings.version, lifespan=lifespan)
+# Rendered as Markdown at the top of the Swagger UI (/docs) and ReDoc (/redoc).
+API_DESCRIPTION = """
+## Authentication
+
+Every endpoint except `/health` needs the service token:
+`Authorization: Bearer <token>`. Press **Authorize** above to set it once for
+every request on this page.
+
+## Choosing a program: `X-Program-Id`
+
+One API serves several loyalty programs. Each has its own rewards, tiers,
+challenges, segments and products, and each member has their own points and
+tier in each program. The `X-Program-Id` header says **which program a request
+works on**. It takes a program's id (UUID) or its slug, e.g. `retail-demo`.
+`GET /programs` lists them.
+
+| Endpoints | `X-Program-Id` |
+|---|---|
+| Program data: members, points, rewards, redemptions, tiers, challenges, segments, products, purchases, events | Picks the program. If left out, the **default program** is used. |
+| `/programs` | Not used. This is how you find the programs. |
+| `/doi/*`, `/auth/*` | Not used. These are about the person, not a program. |
+
+**Every member belongs to every program.** Their name, email and email
+verification are shared across all programs. Points, tier, rewards and
+challenge progress are separate per program. So:
+
+- **Email verification (DOI)** counts in every program. The member is found by
+  `email`, or by a `memberId` from any program.
+- **Sign in** always lands in the default program. The member switches program
+  from there.
+- A member has a different `memberId` in each program. On program endpoints,
+  use the `memberId` that belongs to the program in `X-Program-Id`.
+  `GET /members/{memberId}/programs` lists them all.
+"""
+
+app = FastAPI(
+    title=settings.project_name,
+    version=settings.version,
+    description=API_DESCRIPTION,
+    lifespan=lifespan,
+)
 
 # All API routers require a valid bearer token.
 protected = [Depends(verify_token)]

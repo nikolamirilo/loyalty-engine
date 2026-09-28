@@ -297,7 +297,12 @@ own, and `POST /complete` forces it regardless of progress or deadline.
 | `GET` | `/events` | Every event in the program, newest first, with its member. `?type=<key>` filters by event type |
 | `GET` | `/members/{id}/events` | A member's events, with what their rules did |
 
-**Email and member sign in**
+**Email and member sign in** (person level, so no `X-Program-Id`)
+
+Every member belongs to every program, and email verification counts in all of
+them, so these never need a program. A header sent anyway is ignored. DOI finds
+the member by `email`, or by a `memberId` from any program. Sign in always lands
+in the default program, and the member switches program from there.
 
 | Method | Path | Description |
 |---|---|---|
@@ -305,7 +310,7 @@ own, and `POST /complete` forces it regardless of progress or deadline.
 | `POST` | `/doi/verify` | Confirm a verification code |
 | `POST` | `/auth/signup` | Create a member and mail a login code |
 | `POST` | `/auth/login` | Mail a login code to an existing member |
-| `POST` | `/auth/verify` | Exchange the code for the member record |
+| `POST` | `/auth/verify` | Exchange the code for the member's record in the default program |
 
 ### Member object
 
@@ -343,16 +348,14 @@ and both finish at `POST /doi/verify`. The link flow only spares the typing.
 A `type: "link"` trigger without `CLIENT_BASE_URL` set answers `500` rather than
 mailing a button that goes nowhere. The `code` flow never reads it.
 
-**Idempotency.** While a code is live, `/doi/trigger` answers `200` and sends
-nothing. The request is already satisfied by the code sitting in the member's
-inbox, and a second email would quietly invalidate the first. A new code is
-issued once the old one expires, is verified, or is burned through 5 wrong
-guesses. Nothing is written unless the email was accepted, so a failed send does
-not block the next attempt.
-
-Asking for the *other* `type` while a code is live does issue a new one. The live
-code went out in a shape this caller is not asking for, and only its hash is
-stored, so the link behind it cannot be rebuilt.
+**Resending.** Every `/doi/trigger` mails a fresh code and retires the previous
+one, so a member who lost the email can just ask again. The old code can't be
+re-sent: only its hash is stored. Triggers for the same person less than 60
+seconds apart answer `429` with a `Retry-After` header and send nothing, which
+keeps a looping caller from flooding the inbox. Nothing is written unless the
+email was accepted, so a failed send leaves the previous code working and starts
+no cooldown. `/auth/signup` and `/auth/login` behave the same way for login
+codes.
 
 **Failures.** `DOI_FROM_EMAIL` must sit on a domain verified in Resend. Until it
 does, every send is rejected and `/doi/trigger` answers `500` quoting the
@@ -517,8 +520,9 @@ which is why `pytest.ini` points `testpaths` at `tests/integration` only:
 ./venv/bin/python -m tests.test_database_pool          # NullPool must be in use
 ./venv/bin/python -m tests.test_database_pooler_port   # session pooler is rewritten to transaction pooler
 ./venv/bin/python -m tests.test_doi_email_errors       # send failures are classified, not swallowed
-./venv/bin/python -m tests.test_doi_trigger_flow       # /doi/trigger is idempotent while a code is live
+./venv/bin/python -m tests.test_doi_trigger_flow       # /doi/trigger resends a fresh code, 429 within cooldown
 ./venv/bin/python -m tests.test_doi_link_flow          # type="link" mails a working /verify link
+./venv/bin/python -m tests.test_member_login_resend    # /auth/login resends a fresh code, 429 within cooldown
 ./venv/bin/python -m tests.test_event_rules            # every rule effect, limits, retries, save-time checks
 ./venv/bin/python -m tests.test_database_url           # DATABASE_URL driver normalization
 ./venv/bin/python -m tests.test_program_branding       # brand colours validate, logos upload/replace/delete

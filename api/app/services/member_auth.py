@@ -15,11 +15,18 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models import Member, MemberIdentity, MemberLoginCode, Program
-from app.services.email_sending import EmailDeliveryError, code_email_html, send_email
+from app.core.program import default_program
+from app.models import Member, MemberIdentity, MemberLoginCode
+from app.services.email_sending import (
+    EmailDeliveryError,
+    code_email_html,
+    enforce_resend_cooldown,
+    send_email,
+)
 from app.services.memberships import enrol_everywhere, join
 
 logger = logging.getLogger("uvicorn.error")
@@ -64,6 +71,25 @@ def _latest_active_code(db: Session, identity_id) -> Optional[MemberLoginCode]:
     )
 
 
+def _last_sent_at(db: Session, identity_id) -> Optional[datetime]:
+    # A code they signed in with doesn't count: it did its job, and signing in
+    # again (another device, right after logging out) is a new request, not a
+    # resend. A code burned through MAX_ATTEMPTS wrong guesses does count.
+    row = (
+        db.query(MemberLoginCode.created_at)
+        .filter(
+            MemberLoginCode.identity_id == identity_id,
+            or_(
+                MemberLoginCode.consumed_at.is_(None),
+                MemberLoginCode.attempts >= MAX_ATTEMPTS,
+            ),
+        )
+        .order_by(MemberLoginCode.created_at.desc())
+        .first()
+    )
+    return row.created_at if row else None
+
+
 def _send_login_code(identity: MemberIdentity, code: str) -> None:
     ttl_minutes = int(CODE_TTL.total_seconds() // 60)
     send_email(
@@ -75,25 +101,24 @@ def _send_login_code(identity: MemberIdentity, code: str) -> None:
 
 
 def _issue_and_send_code(db: Session, identity: MemberIdentity) -> None:
-    """Ensure `identity` has a usable, unexpired login code in their inbox.
+    """Mail `identity` a fresh login code, retiring any previous one.
 
-    Mirrors ``email_verification.trigger_verification``'s "one outstanding
-    code, re-send while unexpired is a no-op" behavior, minus the
-    email-verified gate - a login code can always be (re-)requested.
+    Mirrors ``email_verification.trigger_verification``: every request sends a
+    new code (only hashes are stored, so the old one can't be re-sent), and
+    requests closer together than RESEND_COOLDOWN answer 429. There is no
+    email-verified gate - a login code can always be requested.
 
     Keyed to the person, not to one of their memberships: the code proves who
     is signing in, and the program they land in comes from the request.
     """
-    latest = _latest_active_code(db, identity.id)
     now = _now()
-    if latest is not None and now <= _as_aware(latest.expires_at):
-        return
+    enforce_resend_cooldown(_last_sent_at(db, identity.id), now)
 
     code = _generate_code()
 
     # Send before touching the DB: if delivery fails, nothing about the
-    # member's login state should change - an orphaned code row would
-    # suppress every retry until it expired, for a code never delivered.
+    # member's login state should change - the old code stays valid, and no
+    # row is written to start a cooldown for an email that never went out.
     try:
         _send_login_code(identity, code)
     except EmailDeliveryError as exc:
@@ -126,9 +151,7 @@ def _issue_and_send_code(db: Session, identity: MemberIdentity) -> None:
     db.commit()
 
 
-def trigger_signup(
-    db: Session, program: Program, email: str, name: str, phone: Optional[str]
-) -> None:
+def trigger_signup(db: Session, email: str, name: str, phone: Optional[str]) -> None:
     identity = find_identity_by_email(db, email)
     if identity is not None:
         # Members are global, so an existing person already holds a membership
@@ -145,7 +168,7 @@ def trigger_signup(
     _issue_and_send_code(db, identity)
 
 
-def trigger_login(db: Session, program: Program, email: str) -> None:
+def trigger_login(db: Session, email: str) -> None:
     identity = find_identity_by_email(db, email)
     if identity is None:
         raise HTTPException(404, "No account found for this email. Sign up instead.")
@@ -158,7 +181,7 @@ def trigger_login(db: Session, program: Program, email: str) -> None:
     _issue_and_send_code(db, identity)
 
 
-def verify_login_code(db: Session, program: Program, email: str, code: str) -> Member:
+def verify_login_code(db: Session, email: str, code: str) -> Member:
     identity = find_identity_by_email(db, email)
     if identity is None:
         raise HTTPException(404, "No account found for this email.")
@@ -177,9 +200,10 @@ def verify_login_code(db: Session, program: Program, email: str, code: str) -> M
         raise HTTPException(400, "Invalid login code")
 
     row.consumed_at = _now()
-    # The code proves who they are; the program comes from the request. The
-    # membership already exists, so this just picks the right one of theirs.
-    member = join(db, program, identity)
+    # The code proves who they are. Signing in always lands in the default
+    # program - the member switches from there - so that is the membership
+    # handed back. It already exists; join() just picks it.
+    member = join(db, default_program(db), identity)
     db.commit()
     db.refresh(member)
     return member

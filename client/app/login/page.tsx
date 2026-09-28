@@ -18,8 +18,8 @@ export default async function LoginPage() {
   // The proxy already gates this route; this is defense-in-depth.
   if (await getSessionMemberId()) redirect("/home");
 
-  // The program this page signs in to (the member_program cookie, or the
-  // deployment's MEMBER_PROGRAM), so a branded demo is branded from the door.
+  // Signing in always lands in the default program, so that is the brand on
+  // the door (no session here, so memberBrandProgram resolves to it).
   const program = await memberBrandProgram();
 
   return (

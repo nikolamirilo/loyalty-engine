@@ -7,6 +7,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { cn } from "@/lib/format";
 import type { Program } from "@/lib/types";
 import { BrandLogo } from "@/components/branding/BrandLogo";
+import { ProgramLogoProvider } from "@/components/branding/ProgramLogoContext";
 import { CampaignProvider } from "@/components/campaigns/CampaignContext";
 import { CampaignFrame } from "@/components/campaigns/CampaignFrame";
 import { memberLogout } from "@/lib/memberAuth/actions";
@@ -184,7 +185,8 @@ export function MemberShell({
               </header>
 
               <main className="relative mx-auto w-full max-w-lg flex-1 px-4 py-6">
-                {children}
+                {/* Lets the loading.tsx fallback wear the program's logo. */}
+                <ProgramLogoProvider logoUrl={program?.logoUrl}>{children}</ProgramLogoProvider>
                 <CampaignFrame />
               </main>
             </div>

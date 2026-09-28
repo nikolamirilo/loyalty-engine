@@ -1,6 +1,16 @@
+import path from "node:path";
+
 import type { NextConfig } from "next";
 
+// This app is its own project root. The repo root holds a second
+// package-lock.json (husky only, see ../package.json), which Next would
+// otherwise pick as the root - warning about "additional lockfiles" and
+// widening file watching and output tracing to the whole repo.
+const projectRoot = path.resolve(__dirname);
+
 const nextConfig: NextConfig = {
+  turbopack: { root: projectRoot },
+  outputFileTracingRoot: projectRoot,
   experimental: {
     // Program logos are uploaded through a Server Action (lib/programs/actions.ts)
     // and may be up to 2 MB - the API's own limit - which the 1 MB default

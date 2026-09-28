@@ -38,7 +38,7 @@ export async function consolePrograms(): Promise<{ programs: Program[]; current:
 }
 
 /** The program the member app is showing: the signed-in member's, else the
- *  one the login page would authenticate against. */
+ *  default program (where sign-in lands). */
 export async function memberBrandProgram(): Promise<Program | null> {
   const [programs, selected] = await Promise.all([programsOrEmpty(), memberProgramId()]);
   return resolveProgram(programs, selected);

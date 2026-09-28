@@ -38,8 +38,9 @@ export default async function VerifyPage({
   const memberId = param(params.memberId);
   const code = param(params.code);
   const linkComplete = memberId !== "" && code !== "";
-  // Best guess at the member's program: the cookie from their last visit, or
-  // the deployment's MEMBER_PROGRAM. The link itself does not carry one.
+  // Verification is person-level - it counts in every program - so the page
+  // wears the default program's brand, the same one sign-in lands in. (A
+  // signed-in member opening the link sees their current program's instead.)
   const program = await memberBrandProgram();
 
   return (

@@ -6,14 +6,23 @@ code email via Resend" instead of two near-identical copies.
 """
 
 import logging
+import math
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import resend
+from fastapi import HTTPException
 from resend.exceptions import ResendError
 
 from app.core.config import settings
 
 logger = logging.getLogger("uvicorn.error")
+
+# The shortest gap allowed between two code emails to the same person. Every
+# trigger mails a fresh code (so a member who lost the email can get another),
+# which makes this the only thing stopping a caller from flooding an inbox by
+# triggering in a loop - and from buying 5 more guesses every few seconds.
+RESEND_COOLDOWN = timedelta(seconds=60)
 
 # The SDK's default HTTP timeout (30s) outlives the serverless function budget,
 # so a slow provider would surface as an opaque platform timeout instead of an
@@ -119,6 +128,26 @@ def code_email_html(code: str, ttl_minutes: int, label: str = "Your verification
                 </p>
 {expiry_note("code", ttl_minutes)}"""
     )
+
+
+def enforce_resend_cooldown(last_sent_at: Optional[datetime], now: datetime) -> None:
+    """Refuse with 429 if this person was mailed a code under RESEND_COOLDOWN ago.
+
+    A 429 rather than a silent 200: the caller has to be able to tell "a new
+    email is on its way" from "nothing was sent", and when to try again.
+    """
+    if last_sent_at is None:
+        return
+    if last_sent_at.tzinfo is None:  # read back naive from the DB; stored as UTC
+        last_sent_at = last_sent_at.replace(tzinfo=timezone.utc)
+    remaining = (last_sent_at + RESEND_COOLDOWN - now).total_seconds()
+    if remaining > 0:
+        wait = math.ceil(remaining)
+        raise HTTPException(
+            429,
+            f"A code was just sent. Please wait {wait} seconds before requesting another.",
+            headers={"Retry-After": str(wait)},
+        )
 
 
 def _send_status(exc: ResendError) -> Optional[int]:

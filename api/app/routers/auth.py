@@ -2,8 +2,6 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.program import get_program
-from app.models import Program
 from app.schemas import (
     AuthLoginRequest,
     AuthSignupRequest,
@@ -13,6 +11,9 @@ from app.schemas import (
 )
 from app.services.member_auth import trigger_login, trigger_signup, verify_login_code
 
+# No X-Program-Id here: every member belongs to every program, and signing in
+# always lands in the default program - the member switches from there. A
+# header sent anyway is ignored.
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
@@ -20,9 +21,8 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 def signup(
     body: AuthSignupRequest,
     db: Session = Depends(get_db),
-    program: Program = Depends(get_program),
 ):
-    trigger_signup(db, program, body.email, body.name, body.phone)
+    trigger_signup(db, body.email, body.name, body.phone)
     return {"message": "Login code sent"}
 
 
@@ -30,9 +30,8 @@ def signup(
 def login(
     body: AuthLoginRequest,
     db: Session = Depends(get_db),
-    program: Program = Depends(get_program),
 ):
-    trigger_login(db, program, body.email)
+    trigger_login(db, body.email)
     return {"message": "Login code sent"}
 
 
@@ -40,7 +39,6 @@ def login(
 def verify(
     body: AuthVerifyRequest,
     db: Session = Depends(get_db),
-    program: Program = Depends(get_program),
 ):
-    member = verify_login_code(db, program, body.email, body.code)
+    member = verify_login_code(db, body.email, body.code)
     return {"member": member}

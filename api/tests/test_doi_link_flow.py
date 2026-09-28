@@ -6,11 +6,12 @@ What this guards:
     member id and the raw code - that link *is* the flow, so a missing or
     malformed one breaks verification for every member who gets it.
   * The code inside that link is the one /doi/verify accepts.
-  * Type is part of what "already satisfied" means: re-triggering the same type
-    while the code is live still sends nothing, but asking for the other type
-    issues a fresh code. Only the hash is stored, so the emailed link can never
-    be rebuilt - leaving the code alone there would answer 200 while the member
-    never receives the link they were promised.
+  * A re-trigger (past the resend cooldown) that asks for the other type mails
+    that type with a fresh code, and the link's code stops working.
+  * The link works whichever program it was issued from. Every member belongs
+    to every program, so the member id in the link is a membership in some
+    non-default program - and /verify sends no program at all. Scoping the
+    lookup to a program answered "Member not found" here.
   * `type: "link"` without CLIENT_BASE_URL configured fails loudly (500) and
     persists nothing, rather than mailing a broken button.
 
@@ -22,6 +23,7 @@ Run: ./venv/bin/python -m tests.test_doi_link_flow
 
 import os
 import uuid
+from datetime import timedelta
 from html import unescape
 from urllib.parse import parse_qs, urlparse
 
@@ -75,17 +77,30 @@ database.Base.metadata.create_all(
 )
 
 PROGRAM_ID = uuid.uuid4()
+OTHER_PROGRAM_ID = uuid.uuid4()
 IDENTITY_ID = uuid.uuid4()
-MEMBER_ID = uuid.uuid4()
+MEMBER_ID = uuid.uuid4()  # the membership in the *non-default* program
+DEFAULT_MEMBER_ID = uuid.uuid4()
 HEADERS = {"Authorization": "Bearer test-token"}
+# Triggered from the other program, the way a brand's own integration would.
+TRIGGER_HEADERS = {**HEADERS, "X-Program-Id": "other"}
 client = TestClient(app, raise_server_exceptions=False)
+
+
+def _age_codes(seconds: int) -> None:
+    """Pretend every code was issued `seconds` earlier, past the resend cooldown."""
+    session = database.SessionLocal()
+    for row in session.query(EmailVerificationCode).all():
+        row.created_at = row.created_at - timedelta(seconds=seconds)
+    session.commit()
+    session.close()
 
 
 def _trigger(doi_type: str):
     response = client.post(
         "/doi/trigger",
         json={"memberId": str(MEMBER_ID), "type": doi_type},
-        headers=HEADERS,
+        headers=TRIGGER_HEADERS,
     )
     return response.status_code, response.json()
 
@@ -104,13 +119,14 @@ def _active_codes():
 
 def main() -> None:
     session = database.SessionLocal()
-    # No X-Program-Id header is sent below, so the request resolves to the
-    # default program - which is why this one is flagged as such.
     session.add(Program(id=PROGRAM_ID, name="Test", slug="test", is_default=True))
+    session.add(Program(id=OTHER_PROGRAM_ID, name="Other", slug="other"))
     session.add(
         MemberIdentity(id=IDENTITY_ID, name="Link Member", email="link@example.com")
     )
-    session.add(Member(id=MEMBER_ID, program_id=PROGRAM_ID, identity_id=IDENTITY_ID))
+    # Enrolled in both programs, like every member.
+    session.add(Member(id=DEFAULT_MEMBER_ID, program_id=PROGRAM_ID, identity_id=IDENTITY_ID))
+    session.add(Member(id=MEMBER_ID, program_id=OTHER_PROGRAM_ID, identity_id=IDENTITY_ID))
     session.commit()
     session.close()
 
@@ -158,14 +174,8 @@ def main() -> None:
         if not code.isdigit():
             failures.append(f"link carried no numeric code (query={query})")
 
-        # Same type while the code is live: nothing new goes out.
-        again = _trigger("link")
-        if again != (status, body):
-            failures.append(f"re-trigger answered {again}, expected {(status, body)}")
-        if len(sent) != 1:
-            failures.append(f"re-trigger sent another email ({len(sent)} total)")
-
-        # The other type is a different email, so it must issue a fresh code.
+        # Asking for the other type after the cooldown mails that type instead.
+        _age_codes(61)
         code_status, code_body = _trigger("code")
         if code_status != 200:
             failures.append(f"switching to code answered {code_status} {code_body}")

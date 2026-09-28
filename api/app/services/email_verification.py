@@ -20,7 +20,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models import DOIType, EmailVerificationCode, Member, MemberIdentity, Program
+from app.models import DOIType, EmailVerificationCode, Member, MemberIdentity
 from app.services.email_sending import (
     CODE_FG,
     EmailDeliveryError,
@@ -30,6 +30,7 @@ from app.services.email_sending import (
     PRIMARY_FG,
     code_email_html,
     email_shell,
+    enforce_resend_cooldown,
     expiry_note,
     send_email,
 )
@@ -49,41 +50,32 @@ def _as_aware(value: datetime) -> datetime:
     return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
 
 
-def resolve_member(
-    db: Session, email: Optional[str], member_id: Optional[UUID], program: Program
-) -> Member:
-    """Look up the member a DOI request refers to, inside `program`.
+def resolve_member(db: Session, email: Optional[str], member_id: Optional[UUID]) -> Member:
+    """Look up the person a DOI request refers to, in whichever program.
 
     Exactly one of `email`/`member_id` is required; if both are given they
-    must resolve to the same member, so a caller can't be misdirected by a
+    must resolve to the same person, so a caller can't be misdirected by a
     stale/mismatched pair.
 
-    Verification state itself is identity level (one email, verified once for
-    the person), but the request still resolves through a membership: it is
-    what scopes the lookup to this program, and what gives the `link` email a
-    member id to address the client's /verify page with.
+    Deliberately not scoped to a program. Every member belongs to every
+    program and verification is stamped on the identity, so any of a person's
+    member ids - from any program - names the same thing. Scoping it made a
+    link issued from one program answer "Member not found" when opened in
+    another. A membership is still returned (rather than the identity) because
+    the `link` email needs a member id to address the client's /verify page.
     """
     if email is None and member_id is None:
         raise HTTPException(400, "Provide either email or member_id")
 
     if member_id is not None:
-        member = (
-            db.query(Member)
-            .filter(Member.id == member_id, Member.program_id == program.id)
-            .first()
-        )
+        member = db.get(Member, member_id)
         if not member:
             raise HTTPException(404, "Member not found")
         if email is not None and member.email.lower() != email.lower():
             raise HTTPException(400, "email and member_id do not refer to the same member")
         return member
 
-    member = (
-        db.query(Member)
-        .join(Member.identity)
-        .filter(MemberIdentity.email == email, Member.program_id == program.id)
-        .first()
-    )
+    member = db.query(Member).join(Member.identity).filter(MemberIdentity.email == email).first()
     if not member:
         raise HTTPException(404, "Member not found")
     return member
@@ -111,6 +103,18 @@ def _latest_active_code(db: Session, identity_id: UUID) -> Optional[EmailVerific
         .order_by(EmailVerificationCode.created_at.desc())
         .first()
     )
+
+
+def _last_sent_at(db: Session, identity_id: UUID) -> Optional[datetime]:
+    # Any code counts, used or not: a successfully used one means the email is
+    # verified, which trigger_verification refuses before this is consulted.
+    row = (
+        db.query(EmailVerificationCode.created_at)
+        .filter(EmailVerificationCode.identity_id == identity_id)
+        .order_by(EmailVerificationCode.created_at.desc())
+        .first()
+    )
+    return row.created_at if row else None
 
 
 def _link_email_html(link: str, ttl_minutes: int) -> str:
@@ -190,44 +194,31 @@ def _send_verification_email(member: Member, code: str, doi_type: DOIType) -> No
 def trigger_verification(
     db: Session, member: Member, doi_type: DOIType = DOIType.code
 ) -> None:
-    """Ensure the member has a usable verification email in their inbox.
+    """Mail the member a fresh verification email.
 
     ``doi_type`` picks which email that is: ``code`` mails a 6-digit code to
     type back, ``link`` mails a link to the client's /verify page that submits
     the code for them.
 
-    If the email from a previous trigger hasn't expired or been used yet, and
-    it was the same type, that request is already satisfied: leave the code
-    alone and answer exactly as if a new one had been sent. Mailing a second
-    code would invalidate the first - so a member reading the older email would
-    use a code that no longer works - while also spending a send and risking
-    their inbox for nothing.
+    Every trigger sends a new code and retires the previous one, so a member who
+    lost or never got the first email can simply ask again. The same code can't
+    be re-sent instead: only its hash is stored. The newest email is the one
+    that works, which is also the one on top of their inbox.
 
-    A trigger asking for the *other* type does issue a new code: the live one
-    was delivered in a shape this caller isn't asking for (and only its hash is
-    stored, so the link behind it cannot be rebuilt to re-send).
-
-    A new code is also issued once the previous one expires (CODE_TTL) or is
-    used up (verified, or MAX_ATTEMPTS wrong guesses).
+    Triggers closer together than RESEND_COOLDOWN answer 429 and send nothing.
     """
     identity = member.identity
     if identity.email_verified_at is not None:
         raise HTTPException(409, "Member email is already verified")
 
-    latest = _latest_active_code(db, identity.id)
     now = _now()
-    if (
-        latest is not None
-        and latest.type is doi_type
-        and now <= _as_aware(latest.expires_at)
-    ):
-        return
+    enforce_resend_cooldown(_last_sent_at(db, identity.id), now)
 
     code = _generate_code()
 
     # Send before touching the DB: if delivery fails, nothing about the member's
-    # verification state should change - an orphaned code row would suppress
-    # every retry until it expired, for a code that was never delivered.
+    # verification state should change - the old code stays valid, and no row
+    # is written to start a cooldown for an email that never went out.
     try:
         _send_verification_email(member, code, doi_type)
     except EmailDeliveryError as exc:
@@ -250,7 +241,8 @@ def trigger_verification(
             f"misconfigured. {exc.reason}",
         ) from exc
 
-    # A person should only ever have one outstanding code at a time.
+    # A person should only ever have one outstanding code at a time, so the
+    # new one replaces whatever the previous email carried.
     db.query(EmailVerificationCode).filter(
         EmailVerificationCode.identity_id == identity.id,
         EmailVerificationCode.consumed_at.is_(None),

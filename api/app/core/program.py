@@ -7,8 +7,13 @@ request rather than per deployment. That is what lets the admin console's
 program switcher work without a token per program.
 
 Every program-scoped router takes ``program: Program = Depends(get_program)``
-and filters by ``program.id``. The ``/programs`` router itself does not: it is
-how a caller discovers which programs exist.
+and filters by ``program.id``. Two kinds of router do not:
+
+  * ``/programs`` itself - it is how a caller discovers which programs exist.
+  * Person-level flows (``/doi/*``, ``/auth/*``). Every member belongs to every
+    program and their email verification is global, so there is no program to
+    pick: DOI never needs one, and sign-in always lands in the default program
+    (``default_program``), from where the member switches.
 """
 
 import logging
@@ -34,8 +39,23 @@ def _by_id_or_slug(db: Session, value: str) -> Program | None:
         return db.query(Program).filter(Program.slug == value).first()
 
 
+def default_program(db: Session) -> Program:
+    """The program flagged ``is_default``."""
+    program = db.query(Program).filter(Program.is_default.is_(True)).first()
+    if program is None:
+        raise HTTPException(400, "No default program is configured.")
+    return program
+
+
 def get_program(
-    x_program_id: str | None = Header(default=None, alias=PROGRAM_HEADER),
+    x_program_id: str | None = Header(
+        default=None,
+        alias=PROGRAM_HEADER,
+        description=(
+            "Which program this request works on: a program id (UUID) or slug, "
+            "from `GET /programs`. Leave it out to use the default program."
+        ),
+    ),
     db: Session = Depends(get_db),
 ) -> Program:
     """The program this request addresses.

@@ -2,7 +2,6 @@
 
 import type { ActionState } from "@/lib/action-state";
 import { ApiError, apiRequest } from "@/lib/api";
-import { memberProgramId } from "@/lib/server/program";
 
 /**
  * Server Action behind the public /verify page (the DOI `type: "link"` flow).
@@ -12,6 +11,9 @@ import { memberProgramId } from "@/lib/server/program";
  * instead: the bearer token stays on the server, and the only thing the caller
  * controls is the member id + code pair the API already validates - a wrong
  * pair is rejected there, and burns one of the member's five attempts.
+ *
+ * No program is sent (`programId: null`): verification is person-level, and
+ * the API finds the member by id in whichever program it was issued from.
  */
 export async function verifyMemberEmail(
   _prev: ActionState,
@@ -28,7 +30,7 @@ export async function verifyMemberEmail(
     await apiRequest("/doi/verify", {
       method: "POST",
       json: { memberId, code },
-      programId: await memberProgramId(),
+      programId: null,
     });
     return { ok: true, message: "Your email address is verified." };
   } catch (e) {

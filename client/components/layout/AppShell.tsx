@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/format";
 import { BrandLogo } from "@/components/branding/BrandLogo";
+import { ProgramLogoProvider } from "@/components/branding/ProgramLogoContext";
 import { logout } from "@/lib/auth/actions";
 import type { Program } from "@/lib/types";
 import { usePreload, type PreloadRoute } from "@/lib/swr/preload";
@@ -186,7 +187,8 @@ export function AppShell({
       {/* Main content */}
       <main className="lg:pl-72">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          {children}
+          {/* Lets the loading.tsx fallback wear the program's logo. */}
+          <ProgramLogoProvider logoUrl={program?.logoUrl}>{children}</ProgramLogoProvider>
         </div>
       </main>
     </div>

@@ -1,13 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 
 import type { ActionState } from "@/lib/action-state";
 import { ApiError, apiRequest } from "@/lib/api";
-import { MEMBER_SESSION_TTL_MS } from "@/lib/memberAuth/config";
 import { createMemberSession, getSessionMemberId } from "@/lib/memberAuth/session";
-import { MEMBER_PROGRAM_COOKIE, memberProgramId } from "@/lib/server/program";
+import { memberProgramId } from "@/lib/server/program";
 import type { Member } from "@/lib/types";
 
 /**
@@ -32,17 +30,6 @@ export async function switchMemberProgram(programId: string): Promise<ActionStat
       { method: "POST", programId: await memberProgramId() },
     );
 
-    const cookieStore = await cookies();
-    cookieStore.set(MEMBER_PROGRAM_COOKIE, programId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      // Outlives the browser window, like the session it accompanies. Left as a
-      // browser-session cookie it expired on close while the 30-day session
-      // survived, and the pair came back disagreeing.
-      maxAge: MEMBER_SESSION_TTL_MS / 1000,
-      path: "/",
-    });
     // The session carries the program, so this one write moves both: the old
     // member id does not exist in the new program, and leaving the two out of
     // step would 404 every page.

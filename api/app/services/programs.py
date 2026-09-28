@@ -2,8 +2,8 @@
 
 The console only asks for a name, so the slug is derived from it here. It is
 fixed once the program exists - renaming the program leaves it alone - because
-``MEMBER_PROGRAM``, the MCP server's default program, MCP calls and curl
-examples may already refer to it.
+the MCP server's default program, MCP calls and curl examples may already
+refer to it.
 """
 
 import re

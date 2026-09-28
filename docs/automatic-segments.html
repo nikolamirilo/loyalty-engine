@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automatic segments · Loyalty Engine design prototype</title>
+<style>
+/* Same design tokens as client/app/globals.css */
+:root {
+  --background: #f8fafc; --surface: #ffffff; --surface-2: #f1f5f9;
+  --foreground: #0f172a; --muted: #475569; --faint: #64748b; --line: #e2e8f0; --ring: #5b4bd6;
+  --primary: #5b4bd6; --primary-hover: #4c3fbf; --primary-fg: #ffffff; --primary-subtle: #efecfd; --primary-subtle-fg: #4338ca;
+  --success: #0ca30c; --success-fg: #056b05; --success-subtle: #e5f4e5;
+  --warning: #fab219; --warning-fg: #8a5300; --warning-subtle: #fbf0d6;
+  --danger: #d03b3b; --danger-fg: #b0241d; --danger-subtle: #fbe7e7;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b1020; --surface: #131a2c; --surface-2: #1c2438;
+    --foreground: #f1f5f9; --muted: #b6c2d6; --faint: #8493ab; --line: #263048; --ring: #8b7ef0;
+    --primary: #8b7ef0; --primary-hover: #a99ef4; --primary-fg: #0b1020; --primary-subtle: #23204a; --primary-subtle-fg: #c3bafa;
+    --success: #0ca30c; --success-fg: #46c246; --success-subtle: #12341a;
+    --warning: #fab219; --warning-fg: #f0b429; --warning-subtle: #3a2e0f;
+    --danger: #e66767; --danger-fg: #f08a8a; --danger-subtle: #3a1c1c;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--background); color: var(--foreground);
+  font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 20px; }
+header { padding: 28px 0 8px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--primary); }
+h1 { font-size: 26px; margin: 4px 0 6px; letter-spacing: -.01em; }
+h2 { font-size: 15px; margin: 0; }
+h3 { font-size: 14px; margin: 18px 0 6px; }
+.lede { color: var(--muted); max-width: 820px; margin: 0 0 16px; }
+.muted { color: var(--muted); } .faint { color: var(--faint); } .small { font-size: 12.5px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 8px; }
+.tabs button { border: 0; background: none; color: var(--muted); font: inherit; font-weight: 600; padding: 10px 14px;
+  border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -1px; }
+.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+main { padding: 20px 0 60px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--foreground); font: inherit; font-weight: 600; padding: 7px 12px; border-radius: 8px; cursor: pointer; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+.btn.primary:hover { background: var(--primary-hover); }
+.btn.primary:disabled { opacity: .45; cursor: not-allowed; }
+.btn.ghost { border-color: transparent; background: none; }
+.btn.ghost:hover { background: var(--surface-2); }
+.btn.sm { padding: 5px 10px; font-size: 13px; }
+.btn.icon { padding: 4px 9px; font-size: 16px; line-height: 1; }
+input, select { font: inherit; color: var(--foreground); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 8px; padding: 7px 9px; min-width: 0; width: 100%; }
+input:focus, select:focus, .btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+input[type=color] { padding: 3px; height: 36px; width: 52px; cursor: pointer; }
+input[type=checkbox], input[type=radio] { width: auto; accent-color: var(--primary); }
+select.inline { width: auto; display: inline-block; padding: 3px 6px; margin: 0 3px; font-weight: 600; }
+.badge { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.badge.auto { background: var(--primary-subtle); color: var(--primary-subtle-fg); }
+.badge.manual { background: var(--surface-2); color: var(--muted); }
+
+/* build tab */
+.build-grid { display: grid; gap: 16px; grid-template-columns: 290px minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 1150px) { .build-grid { grid-template-columns: 270px minmax(0, 1fr); } #preview { grid-column: 2; } }
+@media (max-width: 760px) { .build-grid { grid-template-columns: 1fr; } #preview { grid-column: auto; } }
+.seg-list ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.seg-item { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; border: 1px solid transparent;
+  background: none; font: inherit; color: inherit; padding: 9px 10px; border-radius: 10px; cursor: pointer; min-width: 0; overflow: hidden; }
+.seg-item:hover { background: var(--surface-2); }
+.seg-item.active { border-color: var(--primary); background: var(--primary-subtle); }
+.swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.seg-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.seg-name { font-weight: 600; }
+.seg-sub { font-size: 12px; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.form { display: grid; gap: 16px; }
+.field { display: grid; gap: 6px; }
+.field > span:first-child { font-weight: 600; font-size: 13px; }
+.row-2 { display: grid; grid-template-columns: 1fr auto; gap: 12px; }
+.mode-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mode-opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+.mode-opt:has(input:checked) { border-color: var(--primary); background: var(--primary-subtle); }
+.mode-opt span { display: flex; flex-direction: column; }
+.mode-opt small { color: var(--muted); font-size: 12px; }
+.cond-rows { display: grid; gap: 8px; }
+.cond-row { display: grid; grid-template-columns: 30px minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.joiner { font-size: 12px; font-weight: 600; color: var(--faint); text-align: right; }
+@media (max-width: 560px) { .cond-row { grid-template-columns: 1fr 1fr; } .joiner { text-align: left; grid-column: 1 / -1; } }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+.note { font-size: 13px; border-radius: 8px; padding: 9px 11px; background: var(--surface-2); color: var(--muted); margin-top: 4px; }
+.note.warn { background: var(--warning-subtle); color: var(--warning-fg); }
+.actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 14px; }
+.checklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.checklist label { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.big { font-size: 20px; font-weight: 700; margin: 0 0 6px; letter-spacing: -.01em; }
+.diff { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+.pill { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.pill.join { background: var(--success-subtle); color: var(--success-fg); }
+.pill.leave { background: var(--danger-subtle); color: var(--danger-fg); }
+.sentence { font-size: 13px; color: var(--muted); background: var(--surface-2); padding: 8px 10px; border-radius: 8px; margin: 0 0 12px; }
+.mlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.mlist li { display: flex; align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 1px solid var(--line); }
+.mlist li:last-child { border-bottom: 0; }
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font-size: 11px;
+  font-weight: 700; display: grid; place-items: center; flex: none; }
+.mmain { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.mmain small { color: var(--faint); font-size: 12px; }
+.status { font-size: 12px; font-weight: 600; }
+.status.join { color: var(--success-fg); } .status.leave { color: var(--danger-fg); } .status.stay { color: var(--faint); }
+
+/* simulate tab */
+.pipeline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 900px) { .pipeline { grid-template-columns: 1fr 1fr; } }
+.step { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 4px;
+  transition: border-color .2s, background .2s, box-shadow .2s; position: relative; }
+.step .num { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font-size: 12px;
+  font-weight: 700; display: grid; place-items: center; }
+.step .detail { font-size: 12.5px; color: var(--muted); min-height: 38px; }
+.step.active { border-color: var(--primary); background: var(--primary-subtle); box-shadow: 0 0 0 3px var(--primary-subtle); }
+.step.active .num, .step.done .num { background: var(--primary); color: var(--primary-fg); }
+.step.done { border-color: var(--primary); }
+.sim-grid { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr); gap: 16px; margin-top: 16px; align-items: start; }
+@media (max-width: 1050px) { .sim-grid { grid-template-columns: 1fr; } }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: left; font-size: 12px; color: var(--faint); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--surface-2); }
+tbody tr.selected { background: var(--primary-subtle); }
+.chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px;
+  font-size: 12px; white-space: nowrap; margin: 1px 2px 1px 0; background: var(--surface); }
+.chip i { width: 7px; height: 7px; border-radius: 50%; }
+.chip.auto { border-style: dashed; border-color: var(--primary); }
+.chip small { color: var(--primary); font-weight: 600; font-size: 10.5px; }
+.tier { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 6px; }
+.tier-gold { background: #fbf0d6; color: #8a5300; } .tier-silver { background: #e2e8f0; color: #334155; } .tier-bronze { background: #f6e3d7; color: #8a3f12; }
+.action-bar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.tip { font-size: 13px; background: var(--primary-subtle); color: var(--primary-subtle-fg); padding: 9px 12px; border-radius: 8px; margin: 0 0 12px; }
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 560px; overflow: auto; }
+.feed li { display: grid; grid-template-columns: 72px 1fr; gap: 8px; font-size: 12.5px; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); }
+.feed li.empty { display: block; background: none; color: var(--faint); }
+.feed .k { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--faint); padding-top: 1px; }
+.feed li.join .k { color: var(--success-fg); } .feed li.leave .k { color: var(--danger-fg); }
+.feed li.tier .k { color: var(--warning-fg); } .feed li.challenge .k { color: var(--primary); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+
+/* design tab */
+.doc { max-width: 980px; }
+.doc .card { margin-bottom: 16px; }
+.doc h2 { font-size: 17px; margin-bottom: 8px; }
+.doc p, .doc li { color: var(--muted); }
+.doc strong { color: var(--foreground); }
+.doc table { margin: 8px 0; }
+.doc td { cursor: default; vertical-align: top; }
+.doc tbody tr { cursor: default; } .doc tbody tr:hover { background: none; }
+pre { background: var(--surface-2); border-radius: 8px; padding: 12px 14px; overflow: auto; margin: 8px 0; line-height: 1.45; }
+pre code { background: none; padding: 0; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+.box { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.box h3 { margin-top: 0; }
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; }
+.flow span { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; background: var(--surface); }
+.flow b { color: var(--faint); }
+.phase { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.phase.p1 { background: var(--success-subtle); color: var(--success-fg); } .phase.p2 { background: var(--warning-subtle); color: var(--warning-fg); }
+.toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--foreground); color: var(--background);
+  padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; box-shadow: 0 8px 30px rgba(0,0,0,.25); max-width: 90vw; z-index: 10; }
+footer { color: var(--faint); font-size: 12px; padding: 0 0 30px; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="eyebrow">Loyalty Engine · design proposal</div>
+  <h1>Automatic segments</h1>
+  <p class="lede">A segment can be <strong>Manual</strong>, as it is today, or <strong>Automatic</strong>. An automatic segment is defined by conditions, in the same condition builder tiers already use. Members join while they match and leave when they stop, with nobody assigning them by hand.
+  This prototype runs entirely in your browser on sample data.</p>
+  <nav class="tabs" role="tablist">
+    <button data-tab="build" class="active" role="tab">1 · Build a segment</button>
+    <button data-tab="simulate" role="tab">2 · Watch it react</button>
+    <button data-tab="design" role="tab">3 · Design &amp; API</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <!-- ─────────────────────────── 1. BUILD ─────────────────────────── -->
+  <section id="tab-build" class="tab">
+    <div class="build-grid">
+      <aside class="card seg-list">
+        <div class="card-head"><h2>Segments</h2><button class="btn sm primary" id="new-seg">+ New</button></div>
+        <ul id="seg-items"></ul>
+        <p class="legend"><span><span class="badge auto">Automatic</span> by conditions</span><span><span class="badge manual">Manual</span> by hand</span></p>
+      </aside>
+      <div class="card" id="editor"></div>
+      <div class="card" id="preview"></div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── 2. SIMULATE ─────────────────────────── -->
+  <section id="tab-simulate" class="tab" hidden>
+    <div class="card">
+      <div class="card-head">
+        <h2>What runs after every change to a member</h2>
+        <span class="muted small">one entry point: <code>refresh_member()</code></span>
+      </div>
+      <ol class="pipeline" id="pipeline">
+        <li class="step"><span class="num">1</span><b>Change saved</b><span class="detail">Pick a member below and change something.</span></li>
+        <li class="step"><span class="num">2</span><b>Automatic segments re-checked</b><span class="detail">Every automatic segment's conditions, against the member's new data.</span></li>
+        <li class="step"><span class="num">3</span><b>Tier re-checked</b><span class="detail">Tiers can read segments, so they run after segments settle.</span></li>
+        <li class="step"><span class="num">4</span><b>Segment challenges handed out</b><span class="detail">New joiners get the challenges bulk-assigned to the segment.</span></li>
+      </ol>
+    </div>
+    <div class="sim-grid">
+      <div class="card">
+        <div class="card-head">
+          <h2>Members</h2>
+          <button class="btn sm" id="nightly" title="Phase 2: a daily cron re-checks time-based conditions">⏱ Run nightly check (+30 days)</button>
+        </div>
+        <p class="tip"><strong>Try:</strong> select <strong>Sara Rossi</strong> and record a €150 purchase. Her lifetime spend passes €500, so she joins <em>Big spenders</em>, and because Gold reads that segment she moves from Bronze to Gold in the same step. Then run the nightly check and watch <em>Win-back</em> pick up lapsed buyers.</p>
+        <div class="table-wrap"><table id="members-table"></table></div>
+        <div class="action-bar" id="action-bar"></div>
+        <p class="legend">
+          <span><span class="chip"><i style="background:#64748b"></i>Staff</span> manual</span>
+          <span><span class="chip auto"><i style="background:#eda100"></i>Big spenders<small>auto</small></span> automatic</span>
+          <span>Tiers: <b>Gold</b> (rank 2) = Segments include Big spenders · <b>Silver</b> (rank 1) = Points ≥ 1,000 · <b>Bronze</b> = everyone</span>
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Activity</h2><button class="btn sm ghost" id="clear-log">Clear</button></div>
+        <ul class="feed" id="feed"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── 3. DESIGN ─────────────────────────── -->
+  <section id="tab-design" class="tab doc" hidden>
+    <div class="card">
+      <h2>1. The idea</h2>
+      <div class="two">
+        <div class="box"><h3><span class="badge manual">Manual</span> today's segments</h3>
+          <p>Members are added and removed by hand: in the member form, with <em>Assign members</em>, or by an event rule's <code>addToSegment</code> / <code>removeFromSegment</code> effect. Nothing changes unless someone acts.</p></div>
+        <div class="box"><h3><span class="badge auto">Automatic</span> new</h3>
+          <p>The segment stores <strong>conditions</strong>. A member is in it <strong>while</strong> the conditions hold and leaves when they stop. Membership is always the result of the rule, so the question "why is X in here?" is answered by the rule alone.</p></div>
+      </div>
+      <p><strong>How this relates to event rules:</strong> an event rule answers "<em>when</em> X happens, add them", which is one-off and never removes anyone. An automatic segment answers "who <em>is</em> X right now". Both stay, but event rules can only target manual segments, so the two never fight over the same membership.</p>
+    </div>
+
+    <div class="card">
+      <h2>2. How it works</h2>
+      <p>Everything computed from a member's data is re-derived in one place, in dependency order:</p>
+      <div class="flow"><span>Member data changes</span><b>→</b><span><strong>Automatic segments</strong><br><small class="faint">read: points, purchases, attributes, manual segments</small></span><b>→</b><span><strong>Tier</strong><br><small class="faint">read: … plus all segments</small></span><b>→</b><span><strong>Challenges</strong><br><small class="faint">handed to new joiners</small></span></div>
+      <p>Segments run before tiers because tier conditions can already read segments. To rule out cycles, automatic segments <strong>cannot</strong> read the tier, and can only reference <strong>manual</strong> segments. So there are no chains between automatic segments and no ordering puzzles.</p>
+      <h3>When a re-check runs</h3>
+      <table>
+        <thead><tr><th>What changed</th><th>Who is re-checked</th><th>Hook (existing call site)</th></tr></thead>
+        <tbody>
+          <tr><td>Points earned, burned or adjusted</td><td>That member</td><td><code>services/points.py · record_transaction</code></td></tr>
+          <tr><td>Purchase recorded</td><td>That member</td><td><code>routers/purchases.py</code></td></tr>
+          <tr><td>Custom attributes or manual segments edited</td><td>That member</td><td><code>routers/members.py · update_member</code></td></tr>
+          <tr><td>Event processed (its effects ran)</td><td>That member</td><td><code>services/events.py · _run_rules</code></td></tr>
+          <tr><td>Member created or joins a program</td><td>That member</td><td><code>routers/members.py</code>, <code>services/memberships.py</code></td></tr>
+          <tr><td>Manual segment bulk-assigned</td><td>Those members</td><td><code>routers/segments.py · assign</code></td></tr>
+          <tr><td>Automatic segment created, edited or switched mode</td><td>Whole program</td><td>new: <code>routers/segments.py</code></td></tr>
+          <tr><td>Tier created, edited or deleted</td><td>Whole program (tiers only)</td><td><code>routers/tiers.py</code>, unchanged</td></tr>
+          <tr><td>The day changes <span class="phase p2">phase 2</span></td><td>Programs with time-based conditions</td><td>new: Vercel Cron → <code>POST /cron/segments</code></td></tr>
+        </tbody>
+      </table>
+      <p>All of today's <code>apply_tier(db, member)</code> calls become <code>refresh_member(db, member)</code>, and <code>reapply_tiers</code> for a whole program becomes <code>refresh_members</code>. Routers stop knowing that tiers and segments exist, or what order they run in.</p>
+    </div>
+
+    <div class="card">
+      <h2>3. The rule language</h2>
+      <p>This is the same <code>RuleCondition</code> (<code>field · operator · value</code>) that tiers and event rules use, with the same validator (<code>validate_conditions</code>) and the same evaluator (<code>matches</code>). It adds two small, flat extensions:</p>
+      <ul>
+        <li><strong>Match all / any</strong>: <code>"match": "all" | "any"</code>. Tiers can express OR with two ranked tiers, but a segment has no such workaround. There is still no nesting.</li>
+        <li><strong><code>notContains</code></strong> for segments ("don't include"), which lets "lapsed buyers, except Staff" be one rule.</li>
+      </ul>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Phase</th></tr></thead>
+        <tbody>
+          <tr><td><code>member.pointsBalance</code></td><td>number</td><td><span class="phase p1">phase 1</span></td></tr>
+          <tr><td><code>member.purchaseSpendCents</code>, <code>member.purchaseCount</code> (lifetime)</td><td>number</td><td><span class="phase p1">phase 1</span></td></tr>
+          <tr><td><code>member.customAttributes.&lt;key&gt;</code></td><td>attribute's type</td><td><span class="phase p1">phase 1</span></td></tr>
+          <tr><td><code>member.segments</code> (manual segments only) · <code>contains</code> / <code>notContains</code></td><td>segment id</td><td><span class="phase p1">phase 1</span></td></tr>
+          <tr><td><code>member.emailVerified</code></td><td>boolean</td><td><span class="phase p1">phase 1</span></td></tr>
+          <tr><td><code>member.daysSinceLastPurchase</code>, <code>member.daysSinceJoined</code></td><td>number</td><td><span class="phase p2">phase 2 · daily</span></td></tr>
+          <tr><td><code>member.purchaseSpendCentsLast30Days</code> / <code>…Last90Days</code></td><td>number</td><td><span class="phase p2">phase 2 · daily</span></td></tr>
+        </tbody>
+      </table>
+      <p>Time-based fields change without any member activity, which is exactly why tiers avoid them today (see <code>services/rules/fields.py</code>). They wait for phase 2's nightly re-check.</p>
+    </div>
+
+    <div class="card">
+      <h2>4. Guardrails</h2>
+      <ol>
+        <li><strong>No hand-editing automatic segments.</strong> <code>POST /segments/{id}/assign</code> answers 409 for an automatic segment. <code>PATCH /members/{id}</code> <code>segmentIds</code> manages manual segments only and rejects automatic ids with 400. The member form shows automatic segments as read-only chips.</li>
+        <li><strong>Event rules target manual segments only.</strong> <code>addToSegment</code> / <code>removeFromSegment</code> validation rejects automatic ones.</li>
+        <li><strong>At least one condition.</strong> An automatic segment with none would silently hold everyone.</li>
+        <li><strong>No cycles.</strong> Automatic conditions cannot use <code>member.tier</code> or other automatic segments. A manual segment used in an automatic segment's conditions can't be switched to automatic until that reference is gone.</li>
+        <li><strong>Switching modes is explicit.</strong> Manual → automatic replaces the hand-picked members with the rule's result, and the preview shows who leaves. Automatic → manual keeps the current members as they are.</li>
+        <li><strong>Leaving keeps challenges.</strong> A member who leaves keeps challenges they were already handed, just as <code>removeFromSegment</code> works today.</li>
+        <li><strong>Referenced segments can't be deleted.</strong> Deleting a segment used by a tier or automatic segment answers 409, naming what uses it. Today a tier can silently point at a deleted segment.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>5. Data model</h2>
+      <p><code>member_segments</code> is unchanged: an automatic segment writes the same rows, so everything that reads membership (challenges, tiers, member counts, event-rule conditions) works untouched. Every existing segment becomes <code>manual</code>.</p>
+<pre><code>-- supabase/migrations/2026xxxx_segment_rules.sql
+ALTER TABLE "public"."segments"
+    ADD COLUMN IF NOT EXISTS "mode" text DEFAULT 'manual' NOT NULL,        -- 'manual' | 'automatic'
+    ADD COLUMN IF NOT EXISTS "match" text DEFAULT 'all' NOT NULL,          -- 'all' | 'any'
+    ADD COLUMN IF NOT EXISTS "conditions" jsonb DEFAULT '[]'::jsonb NOT NULL,
+    ADD COLUMN IF NOT EXISTS "last_evaluated_at" timestamp without time zone;</code></pre>
+    </div>
+
+    <div class="card">
+      <h2>6. API (camelCase in and out)</h2>
+      <table>
+        <thead><tr><th>Endpoint</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td><code>POST /segments</code>, <code>PATCH /segments/{id}</code></td><td>Accept <code>mode</code>, <code>match</code> and <code>conditions</code>. Saving an automatic segment re-checks the whole program.</td></tr>
+          <tr><td><code>GET /segments</code>, <code>GET /segments/{id}</code></td><td>Return <code>mode</code>, <code>match</code>, <code>conditions</code> and <code>lastEvaluatedAt</code>.</td></tr>
+          <tr><td><code>POST /segments/preview</code> <span class="phase p1">new</span></td><td>Dry run for the editor: <code>matchCount</code>, <code>joining</code>, <code>leaving</code>, and a <code>sample</code> of members. Nothing is written.</td></tr>
+          <tr><td><code>POST /segments/{id}/refresh</code> <span class="phase p1">new</span></td><td>"Re-check now" returns <code>joined</code>, <code>left</code> and <code>memberCount</code>.</td></tr>
+          <tr><td><code>POST /segments/{id}/assign</code></td><td>409 for automatic segments.</td></tr>
+          <tr><td><code>POST /cron/segments</code> <span class="phase p2">phase 2</span></td><td>Vercel Cron, daily, <code>CRON_SECRET</code>. Re-checks programs whose segments use time-based fields.</td></tr>
+        </tbody>
+      </table>
+<pre><code>POST /segments
+{
+  "name": "Big spenders",
+  "color": "#eda100",
+  "mode": "automatic",
+  "match": "all",
+  "conditions": [
+    { "field": "member.purchaseSpendCents", "operator": "gte", "value": 50000 }
+  ]
+}
+
+POST /segments/preview
+{ "segmentId": "5b1…", "match": "all", "conditions": [ … ] }
+→ { "matchCount": 5, "joining": 1, "leaving": 0,
+    "sample": [ { "id": "…", "name": "Sara Rossi", "email": "sara@…" } ] }</code></pre>
+    </div>
+
+    <div class="card">
+      <h2>7. MCP server (parity with the console)</h2>
+      <table>
+        <thead><tr><th>Tool</th><th>Scope</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td><code>create_segment</code>, <code>update_segment</code></td><td><code>write</code></td><td>Gain <code>mode</code>, <code>match</code> and <code>conditions</code>. These tools already exist as of this change.</td></tr>
+          <tr><td><code>preview_segment(conditions, match, segment_id?)</code></td><td><code>read</code></td><td>new: lets an agent check its rule before saving it</td></tr>
+          <tr><td><code>refresh_segment(segment_id)</code></td><td><code>write</code></td><td>new</td></tr>
+          <tr><td><code>assign_members_to_segment</code></td><td><code>write</code></td><td>Its docstring notes that automatic segments refuse it.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>8. Code map (S.O.L.I.D.)</h2>
+      <table>
+        <thead><tr><th>Where</th><th>What</th></tr></thead>
+        <tbody>
+          <tr><td><code>api/app/services/member_state.py</code> <span class="phase p1">new</span></td><td><code>refresh_member</code> / <code>refresh_members</code>: the single entry point that owns the order (segments → tier → challenges). <em>SRP, DIP: routers depend on it, not on tiers or segments.</em></td></tr>
+          <tr><td><code>api/app/services/segments.py</code></td><td><code>apply_segments</code>, <code>refresh_segment</code>, <code>preview_segment</code></td></tr>
+          <tr><td><code>api/app/services/rules/fields.py</code></td><td><code>segment_fields()</code> next to <code>tier_fields()</code>. <code>build_tier_context</code> becomes the shared <code>build_member_context</code>, built once per refresh. <em>ISP: each rule kind sees only its own fields.</em></td></tr>
+          <tr><td><code>api/app/services/rules/conditions.py</code></td><td><code>matches(conditions, ctx, match="all")</code> and <code>notContains</code>. <em>OCP: new fields plug in without touching evaluators.</em></td></tr>
+          <tr><td><code>api/app/services/rules/effects.py</code>, <code>routers/members.py</code>, <code>routers/segments.py</code></td><td>Guardrails 1, 2 and 7</td></tr>
+          <tr><td><code>client/components/conditions/ConditionRows.tsx</code> <span class="phase p1">new</span></td><td>Condition rows extracted from <code>TierFields.tsx</code> and shared by tiers and segments</td></tr>
+          <tr><td><code>client/components/segments/SegmentFields.tsx</code>, <code>SegmentCard.tsx</code></td><td>Mode picker, conditions, live preview, "Automatic" badge with its rule sentence, and <em>Re-check now</em> in place of <em>Assign members</em></td></tr>
+          <tr><td><code>client/lib/segments/conditions.ts</code> <span class="phase p1">new</span></td><td><code>segmentConditionFields()</code>, mirroring the API's list, like <code>lib/tiers/conditions.ts</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>9. Rollout</h2>
+      <ol>
+        <li><span class="phase p1">phase 1</span> <strong>Automatic segments on today's fields:</strong> migration, <code>refresh_member</code>, guardrails, preview, console UI and MCP tools. Program-wide re-checks run in the request, as <code>reapply_tiers</code> does now.</li>
+        <li><span class="phase p2">phase 2</span> <strong>Time-based fields and a nightly Vercel Cron.</strong> The card shows "checked 3 h ago". If a program outgrows in-request re-checks, program-wide refreshes move onto a queue.</li>
+        <li><span class="phase">phase 3</span> <strong>Membership history:</strong> a <code>member_segment_changes</code> log (joined or left, why, when) on the member page and in the event log.</li>
+      </ol>
+      <h3>Open decisions</h3>
+      <ul>
+        <li>Should automatic segments also allow hand-picked extras ("pinned" members)? <strong>Recommendation: not in v1.</strong> Membership that is always the rule's result stays explainable.</li>
+        <li>Should leaving a segment withdraw its <em>unfinished</em> challenges? <strong>Recommendation: no.</strong> That matches <code>removeFromSegment</code> today.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<footer class="wrap">Prototype for loyalty-engine · sample data only, nothing is sent anywhere · 2026-09-24</footer>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+'use strict';
+
+// ─────────────── the rule language (mirrors api/app/services/rules) ───────────────
+
+const OPERATORS = {
+  number: ['gte', 'gt', 'eq', 'neq', 'lte', 'lt'],
+  select: ['eq', 'neq'],
+  boolean: ['eq'],
+  segments: ['contains', 'notContains'],
+};
+const OP_LABEL = { eq: 'is', neq: 'is not', gt: 'is more than', gte: 'is at least', lt: 'is less than', lte: 'is at most', contains: 'include', notContains: "don't include" };
+const OP_SYMBOL = { eq: '=', neq: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤' };
+
+const FIELDS = [
+  { path: 'member.purchaseSpendCents', label: 'Lifetime purchase spend (cents)', short: 'Spend', kind: 'number', money: true },
+  { path: 'member.pointsBalance', label: 'Points balance', short: 'Points', kind: 'number' },
+  { path: 'member.purchaseCount', label: 'Lifetime purchase count', short: 'Purchases', kind: 'number' },
+  { path: 'member.segments', label: 'Segments', short: 'Segments', kind: 'segments' },
+  { path: 'member.customAttributes.city', label: 'City', short: 'City', kind: 'select', options: ['Berlin', 'Zurich', 'Vienna'] },
+  { path: 'member.customAttributes.newsletter', label: 'Newsletter opt-in', short: 'Newsletter', kind: 'boolean' },
+  { path: 'member.daysSinceLastPurchase', label: 'Days since last purchase', short: 'Days since last purchase', kind: 'number', daily: true },
+  { path: 'member.daysSinceJoined', label: 'Days since joined', short: 'Days as member', kind: 'number', daily: true },
+];
+const fieldDef = (path) => FIELDS.find((f) => f.path === path);
+
+// ─────────────── sample program ───────────────
+
+const state = {
+  segments: [
+    { id: 'staff', name: 'Staff', color: '#64748b', mode: 'manual', match: 'all', conditions: [] },
+    { id: 'beta', name: 'Beta testers', color: '#2a78d6', mode: 'manual', match: 'all', conditions: [] },
+    { id: 'big', name: 'Big spenders', color: '#eda100', mode: 'automatic', match: 'all',
+      conditions: [{ field: 'member.purchaseSpendCents', operator: 'gte', value: '50000' }] },
+    { id: 'berlin', name: 'Berlin newsletter', color: '#1baf7a', mode: 'automatic', match: 'all',
+      conditions: [
+        { field: 'member.customAttributes.city', operator: 'eq', value: 'Berlin' },
+        { field: 'member.customAttributes.newsletter', operator: 'eq', value: 'true' },
+      ] },
+    { id: 'winback', name: 'Win-back', color: '#eb6834', mode: 'automatic', match: 'all',
+      conditions: [
+        { field: 'member.daysSinceLastPurchase', operator: 'gte', value: '90' },
+        { field: 'member.segments', operator: 'notContains', value: 'staff' },
+      ] },
+  ],
+  // Tried from the highest rank down, first match wins - api/app/services/tiers.py
+  tiers: [
+    { id: 'gold', name: 'Gold', rank: 2, multiplier: 2, conditions: [{ field: 'member.segments', operator: 'contains', value: 'big' }] },
+    { id: 'silver', name: 'Silver', rank: 1, multiplier: 1.5, conditions: [{ field: 'member.pointsBalance', operator: 'gte', value: '1000' }] },
+    { id: 'bronze', name: 'Bronze', rank: 0, multiplier: 1, conditions: [] },
+  ],
+  // Challenges bulk-assigned to a segment - api/app/services/challenges.py:sync_assignments_for_segments
+  challenges: { big: 'VIP double-points week', winback: 'Come-back bonus: 200 points', berlin: 'Berlin store opening' },
+  members: [
+    { id: 'm1', name: 'Ana Novak', points: 1200, spend: 52000, count: 9, city: 'Berlin', newsletter: true, lastPurchase: 4, joined: 400, manual: ['beta'] },
+    { id: 'm2', name: 'Luka Horvat', points: 300, spend: 8000, count: 2, city: 'Zurich', newsletter: false, lastPurchase: 95, joined: 610, manual: ['staff'] },
+    { id: 'm3', name: 'Mia Keller', points: 2600, spend: 120000, count: 21, city: 'Berlin', newsletter: true, lastPurchase: 12, joined: 820, manual: ['beta'] },
+    { id: 'm4', name: 'Jonas Weber', points: 50, spend: 1500, count: 1, city: 'Vienna', newsletter: true, lastPurchase: 140, joined: 150, manual: [] },
+    { id: 'm5', name: 'Sara Rossi', points: 900, spend: 45000, count: 7, city: 'Zurich', newsletter: true, lastPurchase: 33, joined: 290, manual: [] },
+    { id: 'm6', name: 'Tim Bauer', points: 0, spend: 0, count: 0, city: 'Berlin', newsletter: false, lastPurchase: null, joined: 12, manual: [] },
+    { id: 'm7', name: 'Elena Petrova', points: 1800, spend: 61000, count: 11, city: 'Vienna', newsletter: false, lastPurchase: 70, joined: 505, manual: [] },
+    { id: 'm8', name: 'Noah Fischer', points: 450, spend: 30000, count: 5, city: 'Berlin', newsletter: true, lastPurchase: 101, joined: 330, manual: ['beta'] },
+    { id: 'm9', name: 'Lea Schmid', points: 3100, spend: 98000, count: 16, city: 'Zurich', newsletter: false, lastPurchase: 2, joined: 940, manual: ['staff'] },
+    { id: 'm10', name: 'Marko Ilic', points: 700, spend: 22000, count: 4, city: 'Berlin', newsletter: true, lastPurchase: 180, joined: 720, manual: [] },
+  ],
+};
+
+// ─────────────── engine ───────────────
+
+/** Every value a condition can read for `m`, keyed by path (fields.build_member_context). */
+function ctxFor(m, segmentIds) {
+  return {
+    'member.pointsBalance': m.points,
+    'member.purchaseSpendCents': m.spend,
+    'member.purchaseCount': m.count,
+    'member.segments': segmentIds,
+    'member.customAttributes.city': m.city,
+    'member.customAttributes.newsletter': m.newsletter,
+    'member.daysSinceLastPurchase': m.lastPurchase,
+    'member.daysSinceJoined': m.joined,
+  };
+}
+
+function coerce(path, raw) {
+  const f = fieldDef(path);
+  if (!f) return raw;
+  if (f.kind === 'number') return raw === '' || raw == null ? null : Number(raw);
+  if (f.kind === 'boolean') return raw === true || raw === 'true';
+  return raw;
+}
+
+function holds(actual, op, expected) {
+  if (op === 'contains') return Array.isArray(actual) && actual.includes(expected);
+  if (op === 'notContains') return Array.isArray(actual) && !actual.includes(expected);
+  if (op === 'eq') return actual === expected;
+  if (op === 'neq') return actual !== expected;
+  // A missing value is never more or less than anything.
+  if (actual == null || expected == null || Number.isNaN(expected)) return false;
+  return { gt: actual > expected, gte: actual >= expected, lt: actual < expected, lte: actual <= expected }[op];
+}
+
+const condHolds = (c, ctx) => holds(ctx[c.field], c.operator, coerce(c.field, c.value));
+
+function matches(rule, ctx) {
+  // A tier with no conditions is a catch-all; an automatic segment needs at least one.
+  if (!rule.conditions.length) return rule.mode !== 'automatic';
+  return rule.match === 'any'
+    ? rule.conditions.some((c) => condHolds(c, ctx))
+    : rule.conditions.every((c) => condHolds(c, ctx));
+}
+
+const tiersByRank = () => [...state.tiers].sort((a, b) => b.rank - a.rank);
+
+/** services/member_state.py:refresh_member - segments, then tier, then challenges. */
+function refreshMember(m) {
+  const before = { auto: new Set(m.auto), tier: m.tier };
+  // Automatic segments only see manual ones: no chains, no cycles.
+  const base = ctxFor(m, [...m.manual]);
+  m.auto = new Set(state.segments.filter((s) => s.mode === 'automatic' && matches(s, base)).map((s) => s.id));
+  // Tiers see every segment, so they go second.
+  const full = ctxFor(m, [...m.manual, ...m.auto]);
+  const tier = tiersByRank().find((t) => matches(t, full));
+  m.tier = tier ? tier.id : null;
+
+  const joined = [...m.auto].filter((id) => !before.auto.has(id));
+  const left = [...before.auto].filter((id) => !m.auto.has(id));
+  const challenges = [];
+  for (const id of joined) {
+    const ch = state.challenges[id];
+    if (ch && !m.challenges.has(ch)) { m.challenges.add(ch); challenges.push(ch); }
+  }
+  return { member: m, joined, left, tierFrom: before.tier, tierTo: m.tier, challenges };
+}
+
+const membersOf = (segId) => state.members.filter((m) => m.manual.has(segId) || m.auto.has(segId));
+
+// ─────────────── text ───────────────
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const euro = (cents) => '€' + (cents / 100).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const lowerFirst = (s) => s.charAt(0).toLowerCase() + s.slice(1);
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const segById = (id) => state.segments.find((s) => s.id === id);
+const segName = (id) => segById(id)?.name ?? 'a deleted segment';
+const tierName = (id) => state.tiers.find((t) => t.id === id)?.name ?? 'no tier';
+const initials = (name) => name.split(' ').map((p) => p[0]).join('').slice(0, 2);
+
+/** A condition's value as a person reads it. */
+function valueLabel(f, raw) {
+  if (raw === '' || raw == null) return '…';
+  if (f.kind === 'segments') return segName(raw);
+  if (f.kind === 'boolean') return raw === true || raw === 'true' ? 'Yes' : 'No';
+  if (f.money) return euro(Number(raw));
+  return String(raw);
+}
+
+/** A member's current value for a field. */
+function actualLabel(f, v) {
+  if (f.kind === 'segments') return v.length ? v.map(segName).join(', ') : 'none';
+  if (v == null) return 'never';
+  if (f.kind === 'boolean') return v ? 'Yes' : 'No';
+  if (f.money) return euro(v);
+  if (f.path === 'member.daysSinceLastPurchase') return `${v} days ago`;
+  if (f.path === 'member.daysSinceJoined') return `${v} days`;
+  return String(v);
+}
+
+const condSentence = (c) => { const f = fieldDef(c.field); return `${f.label} ${OP_LABEL[c.operator]} ${valueLabel(f, c.value)}`; };
+const ruleSentence = (rule) => rule.conditions.length
+  ? rule.conditions.map(condSentence).join(rule.match === 'any' ? ' or ' : ' and ')
+  : 'no conditions yet';
+
+/** One condition checked against one member, e.g. "spend €600.00 ≥ €500.00". */
+function checkLabel(c, m) {
+  const f = fieldDef(c.field);
+  if (f.kind === 'segments') return `${lowerFirst(f.short)} ${OP_LABEL[c.operator]} ${valueLabel(f, c.value)}`;
+  const actual = ctxFor(m, [...m.manual])[c.field];
+  return `${lowerFirst(f.short)} ${actualLabel(f, actual)} ${OP_SYMBOL[c.operator]} ${valueLabel(f, c.value)}`;
+}
+function explainJoin(seg, m) {
+  const ctx = ctxFor(m, [...m.manual]);
+  return seg.conditions.filter((c) => condHolds(c, ctx)).map((c) => checkLabel(c, m)).join(', ');
+}
+function explainLeave(seg, m) {
+  const ctx = ctxFor(m, [...m.manual]);
+  const failed = seg.conditions.filter((c) => !condHolds(c, ctx));
+  return 'no longer ' + failed.map((c) => lowerFirst(condSentence(c))).join(seg.match === 'any' ? ' or ' : ' and ');
+}
+
+// ─────────────── activity log ───────────────
+
+const log = [];
+const KIND_LABEL = { info: 'Change', join: 'Joined', leave: 'Left', tier: 'Tier', challenge: 'Challenge' };
+function record(kind, text) { log.unshift({ kind, text }); if (log.length > 80) log.pop(); }
+
+function logResults(results, skipSeg) {
+  for (const r of results) {
+    for (const id of r.joined) if (id !== skipSeg) record('join', `${r.member.name} joined ${segName(id)}: ${explainJoin(segById(id), r.member)}`);
+    for (const id of r.left) if (id !== skipSeg) record('leave', `${r.member.name} left ${segName(id)}: ${explainLeave(segById(id), r.member)}`);
+    if (r.tierFrom !== r.tierTo) record('tier', `${r.member.name}: ${tierName(r.tierFrom)} → ${tierName(r.tierTo)}`);
+    for (const c of r.challenges) record('challenge', `${r.member.name} got challenge “${c}”`);
+  }
+}
+
+// ─────────────── 1. build tab ───────────────
+
+let draft = null;
+
+function selectSegment(id) {
+  const s = segById(id);
+  draft = { id: s.id, name: s.name, color: s.color, mode: s.mode, match: s.match,
+    conditions: s.conditions.map((c) => ({ ...c })), isNew: false };
+  renderSegList();
+  renderEditor();
+}
+
+function newSegment() {
+  draft = { id: 'seg' + Date.now(), name: '', color: '#5b4bd6', mode: 'automatic', match: 'all', conditions: [], isNew: true };
+  draft.conditions.push(freshCondition(FIELDS[1]));
+  renderSegList();
+  renderEditor();
+  document.getElementById('f-name').focus();
+}
+
+const manualSegOptions = () => state.segments.filter((s) => s.mode === 'manual' && s.id !== draft.id);
+
+function freshCondition(f) {
+  let value = '';
+  if (f.kind === 'select') value = f.options[0];
+  if (f.kind === 'boolean') value = 'true';
+  if (f.kind === 'segments') value = manualSegOptions()[0]?.id ?? '';
+  return { field: f.path, operator: OPERATORS[f.kind][0], value };
+}
+
+const referencingAutomatic = (segId) => state.segments.filter((s) =>
+  s.mode === 'automatic' && s.id !== segId && s.conditions.some((c) => c.field === 'member.segments' && c.value === segId));
+const referencingTiers = (segId) => state.tiers.filter((t) =>
+  t.conditions.some((c) => c.field === 'member.segments' && c.value === segId));
+
+/** Why the draft can't be saved yet, or null. */
+function draftProblem() {
+  if (!draft.name.trim()) return 'Give the segment a name.';
+  if (state.segments.some((s) => s.id !== draft.id && s.name.toLowerCase() === draft.name.trim().toLowerCase())) return 'Segment name already exists.';
+  if (draft.mode !== 'automatic') return null;
+  if (!draft.conditions.length) return 'Add at least one condition. With none, an automatic segment would hold every member.';
+  if (draft.conditions.some((c) => c.value === '' || c.value == null)) return 'Every condition needs a value.';
+  const saved = segById(draft.id);
+  if (saved && saved.mode === 'manual') {
+    const users = referencingAutomatic(draft.id);
+    if (users.length) return `${users.map((u) => u.name).join(', ')} ${users.length === 1 ? 'uses' : 'use'} this segment in its conditions. Automatic segments can only build on manual ones, so change that first.`;
+  }
+  return null;
+}
+
+function renderSegList() {
+  const items = state.segments.map((s) => {
+    const n = membersOf(s.id).length;
+    const active = draft && draft.id === s.id ? ' active' : '';
+    const sub = plural(n, 'member') + (s.mode === 'automatic' ? ' · ' + ruleSentence(s) : '');
+    return `<li><button class="seg-item${active}" data-id="${s.id}">
+      <span class="swatch" style="background:${esc(s.color)}"></span>
+      <span class="seg-main"><span class="seg-name">${esc(s.name)}</span><span class="seg-sub" title="${esc(sub)}">${esc(sub)}</span></span>
+      <span class="badge ${s.mode === 'automatic' ? 'auto' : 'manual'}">${s.mode === 'automatic' ? 'Automatic' : 'Manual'}</span>
+    </button></li>`;
+  });
+  if (draft && draft.isNew) {
+    items.push(`<li><button class="seg-item active" data-id="${draft.id}"><span class="swatch" style="background:${esc(draft.color)}"></span>
+      <span class="seg-main"><span class="seg-name">${esc(draft.name || 'New segment')}</span><span class="seg-sub">Not saved yet</span></span></button></li>`);
+  }
+  document.getElementById('seg-items').innerHTML = items.join('');
+}
+
+function modeOption(value, title, text) {
+  return `<label class="mode-opt"><input type="radio" name="mode" value="${value}" ${draft.mode === value ? 'checked' : ''}>
+    <span><b>${title}</b><small>${text}</small></span></label>`;
+}
+
+function renderEditor() {
+  document.getElementById('editor').innerHTML = `
+    <div class="card-head"><h2>${draft.isNew ? 'New segment' : 'Edit segment'}</h2></div>
+    <div class="form">
+      <div class="row-2">
+        <label class="field"><span>Name</span><input id="f-name" value="${esc(draft.name)}" placeholder="e.g. Big spenders" autocomplete="off"></label>
+        <label class="field"><span>Color</span><input id="f-color" type="color" value="${esc(draft.color)}"></label>
+      </div>
+      <div class="field"><span>How do members join?</span>
+        <div class="mode-pick" role="radiogroup">
+          ${modeOption('manual', 'Manual', 'You add and remove members yourself')}
+          ${modeOption('automatic', 'Automatic', 'Members join and leave by conditions')}
+        </div>
+      </div>
+      <div id="mode-body"></div>
+      <div id="mode-note"></div>
+      <div class="actions"><button class="btn primary" id="save">${draft.isNew ? 'Create segment' : 'Save changes'}</button><span class="muted small" id="save-hint"></span></div>
+    </div>`;
+  renderModeBody();
+}
+
+function renderModeBody() {
+  const body = document.getElementById('mode-body');
+  if (draft.mode === 'automatic') {
+    body.innerHTML = `<div class="field">
+      <span>Members are in this segment while they match
+        <select id="f-match" class="inline" aria-label="Match"><option value="all" ${draft.match === 'all' ? 'selected' : ''}>all</option><option value="any" ${draft.match === 'any' ? 'selected' : ''}>any</option></select>
+        of these conditions</span>
+      <div id="cond-rows" class="cond-rows"></div>
+      <div><button class="btn ghost sm" id="add-cond">+ Add condition</button></div>
+      <p class="hint" id="daily-hint"></p>
+    </div>`;
+    renderCondRows();
+  } else {
+    const saved = segById(draft.id);
+    body.innerHTML = draft.isNew || !saved || saved.mode !== 'manual'
+      ? `<p class="muted">Once saved, add members from the member form or with <b>Assign members</b>.</p>`
+      : `<div class="field"><span>Members <small class="faint">(the Assign members dialog, in the console)</small></span>
+          <div class="checklist">${state.members.map((m) => `<label><input type="checkbox" class="m-toggle" data-id="${m.id}" ${m.manual.has(draft.id) ? 'checked' : ''}> ${esc(m.name)}</label>`).join('')}</div></div>`;
+  }
+  renderModeNote();
+  renderPreview();
+}
+
+function valueInput(f, c, i) {
+  if (f.kind === 'number') return `<input class="c-val" data-i="${i}" type="number" value="${esc(c.value)}" placeholder="Value" aria-label="Value">`;
+  let opts;
+  if (f.kind === 'select') opts = f.options.map((o) => [o, o]);
+  else if (f.kind === 'boolean') opts = [['true', 'Yes'], ['false', 'No']];
+  else opts = manualSegOptions().map((s) => [s.id, s.name]);
+  if (!opts.length) return `<select class="c-val" data-i="${i}" disabled><option>No manual segments</option></select>`;
+  return `<select class="c-val" data-i="${i}" aria-label="Value">${opts.map(([v, l]) => `<option value="${esc(v)}" ${v === c.value ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+}
+
+function renderCondRows() {
+  const el = document.getElementById('cond-rows');
+  if (!draft.conditions.length) { el.innerHTML = '<p class="muted small">No conditions yet.</p>'; return; }
+  el.innerHTML = draft.conditions.map((c, i) => {
+    const f = fieldDef(c.field);
+    return `<div class="cond-row">
+      <span class="joiner">${i === 0 ? 'if' : draft.match === 'any' ? 'or' : 'and'}</span>
+      <select class="c-field" data-i="${i}" aria-label="Field">${FIELDS.map((x) => `<option value="${x.path}" ${x.path === c.field ? 'selected' : ''}>${esc(x.label)}${x.daily ? ' ⏱' : ''}</option>`).join('')}</select>
+      <select class="c-op" data-i="${i}" aria-label="Operator">${OPERATORS[f.kind].map((op) => `<option value="${op}" ${op === c.operator ? 'selected' : ''}>${OP_LABEL[op]}</option>`).join('')}</select>
+      ${valueInput(f, c, i)}
+      <button class="btn icon ghost c-remove" data-i="${i}" aria-label="Remove condition" title="Remove">×</button>
+    </div>`;
+  }).join('');
+}
+
+function renderModeNote() {
+  const saved = segById(draft.id);
+  const notes = [];
+  if (saved && saved.mode === 'manual' && draft.mode === 'automatic') {
+    notes.push(`<div class="note warn">Switching to automatic replaces the ${plural(membersOf(saved.id).length, 'hand-picked member')} with whoever matches the conditions.</div>`);
+  }
+  if (saved && saved.mode === 'automatic' && draft.mode === 'manual') {
+    notes.push(`<div class="note">The ${plural(membersOf(saved.id).length, 'current member')} stay. From then on you add and remove members by hand.</div>`);
+  }
+  const tiers = saved ? referencingTiers(saved.id) : [];
+  if (tiers.length) notes.push(`<div class="note">Tier ${tiers.map((t) => `<b>${esc(t.name)}</b>`).join(', ')} reads this segment, so saving can move members between tiers too.</div>`);
+  document.getElementById('mode-note').innerHTML = notes.join('');
+  updateSaveState();
+}
+
+function updateSaveState() {
+  const problem = draftProblem();
+  document.getElementById('save').disabled = !!problem;
+  document.getElementById('save-hint').textContent = problem
+    ?? (draft.mode === 'automatic' ? `Saving re-checks all ${state.members.length} members now, then each member again whenever their data changes.` : '');
+  const daily = document.getElementById('daily-hint');
+  if (daily) daily.textContent = draft.conditions.some((c) => fieldDef(c.field).daily)
+    ? '⏱ Uses a time-based field, so a nightly check re-runs it too (phase 2).' : '';
+}
+
+function memberRows(rows, conditions) {
+  if (!rows.length) return '<p class="muted small">Nobody yet.</p>';
+  const fields = [...new Set(conditions.map((c) => c.field))].map(fieldDef);
+  const label = { join: 'Joins', leave: 'Leaves', stay: 'Stays' };
+  return `<ul class="mlist">${rows.map(({ m, status }) => {
+    const ctx = ctxFor(m, [...m.manual]);
+    const facts = fields.map((f) => `${f.short} ${actualLabel(f, ctx[f.path])}`).join(' · ');
+    return `<li><span class="avatar">${esc(initials(m.name))}</span>
+      <span class="mmain"><b>${esc(m.name)}</b>${facts ? `<small>${esc(facts)}</small>` : ''}</span>
+      <span class="status ${status}">${label[status]}</span></li>`;
+  }).join('')}</ul>`;
+}
+
+function renderPreview() {
+  const el = document.getElementById('preview');
+  const current = new Set(draft.isNew ? [] : membersOf(draft.id).map((m) => m.id));
+  if (draft.mode === 'manual') {
+    const list = state.members.filter((m) => current.has(m.id));
+    el.innerHTML = `<div class="card-head"><h2>Members</h2></div>
+      <p class="big">${plural(list.length, 'member')}</p>
+      <p class="muted small">A manual segment changes only when someone adds or removes a member.</p>
+      ${memberRows(list.map((m) => ({ m, status: 'stay' })), [])}`;
+    return;
+  }
+  const complete = draft.conditions.length && !draft.conditions.some((c) => c.value === '');
+  const matchIds = new Set(complete
+    ? state.members.filter((m) => matches(draft, ctxFor(m, [...m.manual].filter((id) => id !== draft.id)))).map((m) => m.id)
+    : []);
+  const rows = [];
+  for (const m of state.members) {
+    const now = current.has(m.id), after = matchIds.has(m.id);
+    if (after) rows.push({ m, status: now ? 'stay' : 'join' });
+    else if (now) rows.push({ m, status: 'leave' });
+  }
+  const order = { join: 0, leave: 1, stay: 2 };
+  rows.sort((a, b) => order[a.status] - order[b.status]);
+  const count = (s) => rows.filter((r) => r.status === s).length;
+  el.innerHTML = `<div class="card-head"><h2>Live preview</h2><span class="faint small"><code>POST /segments/preview</code></span></div>
+    <p class="big">${matchIds.size} of ${plural(state.members.length, 'member')} match right now</p>
+    <p class="diff"><span class="pill join">+${count('join')} join</span><span class="pill leave">−${count('leave')} leave</span><span class="pill">${count('stay')} stay</span></p>
+    <p class="sentence">${complete ? 'Members whose ' + esc(lowerFirst(ruleSentence(draft))) + '.' : 'Finish the conditions to see who matches.'}</p>
+    ${memberRows(rows, draft.conditions)}`;
+}
+
+function afterDraftChange() { renderPreview(); updateSaveState(); }
+
+function save() {
+  if (draftProblem()) return;
+  let seg = segById(draft.id);
+  const before = new Set(seg ? membersOf(seg.id).map((m) => m.id) : []);
+  const prevMode = seg?.mode;
+  if (!seg) { seg = { id: draft.id }; state.segments.push(seg); }
+  Object.assign(seg, {
+    name: draft.name.trim(), color: draft.color, mode: draft.mode, match: draft.match,
+    conditions: draft.mode === 'automatic' ? draft.conditions.map((c) => ({ ...c })) : [],
+  });
+  // Manual → automatic: the rule's result replaces the hand-picked rows.
+  if (prevMode === 'manual' && seg.mode === 'automatic') state.members.forEach((m) => m.manual.delete(seg.id));
+  // Automatic → manual: whoever is in it now stays, by hand from here on.
+  if (prevMode === 'automatic' && seg.mode === 'manual') {
+    state.members.forEach((m) => { if (m.auto.delete(seg.id)) m.manual.add(seg.id); });
+  }
+
+  record('info', `“${seg.name}” saved as ${seg.mode}; all ${plural(state.members.length, 'member')} re-checked`);
+  const results = state.members.map(refreshMember);
+  const after = new Set(membersOf(seg.id).map((m) => m.id));
+  const joined = state.members.filter((m) => after.has(m.id) && !before.has(m.id));
+  const left = state.members.filter((m) => before.has(m.id) && !after.has(m.id));
+  logResults(results, seg.id);
+  if (seg.mode === 'automatic') {
+    joined.forEach((m) => record('join', `${m.name} joined ${seg.name}: ${explainJoin(seg, m)}`));
+    left.forEach((m) => record('leave', `${m.name} left ${seg.name}: ${explainLeave(seg, m)}`));
+  }
+  const tierMoves = results.filter((r) => r.tierFrom !== r.tierTo).length;
+  const handed = results.reduce((n, r) => n + r.challenges.length, 0);
+  toast(`${seg.name}: +${joined.length} joined, −${left.length} left · ${plural(tierMoves, 'tier change')} · ${plural(handed, 'challenge')} handed out`);
+  selectSegment(seg.id);
+  renderSim();
+}
+
+function toggleManual(memberId, segId, on) {
+  const m = state.members.find((x) => x.id === memberId);
+  if (on) m.manual.add(segId); else m.manual.delete(segId);
+  record('info', `${m.name} ${on ? 'added to' : 'removed from'} ${segName(segId)} by hand`);
+  logResults([refreshMember(m)]);
+  renderSegList();
+  renderPreview();
+  renderSim();
+}
+
+// ─────────────── 2. simulate tab ───────────────
+
+let selectedMemberId = 'm5';
+let pipeTimers = [];
+
+function chip(id, auto) {
+  const s = segById(id);
+  return `<span class="chip${auto ? ' auto' : ''}" title="${auto ? 'Automatic: in it by its conditions' : 'Manual: added by hand'}"><i style="background:${esc(s?.color)}"></i>${esc(s?.name)}${auto ? '<small>auto</small>' : ''}</span>`;
+}
+
+function renderSim() {
+  document.getElementById('members-table').innerHTML = `<thead><tr>
+      <th>Member</th><th class="num">Points</th><th class="num">Spend</th><th class="num">Purchases</th><th>City</th><th>Newsletter</th><th>Last purchase</th><th>Segments</th><th>Tier</th>
+    </tr></thead><tbody>${state.members.map((m) => {
+      const t = state.tiers.find((x) => x.id === m.tier);
+      const segs = [...[...m.manual].map((id) => chip(id, false)), ...[...m.auto].map((id) => chip(id, true))].join('');
+      return `<tr data-member="${m.id}" class="${m.id === selectedMemberId ? 'selected' : ''}">
+        <td><b>${esc(m.name)}</b></td><td class="num">${m.points.toLocaleString('en')}</td><td class="num">${euro(m.spend)}</td><td class="num">${m.count}</td>
+        <td>${esc(m.city)}</td><td>${m.newsletter ? 'Yes' : 'No'}</td><td>${m.lastPurchase == null ? 'Never' : m.lastPurchase + ' d ago'}</td>
+        <td>${segs || '<span class="faint">None</span>'}</td>
+        <td>${t ? `<span class="tier tier-${t.id}">${esc(t.name)}</span>` : '<span class="faint">None</span>'}</td></tr>`;
+    }).join('')}</tbody>`;
+  const m = state.members.find((x) => x.id === selectedMemberId);
+  document.getElementById('action-bar').innerHTML = `<span class="muted small">For <b>${esc(m.name)}</b>:</span>
+    <button class="btn sm" data-action="purchase">Record €150 purchase</button>
+    <button class="btn sm" data-action="earn">Earn 300 points</button>
+    <button class="btn sm" data-action="burn">Burn 300 points</button>
+    <button class="btn sm" data-action="newsletter">${m.newsletter ? 'Opt out of' : 'Opt in to'} newsletter</button>
+    <button class="btn sm" data-action="city">Move city</button>`;
+  renderFeed();
+}
+
+function renderFeed() {
+  document.getElementById('feed').innerHTML = log.length
+    ? log.map((e) => `<li class="${e.kind}"><span class="k">${KIND_LABEL[e.kind]}</span><span>${esc(e.text)}</span></li>`).join('')
+    : '<li class="empty">Changes show up here.</li>';
+}
+
+const short = (items, none) => !items.length ? none : items.length <= 2 ? items.join(' · ') : `${items.slice(0, 2).join(' · ')} · +${items.length - 2} more`;
+
+function runPipeline(title, results) {
+  pipeTimers.forEach(clearTimeout);
+  pipeTimers = [];
+  const segChanges = results.flatMap((r) => [
+    ...r.joined.map((id) => `${r.member.name} joined ${segName(id)}`),
+    ...r.left.map((id) => `${r.member.name} left ${segName(id)}`),
+  ]);
+  const tierChanges = results.filter((r) => r.tierFrom !== r.tierTo).map((r) => `${r.member.name}: ${tierName(r.tierFrom)} → ${tierName(r.tierTo)}`);
+  const handed = results.flatMap((r) => r.challenges.map((c) => `${r.member.name} got “${c}”`));
+  const details = [title, short(segChanges, 'No segment changes'), short(tierChanges, 'No tier changes'), short(handed, 'No new challenges')];
+  const steps = [...document.querySelectorAll('#pipeline .step')];
+  steps.forEach((s) => { s.classList.remove('active', 'done'); s.querySelector('.detail').textContent = '…'; });
+  details.forEach((text, i) => {
+    pipeTimers.push(setTimeout(() => {
+      if (i > 0) steps[i - 1].classList.replace('active', 'done');
+      steps[i].classList.add('active');
+      steps[i].querySelector('.detail').textContent = text;
+      if (i === details.length - 1) pipeTimers.push(setTimeout(() => steps[i].classList.replace('active', 'done'), 450));
+    }, i * 420));
+  });
+}
+
+function act(kind) {
+  const m = state.members.find((x) => x.id === selectedMemberId);
+  let title = '';
+  if (kind === 'purchase') { m.spend += 15000; m.count += 1; m.lastPurchase = 0; title = `${m.name} bought for €150.00 (lifetime ${euro(m.spend)})`; }
+  if (kind === 'earn') {
+    const t = state.tiers.find((x) => x.id === m.tier);
+    const mult = t ? t.multiplier : 1;
+    const pts = Math.round(300 * mult);
+    m.points += pts;
+    title = `${m.name} earned ${pts} points (300 × ${mult}${t ? ' ' + t.name : ''})`;
+  }
+  if (kind === 'burn') { const pts = Math.min(300, m.points); m.points -= pts; title = `${m.name} spent ${pts} points`; }
+  if (kind === 'newsletter') { m.newsletter = !m.newsletter; title = `${m.name} ${m.newsletter ? 'opted in to' : 'opted out of'} the newsletter`; }
+  if (kind === 'city') { const cities = FIELDS[4].options; m.city = cities[(cities.indexOf(m.city) + 1) % cities.length]; title = `${m.name} moved to ${m.city}`; }
+  record('info', title);
+  const r = refreshMember(m);
+  logResults([r]);
+  runPipeline(title, [r]);
+  refreshViews();
+}
+
+function nightly() {
+  state.members.forEach((m) => { if (m.lastPurchase != null) m.lastPurchase += 30; m.joined += 30; });
+  const title = 'Nightly check: the clock moved 30 days';
+  record('info', title);
+  const results = state.members.map(refreshMember);
+  logResults(results);
+  runPipeline(title, results);
+  refreshViews();
+}
+
+function refreshViews() {
+  renderSegList();
+  if (draft) { renderPreview(); renderModeNote(); }
+  renderSim();
+}
+
+// ─────────────── wiring ───────────────
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 4000);
+}
+
+function init() {
+  state.members.forEach((m) => {
+    m.manual = new Set(m.manual); m.auto = new Set(); m.challenges = new Set(); m.tier = null;
+    refreshMember(m);
+  });
+
+  document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('active', x === b));
+    document.querySelectorAll('.tab').forEach((s) => { s.hidden = s.id !== 'tab-' + b.dataset.tab; });
+  }));
+
+  const build = document.getElementById('tab-build');
+  build.addEventListener('click', (e) => {
+    const item = e.target.closest('.seg-item');
+    if (item) { if (!(draft?.isNew && item.dataset.id === draft.id)) selectSegment(item.dataset.id); return; }
+    if (e.target.closest('#new-seg')) { newSegment(); return; }
+    if (e.target.closest('#add-cond')) { draft.conditions.push(freshCondition(FIELDS[0])); renderCondRows(); afterDraftChange(); return; }
+    const rm = e.target.closest('.c-remove');
+    if (rm) { draft.conditions.splice(Number(rm.dataset.i), 1); renderCondRows(); afterDraftChange(); return; }
+    if (e.target.closest('#save')) save();
+  });
+  build.addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.id === 'f-name') { draft.name = t.value; updateSaveState(); if (draft.isNew) renderSegList(); return; }
+    if (t.classList.contains('c-val') && t.tagName === 'INPUT') { draft.conditions[Number(t.dataset.i)].value = t.value; afterDraftChange(); }
+  });
+  build.addEventListener('change', (e) => {
+    const t = e.target;
+    const i = Number(t.dataset.i);
+    if (t.id === 'f-color') { draft.color = t.value; if (draft.isNew) renderSegList(); return; }
+    if (t.name === 'mode') {
+      draft.mode = t.value;
+      if (draft.mode === 'automatic' && !draft.conditions.length) draft.conditions.push(freshCondition(FIELDS[0]));
+      renderModeBody();
+      return;
+    }
+    if (t.id === 'f-match') { draft.match = t.value; renderCondRows(); afterDraftChange(); return; }
+    if (t.classList.contains('c-field')) { draft.conditions[i] = freshCondition(fieldDef(t.value)); renderCondRows(); afterDraftChange(); return; }
+    if (t.classList.contains('c-op')) { draft.conditions[i].operator = t.value; afterDraftChange(); return; }
+    if (t.classList.contains('c-val') && t.tagName === 'SELECT') { draft.conditions[i].value = t.value; afterDraftChange(); return; }
+    if (t.classList.contains('m-toggle')) toggleManual(t.dataset.id, draft.id, t.checked);
+  });
+
+  const sim = document.getElementById('tab-simulate');
+  sim.addEventListener('click', (e) => {
+    const action = e.target.closest('[data-action]');
+    if (action) { act(action.dataset.action); return; }
+    const row = e.target.closest('tr[data-member]');
+    if (row) { selectedMemberId = row.dataset.member; renderSim(); return; }
+    if (e.target.closest('#nightly')) { nightly(); return; }
+    if (e.target.closest('#clear-log')) { log.length = 0; renderFeed(); }
+  });
+
+  selectSegment('big');
+  renderSim();
+}
+
+if (typeof document !== 'undefined') init();
+</script>
+</body>
+</html>

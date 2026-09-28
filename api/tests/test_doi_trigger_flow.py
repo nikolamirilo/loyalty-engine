@@ -1,13 +1,14 @@
 """Regression test for what POST /doi/trigger does when called twice.
 
-Two behaviours this guards:
+What this guards:
 
-  * While the member's code is still live, triggering again must answer exactly
-    as the first call did and send nothing. A second email would invalidate the
-    first, so a member reading the older one would type a dead code.
-  * A failed send must leave no code row behind - that row is what suppresses
-    the next trigger, and suppressing it for a code that was never delivered
-    locks the member out for the full code lifetime.
+  * Triggering again resends: a member who lost the first email gets a new one
+    with a fresh code, and only that newest code verifies.
+  * Triggering again within RESEND_COOLDOWN answers 429 with Retry-After and
+    sends nothing, rather than a 200 that pretends an email went out.
+  * A failed send must leave no code row behind - that row is what starts the
+    cooldown, and starting it for a code that was never delivered would block
+    the member's retry for nothing.
 
 Runs against an in-memory SQLite database with the Resend SDK stubbed out, so
 it never touches Supabase and never sends mail.
@@ -17,7 +18,7 @@ Run: ./venv/bin/python -m tests.test_doi_trigger_flow
 
 import os
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 os.environ.setdefault("DATABASE_URL", "postgresql://u:p@h:6543/postgres")
 os.environ.setdefault("API_TOKEN", "test-token")
@@ -75,10 +76,30 @@ client = TestClient(app, raise_server_exceptions=False)
 
 
 def _trigger():
-    response = client.post(
+    return client.post(
         "/doi/trigger", json={"memberId": str(MEMBER_ID)}, headers=HEADERS
     )
-    return response.status_code, response.text
+
+
+def _sent_code(email) -> str:
+    return email["text"].split("code is ")[1].split(".")[0]
+
+
+def _verify(code: str):
+    return client.post(
+        "/doi/verify",
+        json={"memberId": str(MEMBER_ID), "code": code},
+        headers=HEADERS,
+    )
+
+
+def _age_codes(seconds: int) -> None:
+    """Pretend every code was issued `seconds` earlier than it was."""
+    session = database.SessionLocal()
+    for row in session.query(EmailVerificationCode).all():
+        row.created_at = row.created_at - timedelta(seconds=seconds)
+    session.commit()
+    session.close()
 
 
 def _active_codes():
@@ -120,7 +141,7 @@ def main() -> None:
             )
 
         resend.Emails.send = rejecting_send
-        status, _ = _trigger()
+        status = _trigger().status_code
         if status != 500:
             failures.append(f"permanent send failure answered {status}, expected 500")
         if _active_codes():
@@ -132,54 +153,43 @@ def main() -> None:
 
         resend.Emails.send = recording_send
 
+        # The failed send above started no cooldown, so this goes straight out.
         first = _trigger()
-        if first[0] != 200:
-            failures.append(f"first trigger answered {first[0]}, expected 200")
+        if first.status_code != 200:
+            failures.append(f"first trigger answered {first.status_code}, expected 200")
         if len(sent) != 1:
             failures.append(f"first trigger sent {len(sent)} emails, expected 1")
 
-        # Re-triggering while that code is live: same answer, no second email.
-        again = _trigger()
-        if again != first:
-            failures.append(
-                f"re-trigger answered {again}, expected the first response {first}"
-            )
+        # Straight away again: refused with 429, nothing sent, first code intact.
+        hurried = _trigger()
+        if hurried.status_code != 429:
+            failures.append(f"re-trigger within cooldown answered {hurried.status_code}, expected 429")
+        retry_after = hurried.headers.get("Retry-After", "")
+        if not retry_after.isdigit() or not 0 < int(retry_after) <= 60:
+            failures.append(f"429 carried Retry-After {retry_after!r}, expected 1-60")
         if len(sent) != 1:
-            failures.append(f"re-trigger sent another email ({len(sent)} total)")
+            failures.append(f"re-trigger within cooldown sent an email ({len(sent)} total)")
+
+        # Once the cooldown has passed, the member gets a new email and code.
+        _age_codes(61)
+        resent = _trigger()
+        if resent.status_code != 200:
+            failures.append(f"re-trigger after cooldown answered {resent.status_code}, expected 200")
+        if len(sent) != 2:
+            failures.append(f"re-trigger after cooldown sent {len(sent)} emails in total, expected 2")
         if len(_active_codes()) != 1:
             failures.append(f"expected 1 outstanding code, found {len(_active_codes())}")
 
-        # Once it expires, the next trigger issues a fresh code.
-        session = database.SessionLocal()
-        row = (
-            session.query(EmailVerificationCode)
-            .filter(EmailVerificationCode.consumed_at.is_(None))
-            .one()
-        )
-        row.expires_at = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
-            seconds=1
-        )
-        session.commit()
-        session.close()
-
-        expired = _trigger()
-        if expired[0] != 200:
-            failures.append(f"trigger after expiry answered {expired[0]}, expected 200")
-        if len(sent) != 2:
-            failures.append(
-                f"trigger after expiry sent {len(sent)} emails in total, expected 2"
-            )
-
-        # The newest emailed code is the one that verifies.
-        code = sent[-1]["text"].split("code is ")[1].split(".")[0]
-        response = client.post(
-            "/doi/verify",
-            json={"memberId": str(MEMBER_ID), "code": code},
-            headers=HEADERS,
-        )
+        # The first email's code was retired; only the newest one verifies.
+        old_code, new_code = _sent_code(sent[0]), _sent_code(sent[-1])
+        if old_code != new_code:
+            stale = _verify(old_code)
+            if stale.status_code != 400:
+                failures.append(f"superseded code answered {stale.status_code}, expected 400")
+        response = _verify(new_code)
         if response.status_code != 200 or not response.json().get("verified"):
             failures.append(
-                f"verifying the emailed code answered {response.status_code} "
+                f"verifying the newest emailed code answered {response.status_code} "
                 f"{response.text}"
             )
     finally:
@@ -190,7 +200,7 @@ def main() -> None:
         for f in failures:
             print("  -", f)
         raise SystemExit(1)
-    print("OK: /doi/trigger is idempotent while a code is live, and persists nothing on failure")
+    print("OK: /doi/trigger resends a fresh code, rate-limits with 429, and persists nothing on failure")
 
 
 if __name__ == "__main__":

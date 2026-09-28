@@ -1,11 +1,9 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import type { ActionState } from "@/lib/action-state";
 import { ApiError, apiRequest } from "@/lib/api";
-import { MEMBER_PROGRAM_COOKIE, memberProgramId } from "@/lib/server/program";
 import type { Member } from "@/lib/types";
 import { createMemberSession, destroySession } from "./session";
 
@@ -13,6 +11,10 @@ import { createMemberSession, destroySession } from "./session";
  * The member email/signup/login-code flow. Runs before any session exists,
  * so - like the DOI actions in `lib/doi/actions.ts` - these call the API
  * directly rather than through the session-gated `/api/le` proxy.
+ *
+ * None of them send a program (`programId: null`): every member belongs to
+ * every program, and the API always signs them in to the default one. The
+ * member switches program from the account page afterwards.
  */
 
 export async function requestLoginCode(
@@ -26,7 +28,7 @@ export async function requestLoginCode(
     await apiRequest("/auth/login", {
       method: "POST",
       json: { email },
-      programId: await memberProgramId(),
+      programId: null,
     });
     return { ok: true };
   } catch (e) {
@@ -51,7 +53,7 @@ export async function requestSignupCode(
     await apiRequest("/auth/signup", {
       method: "POST",
       json: { email, name, phone: phone || undefined },
-      programId: await memberProgramId(),
+      programId: null,
     });
     return { ok: true };
   } catch (e) {
@@ -81,7 +83,7 @@ export async function verifyLoginCode(
     const result = await apiRequest<{ member: Member }>("/auth/verify", {
       method: "POST",
       json: { email, code },
-      programId: await memberProgramId(),
+      programId: null,
     });
     member = result.member;
   } catch (e) {
@@ -90,17 +92,13 @@ export async function verifyLoginCode(
     return { ok: false, error: "Something went wrong. Please try again." };
   }
 
-  // The program comes back on the membership rather than being assumed from
-  // the cookie: a login with no cookie resolves to the API's default program,
-  // and the session has to record where the member actually landed.
+  // The program comes back on the membership (always the default program), and
+  // the session records it so every later request addresses the same one.
   await createMemberSession(member.id, member.programId);
   redirect("/home"); // throws NEXT_REDIRECT - keep outside any try/catch
 }
 
 export async function memberLogout(): Promise<void> {
   await destroySession();
-  // Forget the program too: the next person to sign in on this browser should
-  // land in the deployment's own program, not wherever the last one wandered.
-  (await cookies()).delete(MEMBER_PROGRAM_COOKIE);
   redirect("/");
 }
