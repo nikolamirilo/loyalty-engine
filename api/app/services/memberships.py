@@ -111,10 +111,13 @@ def enrol_all_identities(db: Session, program: Program) -> int:
     ]
     db.add_all(members)
     db.flush()
-    # Everyone lands on zero points, so they all resolve to the same tier - but
-    # it is the program's own lowest tier, which only apply_tier knows how to find.
-    for member in members:
-        apply_tier(db, member)
+    # Every row here starts identical - zero points, no purchases, no segments,
+    # the same attribute defaults - so they all resolve to the same tier. Work
+    # it out once and copy it: apply_tier per member costs ~3 queries each, and
+    # at 20 members that alone blew the 10s function limit on POST /programs.
+    apply_tier(db, members[0])
+    for member in members[1:]:
+        member.tier_id = members[0].tier_id
     return len(members)
 
 

@@ -133,6 +133,11 @@ but fix `DATABASE_URL` rather than leaning on that. If the database is
 unreachable, the API answers `503` with a JSON body instead of crashing the
 request.
 
+Run the API in the same region as the database. The Supabase project is in
+`eu-west-1` (Ireland), so `vercel.json` here (and in `client/`) pins functions to
+`dub1` (Dublin). Across the Atlantic every query costs a round trip of roughly
+100 ms, which is how `POST /programs` came to exceed the 10 second function limit.
+
 SSL is on automatically. Tables are created on first run. Changes to tables that
 already exist need a migration, see [supabase/README.md](../supabase/README.md).
 
