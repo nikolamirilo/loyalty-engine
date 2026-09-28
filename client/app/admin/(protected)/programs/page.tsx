@@ -49,9 +49,6 @@ export default async function ProgramsPage() {
                       <span className="text-sm font-semibold text-foreground">
                         {program.name}
                       </span>
-                      <code className="rounded bg-surface-2 px-1.5 py-0.5 text-xs text-muted">
-                        {program.slug}
-                      </code>
                       {program.isDefault && (
                         <span className="rounded-full bg-primary-subtle px-2 py-0.5 text-xs font-medium text-primary-subtle-fg">
                           Default
