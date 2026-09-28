@@ -2,15 +2,16 @@ import path from "node:path";
 
 import type { NextConfig } from "next";
 
-// This app is its own project root. The repo root holds a second
-// package-lock.json (husky only, see ../package.json), which Next would
-// otherwise pick as the root - warning about "additional lockfiles" and
-// widening file watching and output tracing to the whole repo.
-const projectRoot = path.resolve(__dirname);
+// The repo root, stated explicitly. It holds a second package-lock.json (husky
+// only, see ../package.json), so Next already picked it as the root - this only
+// silences its "additional lockfiles" warning. It must stay the repo root, not
+// client/: this also sets outputFileTracingRoot, and Vercel resolves traced
+// files against the repo checkout. Pointing it at client/ broke the deploy
+// with "ENOENT ... lstat '/vercel/path0/.next/package.json'".
+const repoRoot = path.resolve(__dirname, "..");
 
 const nextConfig: NextConfig = {
-  turbopack: { root: projectRoot },
-  outputFileTracingRoot: projectRoot,
+  turbopack: { root: repoRoot },
   experimental: {
     // Program logos are uploaded through a Server Action (lib/programs/actions.ts)
     // and may be up to 2 MB - the API's own limit - which the 1 MB default
