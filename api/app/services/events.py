@@ -148,8 +148,8 @@ def _run_rules(
 
 def track_event(db: Session, program: Program, body: TrackEventRequest) -> Tuple[MemberEvent, bool]:
     """Record an event for a member and run its rules. Returns the stored
-    event and whether it is new: an ``eventId`` already seen for this member
-    returns the original event and runs nothing. Commits.
+    event and whether it is new: an ``eventId`` this member already sent for
+    the same type returns the original event and runs nothing. Commits.
     """
     # Locked for the whole event: effects move the balance, and two events for
     # one member must not interleave. It also makes the eventId check below
@@ -163,10 +163,15 @@ def track_event(db: Session, program: Program, body: TrackEventRequest) -> Tuple
     if member is None:
         raise HTTPException(404, "Member not found")
 
+    # Per type, so one order number can mark both orderPlaced and orderRefunded.
     if body.event_id is not None:
         seen = (
             db.query(MemberEvent)
-            .filter(MemberEvent.member_id == member.id, MemberEvent.external_id == body.event_id)
+            .filter(
+                MemberEvent.member_id == member.id,
+                MemberEvent.type == body.type,
+                MemberEvent.external_id == body.event_id,
+            )
             .first()
         )
         if seen is not None:

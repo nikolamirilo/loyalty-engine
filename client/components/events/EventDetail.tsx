@@ -131,6 +131,15 @@ export function EventDetail({ id }: { id: string }) {
           <Button variant="secondary" onClick={() => setEditingEvent(true)}>
             <PencilIcon /> Edit event
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`Copy ID for ${eventType.name}`}
+            title="Copy event ID"
+            onClick={() => copy(eventType.id, "Event ID")}
+          >
+            <CopyIcon />
+          </Button>
           <ConfirmButton
             trigger={
               <Button variant="ghost" size="icon" aria-label={`Delete ${eventType.name}`}>

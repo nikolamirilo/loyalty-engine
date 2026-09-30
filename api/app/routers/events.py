@@ -24,8 +24,8 @@ def receive_event(
     """Record an event for a member and run its rules.
 
     The response lists every effect the matching rules applied or skipped.
-    Sending an `eventId` this member already has returns that first event
-    with 200 instead of 201, and runs nothing again.
+    Sending an `eventId` this member already sent with the same `type` returns
+    that first event with 200 instead of 201, and runs nothing again.
     """
     event, created = track_event(db, program, body)
     if not created:

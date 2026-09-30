@@ -47,7 +47,10 @@ class EventType(Base):
     attributes: Mapped[List[Dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    __table_args__ = (UniqueConstraint("program_id", "key", name="uq_program_event_type_key"),)
+    __table_args__ = (
+        UniqueConstraint("program_id", "key", name="uq_program_event_type_key"),
+        UniqueConstraint("program_id", "name", name="uq_program_event_type_name"),
+    )
 
     rules: Mapped[List["EventRule"]] = relationship(
         "EventRule",
@@ -90,7 +93,8 @@ class MemberEvent(Base):
     definition being deleted (the same reason ``Purchase`` copies the product
     name). ``effects`` records each applied or skipped effect as shown in the
     console. ``external_id`` is the caller's own event id: sending the same one
-    twice returns the first result instead of applying the rules again.
+    twice for the same type returns the first result instead of applying the
+    rules again.
     """
 
     __tablename__ = "member_events"
@@ -108,7 +112,9 @@ class MemberEvent(Base):
     external_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    __table_args__ = (UniqueConstraint("member_id", "external_id", name="uq_member_event_external_id"),)
+    __table_args__ = (
+        UniqueConstraint("member_id", "type", "external_id", name="uq_member_event_type_external_id"),
+    )
 
     member: Mapped["Member"] = relationship("Member")
     event_type: Mapped[Optional["EventType"]] = relationship("EventType")

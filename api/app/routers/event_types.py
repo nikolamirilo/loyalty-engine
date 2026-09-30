@@ -44,6 +44,15 @@ def _optional_text(value: str | None) -> str | None:
     return (value or "").strip() or None
 
 
+def _assert_name_free(db: Session, program: Program, name: str, current: EventType | None = None) -> None:
+    """Event names are unique in a program, so the console never lists two alike."""
+    taken = db.query(EventType).filter(EventType.program_id == program.id, EventType.name == name)
+    if current is not None:
+        taken = taken.filter(EventType.id != current.id)
+    if taken.first():
+        raise HTTPException(400, f"An event named '{name}' already exists")
+
+
 # ── event types ──────────────────────────────────────────────────────────────
 
 
@@ -53,6 +62,8 @@ def create_event_type(
     db: Session = Depends(get_db),
     program: Program = Depends(get_program),
 ):
+    name = body.name.strip()
+    _assert_name_free(db, program, name)
     key = slugify(body.name)
     if db.query(EventType).filter(EventType.program_id == program.id, EventType.key == key).first():
         raise HTTPException(400, f"An event with the key '{key}' already exists")
@@ -60,7 +71,7 @@ def create_event_type(
     event_type = EventType(
         program_id=program.id,
         key=key,
-        name=body.name.strip(),
+        name=name,
         description=_optional_text(body.description),
         is_active=body.is_active,
         attributes=build_attributes(body.attributes, []),
@@ -105,7 +116,9 @@ def update_event_type(
     sent = body.model_fields_set
 
     if body.name is not None:
-        event_type.name = body.name.strip()
+        name = body.name.strip()
+        _assert_name_free(db, program, name, event_type)
+        event_type.name = name
     if "description" in sent:
         event_type.description = _optional_text(body.description)
     if body.is_active is not None:

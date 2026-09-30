@@ -184,8 +184,9 @@ class TrackEventRequest(CamelModel):
     member_id: UUID
     type: str  # an event type key, e.g. "orderPlaced"
     attributes: Dict[str, Any] = Field(default_factory=dict)
-    # The caller's own id for this event. Sending it again returns the first
-    # result instead of running the rules twice, so retries are safe.
+    # The caller's own id for this event. Sending it again with the same type
+    # returns the first result instead of running the rules twice, so retries
+    # are safe. Another type can reuse it.
     event_id: Optional[str] = Field(default=None, min_length=1, max_length=200)
 
 

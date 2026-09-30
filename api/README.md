@@ -373,8 +373,9 @@ instead, since those are worth retrying.
 An event type is something a member does that another system reports, such as
 "Order placed". Define it first with the attributes it carries. Its `key`,
 derived from the name (`orderPlaced`), is what callers send as `type`, and it
-never changes. Unknown types and attributes are rejected, so a typo in an
-integration fails loudly instead of earning nothing.
+never changes. Names are unique within a program. Unknown types and attributes
+are rejected, so a typo in an integration fails loudly instead of earning
+nothing.
 
 A rule reads as one sentence: when the event arrives, if all conditions hold,
 run all effects. There is no OR; two rules express one. Every matching rule
@@ -427,8 +428,10 @@ target has gone since, such as a deleted reward or a challenge the member
 doesn't have, is skipped and the event records why. `limitPerMember` caps how
 often one member can trigger a rule; `1` means the first time only.
 
-**Retries.** Send your own `eventId` to make retries safe: the same id for the
-same member returns the first result with `200` and runs nothing again.
+**Retries.** Send your own `eventId`, such as the order number, to make retries
+safe: the same id for the same member and `type` returns the first result with
+`200` and runs nothing again. Another type can reuse it, so one order number
+can mark both `orderPlaced` and `orderRefunded`.
 
 ## Example requests
 

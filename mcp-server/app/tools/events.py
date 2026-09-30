@@ -45,7 +45,8 @@ async def create_event_type(
 ) -> Dict[str, Any]:
     """Define an event type members can trigger, such as "Order placed". Its
     `key` is derived from `name` (here `orderPlaced`), never changes, and is
-    what `track_event` takes as `type`.
+    what `track_event` takes as `type`. No two event types in a program share
+    a name.
 
     `attributes` lists the data the event carries, each like
     `{"label": "Amount", "type": "number"}`. `type` is one of `text`,
@@ -77,7 +78,8 @@ async def update_event_type(
 ) -> Dict[str, Any]:
     """Update an event type (ids from `list_event_types`). Only the fields
     provided are changed. The `key` never changes, so integrations keep
-    working after a rename.
+    working after a rename. A new `name` can't be one another event type in
+    the program already uses.
 
     `attributes`, when given, replaces the whole list. Include every attribute
     to keep, each with its existing `key` (its type can't change); an item
@@ -235,8 +237,10 @@ async def track_event(
     values. The result's `effects` lists what each matching rule did, such as
     points added or a reward given.
 
-    Pass `event_id` (your own id for the event) to make retries safe: the same
-    id again returns the first result and runs nothing.
+    Pass `event_id` (your own id for the event, such as an order number) to
+    make retries safe: the same id again with the same `type` returns the
+    first result and runs nothing. Another type can reuse it, so one order
+    number can mark both an order and its refund.
 
     `program` is the program slug or id to act in; defaults to the server's
     configured program.

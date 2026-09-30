@@ -3,8 +3,9 @@
 Defines an event type, attaches rules covering every effect, then sends
 events for one member and checks what each rule did: points (with the tier
 multiplier), segments, prizes, challenge progress, member field updates,
-the once-per-member limit and eventId retries. Also covers the checks a
-rule must pass when saved, and that events stay inside their program.
+the once-per-member limit and eventId retries, which count per event type.
+Also covers the checks a rule must pass when saved, unique event names, and
+that events stay inside their program.
 
 Runs against an in-memory SQLite database. It never touches Supabase and
 never sends mail.
@@ -137,6 +138,8 @@ def main() -> None:
     )
     again = call("POST", "/event-types", {"name": "Order placed!"})
     check(again.status_code == 400, f"a duplicate event key answered {again.status_code}")
+    twin = call("POST", "/event-types", {"name": "Order placed"})
+    check(twin.status_code == 400 and "named" in twin.text, f"a duplicate event name answered {twin.status_code}: {twin.text}")
 
     rules = f"/event-types/{order_id}/rules"
 
@@ -415,6 +418,25 @@ def main() -> None:
         f"redeeming too much did {summaries(again)}",
     )
     check(balance(member) == before - 100, f"a burn beyond the balance moved it to {balance(member)}")
+
+    # ── one eventId across types, and names that stay unique ────────────────
+    # "order-1" already marks the first orderPlaced event. The refund of that
+    # order reuses it: a repeat is only the same id on the same type.
+    refunded = created(call("POST", "/event-types", {"name": "Order refunded"}), "an event type")
+    refund = send(member, {}, "order-1", type_="orderRefunded")
+    check(
+        refund.status_code == 201 and refund.json()["type"] == "orderRefunded",
+        f"a refund reusing the order's eventId answered {refund.status_code}: {refund.text}",
+    )
+    refund_retry = send(member, {}, "order-1", type_="orderRefunded")
+    check(
+        refund_retry.status_code == 200 and refund_retry.json()["id"] == refund.json()["id"],
+        f"retrying the refund answered {refund_retry.status_code}",
+    )
+    taken = call("PATCH", f"/event-types/{refunded['id']}", {"name": "Workout"})
+    check(taken.status_code == 400, f"renaming onto another event's name answered {taken.status_code}")
+    same = call("PATCH", f"/event-types/{refunded['id']}", {"name": "Order refunded", "description": "From the shop"})
+    check(same.status_code == 200, f"saving an event under its own name answered {same.status_code}: {same.text}")
 
     if failures:
         print("FAIL:")

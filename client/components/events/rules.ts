@@ -192,7 +192,7 @@ export function curlExample(eventType: EventType): string {
     memberId: "<member id>",
     type: eventType.key,
     attributes: Object.fromEntries(eventType.attributes.map((a) => [a.key, sampleValue(a)])),
-    eventId: "<your id for this event, optional>",
+    eventId: "<optional: your unique id for this event, e.g. order number>",
   };
   const json = JSON.stringify(body, null, 2)
     .split("\n")
