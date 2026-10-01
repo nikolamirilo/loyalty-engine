@@ -6,7 +6,9 @@ the API. Only the API writes there, with the service role key; nothing else
 holds a credential for the bucket.
 
 ``ObjectStorage`` is the seam the routes depend on (via ``get_storage``), so a
-test can swap in an in-memory fake without touching Supabase.
+test can swap in an in-memory fake without touching Supabase. The two
+``get_*storage`` functions are the FastAPI dependencies that build it, which is
+why this module, unlike ``app.services``, imports ``Depends``.
 """
 
 import logging
@@ -14,9 +16,10 @@ from typing import Protocol
 from urllib.parse import quote
 
 import httpx
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 
 from app.core.config import settings
+from app.core.errors import FeatureUnavailable, UpstreamError
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -53,12 +56,12 @@ class SupabaseStorage:
             )
         except httpx.HTTPError as exc:
             logger.exception("Storage upload to %s failed", path)
-            raise HTTPException(502, "Could not reach file storage. Please try again.") from exc
+            raise UpstreamError("Could not reach file storage. Please try again.") from exc
         if response.status_code >= 400:
             logger.error(
                 "Storage rejected upload to %s: %s %s", path, response.status_code, response.text
             )
-            raise HTTPException(502, "File storage rejected the upload.")
+            raise UpstreamError("File storage rejected the upload.")
         return self._public_prefix() + quote(path)
 
     def delete_url(self, url: str) -> None:
@@ -104,8 +107,7 @@ def get_storage(
     do) swaps the storage behind both.
     """
     if storage is None:
-        raise HTTPException(
-            503,
+        raise FeatureUnavailable(
             "Logo uploads are not configured. Set SUPABASE_URL and "
             "SUPABASE_SERVICE_ROLE_KEY on the API.",
         )

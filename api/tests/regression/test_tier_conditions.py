@@ -5,7 +5,7 @@ a tier's own definition) changes.
 Runs against an in-memory SQLite database. It never touches Supabase and
 never sends mail.
 
-Run: ./venv/bin/python -m tests.test_tier_conditions
+Run: ./venv/bin/python -m tests.regression.test_tier_conditions
 """
 
 import os

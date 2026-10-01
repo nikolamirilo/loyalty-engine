@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 
 from app.core.config import settings
 from app.core.database import Base, engine
+from app.core.errors import DomainError
 from app.core.security import verify_token
 from app.routers import (
     auth,
@@ -104,6 +105,21 @@ app.include_router(event_types.router, dependencies=protected)
 app.include_router(events.router, dependencies=protected)
 app.include_router(doi.router, dependencies=protected)
 app.include_router(auth.router, dependencies=protected)
+
+
+@app.exception_handler(DomainError)
+async def domain_error(request: Request, exc: DomainError) -> JSONResponse:
+    """Answer a service's error with its status and FastAPI's usual body.
+
+    Services raise ``app.core.errors`` rather than ``HTTPException`` so they
+    stay free of HTTP; this is the one place those errors become responses.
+    The body matches ``HTTPException``'s, so callers can't tell them apart.
+    """
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=exc.headers,
+    )
 
 
 @app.exception_handler(OperationalError)

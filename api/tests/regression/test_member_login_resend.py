@@ -14,7 +14,7 @@ What this guards:
 Runs against an in-memory SQLite database with the Resend SDK stubbed out, so
 it never touches Supabase and never sends mail.
 
-Run: ./venv/bin/python -m tests.test_member_login_resend
+Run: ./venv/bin/python -m tests.regression.test_member_login_resend
 """
 
 import os

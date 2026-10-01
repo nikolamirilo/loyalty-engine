@@ -8,7 +8,7 @@ server labelling a PNG ``application/octet-stream`` (or an HTML error page
 
 import uuid
 
-from fastapi import HTTPException
+from app.core.errors import InvalidInput, PayloadTooLarge
 
 # Comfortably above any real logo, and under both the Vercel request body
 # limit (4.5 MB) and the client's Server Action limit (next.config.ts).
@@ -25,9 +25,9 @@ _EXTENSIONS = {
 def detect_logo_type(data: bytes) -> str:
     """The logo's MIME type, or a 400/413 if it is not an acceptable image."""
     if not data:
-        raise HTTPException(400, "The logo file is empty.")
+        raise InvalidInput("The logo file is empty.")
     if len(data) > MAX_LOGO_BYTES:
-        raise HTTPException(413, "The logo must be 2 MB or smaller.")
+        raise PayloadTooLarge("The logo must be 2 MB or smaller.")
 
     if data.startswith(b"\x89PNG\r\n\x1a\n"):
         return "image/png"
@@ -40,7 +40,7 @@ def detect_logo_type(data: bytes) -> str:
     if b"<svg" in data[:2048].lower():
         return "image/svg+xml"
 
-    raise HTTPException(400, "The logo must be a PNG, JPEG, WebP or SVG image.")
+    raise InvalidInput("The logo must be a PNG, JPEG, WebP or SVG image.")
 
 
 def logo_path(program_id: uuid.UUID, content_type: str) -> str:

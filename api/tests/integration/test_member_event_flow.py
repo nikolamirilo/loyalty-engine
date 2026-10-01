@@ -6,7 +6,7 @@ grants a reward and copies an event attribute onto the member, and a retry
 with the same eventId that runs nothing. Deleting the event type at the end
 must leave the member's history in place.
 
-``tests/test_event_rules.py`` covers every effect and validation on SQLite;
+``tests/regression/test_event_rules.py`` covers every effect and validation on SQLite;
 this file exists for what only Postgres exercises: JSONB columns, the unique
 eventId constraint, and the cascades.
 """

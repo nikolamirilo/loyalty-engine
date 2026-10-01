@@ -14,8 +14,12 @@ from app.schemas import (
     EventTypeOut,
     EventTypeUpdate,
 )
-from app.services.custom_attributes import slugify
-from app.services.events import assert_attributes_unused, build_attributes
+from app.services.events import (
+    assert_attributes_unused,
+    assert_name_free,
+    build_attributes,
+    new_event_key,
+)
 from app.services.rules import validate_rule
 from app.services.rules.conditions import validate_conditions
 from app.services.rules.effects import validate_effects
@@ -44,15 +48,6 @@ def _optional_text(value: str | None) -> str | None:
     return (value or "").strip() or None
 
 
-def _assert_name_free(db: Session, program: Program, name: str, current: EventType | None = None) -> None:
-    """Event names are unique in a program, so the console never lists two alike."""
-    taken = db.query(EventType).filter(EventType.program_id == program.id, EventType.name == name)
-    if current is not None:
-        taken = taken.filter(EventType.id != current.id)
-    if taken.first():
-        raise HTTPException(400, f"An event named '{name}' already exists")
-
-
 # ── event types ──────────────────────────────────────────────────────────────
 
 
@@ -63,14 +58,10 @@ def create_event_type(
     program: Program = Depends(get_program),
 ):
     name = body.name.strip()
-    _assert_name_free(db, program, name)
-    key = slugify(body.name)
-    if db.query(EventType).filter(EventType.program_id == program.id, EventType.key == key).first():
-        raise HTTPException(400, f"An event with the key '{key}' already exists")
-
+    assert_name_free(db, program, name)
     event_type = EventType(
         program_id=program.id,
-        key=key,
+        key=new_event_key(db, program, body.name),
         name=name,
         description=_optional_text(body.description),
         is_active=body.is_active,
@@ -117,7 +108,7 @@ def update_event_type(
 
     if body.name is not None:
         name = body.name.strip()
-        _assert_name_free(db, program, name, event_type)
+        assert_name_free(db, program, name, event_type)
         event_type.name = name
     if "description" in sent:
         event_type.description = _optional_text(body.description)

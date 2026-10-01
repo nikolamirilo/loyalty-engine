@@ -10,7 +10,7 @@ couldn't get one died with:
 `_prefer_transaction_pooler` redirects such a URL to the transaction pooler
 (port 6543), the mode built for many short-lived connections.
 
-Run: ./venv/bin/python -m tests.test_database_pooler_port
+Run: ./venv/bin/python -m tests.regression.test_database_pooler_port
 """
 
 import os

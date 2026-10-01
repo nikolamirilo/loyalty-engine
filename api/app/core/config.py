@@ -40,7 +40,7 @@ class Settings:
     # checked where it is used instead (app/services/email_verification.py).
     client_base_url: str = ""
     # Supabase Storage, where program logos are uploaded. Optional for the same
-    # reason: only the logo upload needs it (app/services/storage.py). The
+    # reason: only the logo upload needs it (app/integrations/storage.py). The
     # service role key bypasses Storage RLS, so it must stay server-side.
     supabase_url: str = ""
     supabase_service_role_key: str = ""

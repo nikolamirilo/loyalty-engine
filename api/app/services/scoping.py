@@ -9,10 +9,10 @@ by hand each time.
 from typing import TypeVar
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import Base
+from app.core.errors import NotFound
 from app.models import Program
 
 T = TypeVar("T", bound=Base)
@@ -32,5 +32,5 @@ def get_scoped_or_404(
         .first()
     )
     if obj is None:
-        raise HTTPException(404, f"{label} not found")
+        raise NotFound(f"{label} not found")
     return obj

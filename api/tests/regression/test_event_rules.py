@@ -10,7 +10,7 @@ that events stay inside their program.
 Runs against an in-memory SQLite database. It never touches Supabase and
 never sends mail.
 
-Run: ./venv/bin/python -m tests.test_event_rules
+Run: ./venv/bin/python -m tests.regression.test_event_rules
 """
 
 import os

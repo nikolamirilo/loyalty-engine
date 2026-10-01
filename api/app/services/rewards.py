@@ -8,9 +8,9 @@ be changed in one place.
 
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.errors import InvalidInput, NotFound
 from app.models import Program, Redemption, RedemptionSource, Reward
 from app.services.scoping import get_scoped_or_404
 
@@ -32,7 +32,7 @@ def get_reward_or_404(db: Session, reward_id: UUID, program: Program, lock: bool
         .first()
     )
     if not reward:
-        raise HTTPException(404, "Reward not found")
+        raise NotFound("Reward not found")
     return reward
 
 
@@ -46,9 +46,9 @@ def is_available(reward: Reward) -> bool:
 def assert_available(reward: Reward) -> None:
     """Raise the caller-facing 400 for an unavailable reward."""
     if not reward.is_active:
-        raise HTTPException(400, "Reward is not active")
+        raise InvalidInput("Reward is not active")
     if reward.stock is not None and reward.stock <= 0:
-        raise HTTPException(400, "Reward is out of stock")
+        raise InvalidInput("Reward is out of stock")
 
 
 def consume_stock(reward: Reward) -> None:

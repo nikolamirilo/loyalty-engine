@@ -11,9 +11,9 @@ from datetime import date
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.errors import InvalidInput
 from app.models import MemberAttribute, MemberAttributeType
 
 # The pragmatic intersection of what HubSpot, Braze and Bloomreach offer.
@@ -35,8 +35,7 @@ def slugify(label: str) -> str:
     words = _WORD_RE.findall(label)
     key = (words[0].lower() + "".join(w.capitalize() for w in words[1:]))[:_MAX_KEY_LENGTH] if words else ""
     if not key or not key[0].isalpha():
-        raise HTTPException(
-            400,
+        raise InvalidInput(
             "Label must contain at least one letter and start with one, "
             "so a valid internal key can be derived from it.",
         )
@@ -51,7 +50,7 @@ def normalize_options(type_: str, options: Optional[List[str]]) -> Optional[List
     # dict.fromkeys dedupes while preserving the admin's ordering.
     cleaned = list(dict.fromkeys(cleaned))
     if not cleaned:
-        raise HTTPException(400, "A dropdown attribute needs at least one option.")
+        raise InvalidInput("A dropdown attribute needs at least one option.")
     return cleaned
 
 
@@ -72,36 +71,36 @@ def coerce(attribute: MemberAttribute, raw: Any) -> Any:
             return raw
         if isinstance(raw, str) and raw.strip().lower() in ("true", "false"):
             return raw.strip().lower() == "true"
-        raise HTTPException(400, f"'{label}' must be true or false.")
+        raise InvalidInput(f"'{label}' must be true or false.")
 
     if type_ == MemberAttributeType.number.value:
         # bool is a subclass of int, so reject it explicitly rather than storing 1/0.
         if isinstance(raw, bool):
-            raise HTTPException(400, f"'{label}' must be a number.")
+            raise InvalidInput(f"'{label}' must be a number.")
         if isinstance(raw, (int, float)):
             return raw
         try:
             return float(str(raw).strip())
         except (TypeError, ValueError):
-            raise HTTPException(400, f"'{label}' must be a number.")
+            raise InvalidInput(f"'{label}' must be a number.")
 
     if type_ == MemberAttributeType.date.value:
         try:
             return date.fromisoformat(str(raw).strip()).isoformat()
         except (TypeError, ValueError):
-            raise HTTPException(400, f"'{label}' must be a date in YYYY-MM-DD format.")
+            raise InvalidInput(f"'{label}' must be a date in YYYY-MM-DD format.")
 
     if type_ == MemberAttributeType.select.value:
         value = str(raw).strip()
         if value not in (attribute.options or []):
             allowed = ", ".join(attribute.options or []) or "none"
-            raise HTTPException(400, f"'{label}' must be one of: {allowed}.")
+            raise InvalidInput(f"'{label}' must be one of: {allowed}.")
         return value
 
     # text
     value = str(raw).strip()
     if len(value) > _MAX_TEXT_LENGTH:
-        raise HTTPException(400, f"'{label}' must be {_MAX_TEXT_LENGTH} characters or fewer.")
+        raise InvalidInput(f"'{label}' must be {_MAX_TEXT_LENGTH} characters or fewer.")
     return value or None
 
 
@@ -123,7 +122,7 @@ def validate_payload(
     }
     unknown = [key for key in payload if key not in attributes]
     if unknown:
-        raise HTTPException(400, f"Unknown custom attribute(s): {', '.join(sorted(unknown))}")
+        raise InvalidInput(f"Unknown custom attribute(s): {', '.join(sorted(unknown))}")
 
     return {key: coerce(attributes[key], value) for key, value in payload.items()}
 

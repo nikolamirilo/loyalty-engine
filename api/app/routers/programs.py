@@ -12,12 +12,12 @@ from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.integrations.storage import ObjectStorage, get_optional_storage, get_storage
 from app.models import Program
 from app.schemas import ProgramCreate, ProgramOut, ProgramUpdate
 from app.services.memberships import enrol_all_identities
 from app.services.program_branding import detect_logo_type, logo_path
 from app.services.programs import unique_slug
-from app.services.storage import ObjectStorage, get_optional_storage, get_storage
 
 router = APIRouter(prefix="/programs", tags=["Programs"])
 

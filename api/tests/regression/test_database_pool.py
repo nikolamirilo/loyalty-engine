@@ -10,7 +10,7 @@ pooler until it rejected new connections with:
 The engine must use SQLAlchemy's NullPool so each request opens exactly one
 connection and closes it, never leaking connections between invocations.
 
-Run: ./venv/bin/python -m tests.test_database_pool
+Run: ./venv/bin/python -m tests.regression.test_database_pool
 """
 
 import os

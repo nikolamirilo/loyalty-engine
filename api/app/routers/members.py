@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -8,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.database import get_db
 from app.core.program import get_program
-from app.models import Member, MemberIdentity, MemberSegment, Program, Segment
+from app.models import Member, MemberIdentity, MemberSegment, Program
 from app.schemas import (
     MemberCountOut,
     MemberCreate,
@@ -17,10 +16,8 @@ from app.schemas import (
     MemberStatsOut,
     MemberUpdate,
 )
-from app.services.challenges import sync_assignments_for_segments
-from app.services.custom_attributes import defaults_for_new_member, validate_payload
-from app.services.memberships import enrol_everywhere, find_membership, join
-from app.services.tiers import apply_tier
+from app.services.members import edit_member, register_member, summarize_members
+from app.services.memberships import join
 
 router = APIRouter(prefix="/members", tags=["Members"])
 
@@ -33,41 +30,6 @@ _TIER_OPT = joinedload(Member.tier)
 # through `Member.name`/`Member.email`. Without this every listed member costs
 # an extra query.
 _IDENTITY_OPT = selectinload(Member.identity)
-
-# Fields of `MemberUpdate` that belong to the person rather than to this
-# membership, so a write lands on the identity and is visible in every program
-# that person has joined.
-PERSON_FIELDS = frozenset({"name", "email", "phone"})
-
-
-def _sync_member_segments(
-    db: Session, member: Member, program: Program, segment_ids: list[UUID]
-) -> None:
-    """Replace `member`'s segment memberships with exactly `segment_ids`.
-
-    Diffs against the current assignments instead of recreating the whole
-    collection: callers (e.g. the member edit form) resend the full segment
-    list on every save, even when it hasn't changed, and a wholesale replace
-    would insert new rows for unchanged segments before deleting the old ones,
-    tripping the `uq_member_segment` unique constraint against itself.
-    """
-    unique_ids = set(segment_ids)
-    if unique_ids:
-        found = {
-            s.id
-            for s in db.query(Segment.id)
-            .filter(Segment.id.in_(unique_ids), Segment.program_id == program.id)
-            .all()
-        }
-        missing = unique_ids - found
-        if missing:
-            raise HTTPException(404, f"Segment(s) not found: {', '.join(str(i) for i in missing)}")
-    current = {sa.segment_id: sa for sa in member.segment_assignments}
-    for segment_id, assignment in current.items():
-        if segment_id not in unique_ids:
-            member.segment_assignments.remove(assignment)
-    for segment_id in unique_ids - current.keys():
-        member.segment_assignments.append(MemberSegment(segment_id=segment_id))
 
 
 def _get_member_or_404(db: Session, member_id: UUID, program: Program) -> Member:
@@ -88,31 +50,7 @@ def create_member(
     db: Session = Depends(get_db),
     program: Program = Depends(get_program),
 ):
-    # Members are global: a person exists once and belongs to every program, so
-    # there is no "add an existing person to this program" - they are already in
-    # it. A known email is therefore a duplicate, not an enrolment. To fill in
-    # the membership they already hold here, PATCH it instead.
-    if db.query(MemberIdentity).filter(MemberIdentity.email == body.email).first():
-        raise HTTPException(400, "A member with this email already exists")
-
-    identity = MemberIdentity(name=body.name, email=body.email, phone=body.phone)
-    db.add(identity)
-    db.flush()
-    enrol_everywhere(db, identity)
-    member = find_membership(db, program, identity)
-
-    # Definition defaults fill in only the attributes the caller didn't supply, so
-    # a member created through the API lands with the same values an admin sees
-    # prefilled in the console's create form. `enrol_everywhere` already seeded
-    # the defaults; this layers the caller's own values over them.
-    member.custom_attributes = {
-        **defaults_for_new_member(db, program.id),
-        **validate_payload(db, program.id, body.custom_attributes),
-    }
-    db.flush()
-    _sync_member_segments(db, member, program, body.segment_ids)
-    sync_assignments_for_segments(db, program, set(body.segment_ids), {member.id})
-    apply_tier(db, member)
+    member = register_member(db, program, body)
     db.commit()
     db.refresh(member)
     return member
@@ -165,45 +103,8 @@ def member_stats(
     db: Session = Depends(get_db),
     program: Program = Depends(get_program),
 ):
-    """Dashboard aggregates computed server-side so the client doesn't download
-    every member just to tally them: total count, points in circulation, and the
-    member-count-per-tier distribution.
-
-    Grouped by each member's stored ``tier_id`` rather than recomputed live: a
-    tier's conditions can now reach beyond the points balance (purchase spend,
-    segments, custom attributes), and `apply_tier` already re-runs on every
-    change any of those can come from, plus whenever a tier definition itself
-    changes (`app.services.tiers.reapply_tiers`). The stored value is always
-    current, and grouping by it is one cheap query instead of re-evaluating
-    every member's conditions on every dashboard load.
-    """
-    count = db.query(func.count(Member.id)).filter(Member.program_id == program.id).scalar() or 0
-    points_in_circulation = (
-        db.query(func.coalesce(func.sum(Member.total_points), 0))
-        .filter(Member.program_id == program.id)
-        .scalar()
-        or 0
-    )
-
-    by_tier: dict[str, int] = {}
-    untiered = 0
-    for tier_id, tier_count in (
-        db.query(Member.tier_id, func.count(Member.id))
-        .filter(Member.program_id == program.id)
-        .group_by(Member.tier_id)
-        .all()
-    ):
-        if tier_id is None:
-            untiered = tier_count
-        else:
-            by_tier[str(tier_id)] = tier_count
-
-    return {
-        "count": count,
-        "points_in_circulation": points_in_circulation,
-        "by_tier": by_tier,
-        "untiered": untiered,
-    }
+    """Total members, points in circulation and members per tier."""
+    return summarize_members(db, program)
 
 
 @router.get("/{member_id}", response_model=MemberOut)
@@ -275,39 +176,7 @@ def update_member(
     program: Program = Depends(get_program),
 ):
     member = _get_member_or_404(db, member_id, program)
-    if body.email is not None and body.email != member.email:
-        if (
-            db.query(MemberIdentity)
-            .filter(
-                MemberIdentity.email == body.email,
-                MemberIdentity.id != member.identity_id,
-            )
-            .first()
-        ):
-            raise HTTPException(400, "Email already registered")
-    data = body.model_dump(
-        exclude_none=True, exclude={"segment_ids", "custom_attributes", "email_verified"}
-    )
-    for field, value in data.items():
-        setattr(member.identity if field in PERSON_FIELDS else member, field, value)
-    if body.email_verified is not None:
-        member.identity.email_verified_at = (
-            datetime.now(timezone.utc) if body.email_verified else None
-        )
-    if body.custom_attributes is not None:
-        # Shallow merge, not replace: a caller that knows about one attribute must
-        # not wipe the others. A key sent as null clears just that value.
-        # Reassignment (not in-place mutation) is what makes SQLAlchemy see the
-        # change on a plain JSONB column.
-        patch = validate_payload(db, program.id, body.custom_attributes)
-        member.custom_attributes = {**(member.custom_attributes or {}), **patch}
-    if body.segment_ids is not None:
-        _sync_member_segments(db, member, program, body.segment_ids)
-        sync_assignments_for_segments(db, program, set(body.segment_ids), {member_id})
-    # A tier's conditions can read segments or custom attributes, so either
-    # changing can move the member into a different one.
-    if body.segment_ids is not None or body.custom_attributes is not None:
-        apply_tier(db, member)
+    edit_member(db, program, member, body)
     db.commit()
     db.refresh(member)
     return member

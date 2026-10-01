@@ -8,7 +8,7 @@ never reached the logs.
 Sends must now raise `EmailDeliveryError` carrying the provider's own reason,
 with permanent failures (which no retry can fix) told apart from transient ones.
 
-Run: ./venv/bin/python -m tests.test_doi_email_errors
+Run: ./venv/bin/python -m tests.regression.test_doi_email_errors
 """
 
 import os

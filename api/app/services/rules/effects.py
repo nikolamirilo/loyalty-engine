@@ -17,10 +17,10 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import HTTPException
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy.orm import Session
 
+from app.core.errors import DomainError, InvalidInput
 from app.models import (
     Challenge,
     ChallengeAssignment,
@@ -100,11 +100,11 @@ class EffectHandler:
 def _check_amount_source(event_type: EventType, fixed: Optional[int], from_attribute: Optional[str], what: str) -> None:
     """An effect's number is fixed or read from a number attribute, not both."""
     if fixed is not None and from_attribute is not None:
-        raise HTTPException(400, f"Set {what} to a fixed number or to an event attribute, not both.")
+        raise InvalidInput(f"Set {what} to a fixed number or to an event attribute, not both.")
     if from_attribute is not None:
         spec = event_fields(event_type).get(EVENT_PREFIX + from_attribute)
         if spec is None or spec.type != "number":
-            raise HTTPException(400, f"{what.capitalize()} can only come from a number attribute of this event.")
+            raise InvalidInput(f"{what.capitalize()} can only come from a number attribute of this event.")
 
 
 def _read_amount(ctx: EffectContext, fixed: Optional[int], from_attribute: Optional[str]) -> Optional[float]:
@@ -114,7 +114,7 @@ def _read_amount(ctx: EffectContext, fixed: Optional[int], from_attribute: Optio
 
 def _check_points(event_type: EventType, effect: Any) -> None:
     if effect.points is None and effect.from_attribute is None:
-        raise HTTPException(400, "Set points to a fixed number or to an event attribute.")
+        raise InvalidInput("Set points to a fixed number or to an event attribute.")
     _check_amount_source(event_type, effect.points, effect.from_attribute, "points")
 
 
@@ -205,7 +205,7 @@ class AssignChallenge(EffectHandler):
             return Outcome("Challenge no longer exists", skipped=True)
         try:
             assert_joinable(challenge)
-        except HTTPException as exc:
+        except DomainError as exc:
             return Outcome(f'"{challenge.name}": {str(exc.detail).lower()}', skipped=True)
         has_it = (
             ctx.db.query(ChallengeAssignment.id)
@@ -333,28 +333,28 @@ class UpdateMember(EffectHandler):
         for update in effect.fields:
             spec = writable.get(update.field)
             if spec is None:
-                raise HTTPException(400, f"'{update.field}' can't be updated by a rule.")
+                raise InvalidInput(f"'{update.field}' can't be updated by a rule.")
             if update.field in seen:
-                raise HTTPException(400, f"'{spec.label}' is set twice in one effect.")
+                raise InvalidInput(f"'{spec.label}' is set twice in one effect.")
             seen.add(update.field)
 
             if update.from_attribute is not None:
                 if update.value is not None:
-                    raise HTTPException(400, f"Set '{spec.label}' from a value or from an attribute, not both.")
+                    raise InvalidInput(f"Set '{spec.label}' from a value or from an attribute, not both.")
                 source = sources.get(EVENT_PREFIX + update.from_attribute)
                 if source is None:
-                    raise HTTPException(400, f"This event has no attribute '{update.from_attribute}'.")
+                    raise InvalidInput(f"This event has no attribute '{update.from_attribute}'.")
                 # Anything reads as text; otherwise the types have to agree.
                 if spec.type not in ("text", source.type):
-                    raise HTTPException(
-                        400, f"'{source.label}' ({source.type}) can't be copied into '{spec.label}' ({spec.type})."
+                    raise InvalidInput(
+                        f"'{source.label}' ({source.type}) can't be copied into '{spec.label}' ({spec.type})."
                     )
                 stored.append({"field": update.field, "value": None, "fromAttribute": update.from_attribute})
                 continue
 
             value = coerce_value(spec, update.value)
             if update.field == "member.name" and not value:
-                raise HTTPException(400, "A member's name can't be set to empty.")
+                raise InvalidInput("A member's name can't be set to empty.")
             stored.append({"field": update.field, "value": value, "fromAttribute": None})
         return {"type": effect.type, "fields": stored}
 
@@ -376,7 +376,7 @@ class UpdateMember(EffectHandler):
                 continue
             try:
                 value = coerce_value(spec, raw)
-            except HTTPException as exc:
+            except DomainError as exc:
                 problems.append(str(exc.detail))
                 continue
 

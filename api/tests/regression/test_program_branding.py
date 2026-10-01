@@ -8,7 +8,7 @@ without Storage configured answers with.
 Runs against an in-memory SQLite database with an in-memory fake in place of
 Supabase Storage. It never touches Supabase.
 
-Run: ./venv/bin/python -m tests.test_program_branding
+Run: ./venv/bin/python -m tests.regression.test_program_branding
 """
 
 import os
@@ -41,7 +41,7 @@ def _jsonb_on_sqlite(type_, compiler, **kw):  # postgres-only type
 
 from app.main import app  # noqa: E402 - must be imported after the engine swap
 from app.models import Member, MemberAttribute  # noqa: E402
-from app.services.storage import get_optional_storage  # noqa: E402
+from app.integrations.storage import get_optional_storage  # noqa: E402
 
 # ...as must these, postgres-only defaults SQLite cannot render.
 Member.__table__.c.custom_attributes.server_default = None

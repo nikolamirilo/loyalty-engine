@@ -8,10 +8,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Collection, Dict, Tuple
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core.errors import InvalidInput
 from app.models import Product, Program, Purchase
 from app.schemas.purchase import PurchaseStatsOut
 from app.services.scoping import get_scoped_or_404
@@ -57,7 +57,7 @@ def get_purchase_totals_by_member(db: Session, member_ids: Collection[UUID]) -> 
 def assert_purchasable(product: Product) -> None:
     """Raise the caller-facing 400 for a product that can't be bought right now."""
     if not product.is_active:
-        raise HTTPException(400, "Product is not available")
+        raise InvalidInput("Product is not available")
 
 
 def record_purchase(db: Session, member_id: UUID, product: Product, quantity: int) -> Purchase:

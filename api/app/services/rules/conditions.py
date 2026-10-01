@@ -8,9 +8,9 @@ import operator
 from typing import Any, Dict, List
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.errors import InvalidInput
 from app.models import Program, Tier
 from app.schemas import RuleCondition
 from app.services.rules.fields import SEGMENTS, TIER, FieldSpec, coerce_value
@@ -35,12 +35,12 @@ def _uuid(raw: Any, spec: FieldSpec) -> UUID:
     try:
         return UUID(str(raw))
     except ValueError:
-        raise HTTPException(400, f"The condition on '{spec.label}' needs an id.")
+        raise InvalidInput(f"The condition on '{spec.label}' needs an id.")
 
 
 def _value(db: Session, program: Program, spec: FieldSpec, raw: Any) -> Any:
     if raw is None or (isinstance(raw, str) and not raw.strip()):
-        raise HTTPException(400, f"The condition on '{spec.label}' needs a value.")
+        raise InvalidInput(f"The condition on '{spec.label}' needs a value.")
     if spec.type == TIER:
         return str(get_scoped_or_404(db, Tier, _uuid(raw, spec), program, "Tier").id)
     if spec.type == SEGMENTS:
@@ -60,9 +60,9 @@ def validate_conditions(
     for condition in conditions:
         spec = fields.get(condition.field)
         if spec is None:
-            raise HTTPException(400, f"Unknown condition field '{condition.field}'.")
+            raise InvalidInput(f"Unknown condition field '{condition.field}'.")
         if condition.operator not in OPERATORS[spec.type]:
-            raise HTTPException(400, f"'{spec.label}' can't be compared with '{condition.operator}'.")
+            raise InvalidInput(f"'{spec.label}' can't be compared with '{condition.operator}'.")
         out.append(
             {
                 "field": condition.field,

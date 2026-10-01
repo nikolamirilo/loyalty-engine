@@ -16,14 +16,14 @@ from typing import Optional
 from urllib.parse import urlencode
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.errors import Conflict, InvalidInput, Misconfigured, NotFound, UpstreamError
 from app.models import DOIType, EmailVerificationCode, Member, MemberIdentity
-from app.services.email_sending import (
+from app.integrations.email import EmailDeliveryError, send_email
+from app.services.code_emails import (
     CODE_FG,
-    EmailDeliveryError,
     FAINT,
     MUTED,
     PRIMARY,
@@ -32,7 +32,6 @@ from app.services.email_sending import (
     email_shell,
     enforce_resend_cooldown,
     expiry_note,
-    send_email,
 )
 
 logger = logging.getLogger("uvicorn.error")
@@ -65,19 +64,19 @@ def resolve_member(db: Session, email: Optional[str], member_id: Optional[UUID])
     the `link` email needs a member id to address the client's /verify page.
     """
     if email is None and member_id is None:
-        raise HTTPException(400, "Provide either email or member_id")
+        raise InvalidInput("Provide either email or member_id")
 
     if member_id is not None:
         member = db.get(Member, member_id)
         if not member:
-            raise HTTPException(404, "Member not found")
+            raise NotFound("Member not found")
         if email is not None and member.email.lower() != email.lower():
-            raise HTTPException(400, "email and member_id do not refer to the same member")
+            raise InvalidInput("email and member_id do not refer to the same member")
         return member
 
     member = db.query(Member).join(Member.identity).filter(MemberIdentity.email == email).first()
     if not member:
-        raise HTTPException(404, "Member not found")
+        raise NotFound("Member not found")
     return member
 
 
@@ -154,8 +153,7 @@ def _verify_link(member_id: UUID, code: str) -> str:
     """
     base = settings.client_base_url
     if not base:
-        raise HTTPException(
-            500,
+        raise Misconfigured(
             'Verification emails of type "link" need CLIENT_BASE_URL set to the '
             "public base URL of the client app.",
         )
@@ -209,7 +207,7 @@ def trigger_verification(
     """
     identity = member.identity
     if identity.email_verified_at is not None:
-        raise HTTPException(409, "Member email is already verified")
+        raise Conflict("Member email is already verified")
 
     now = _now()
     enforce_resend_cooldown(_last_sent_at(db, identity.id), now)
@@ -231,12 +229,11 @@ def trigger_verification(
             exc.reason,
         )
         if exc.transient:
-            raise HTTPException(
-                502, "Could not send the verification email. Please try again shortly."
+            raise UpstreamError(
+                "Could not send the verification email. Please try again shortly."
             ) from exc
         # Permanent: retrying is pointless, so say what actually needs fixing.
-        raise HTTPException(
-            500,
+        raise Misconfigured(
             "Verification email could not be sent - email delivery is "
             f"misconfigured. {exc.reason}",
         ) from exc
@@ -265,16 +262,16 @@ def verify_code(db: Session, member: Member, code: str) -> Member:
 
     row = _latest_active_code(db, identity.id)
     if row is None:
-        raise HTTPException(400, "No active verification code for this member")
+        raise InvalidInput("No active verification code for this member")
     if _now() > _as_aware(row.expires_at):
-        raise HTTPException(400, "Verification code has expired")
+        raise InvalidInput("Verification code has expired")
 
     if not secrets.compare_digest(row.code_hash, _hash_code(identity.id, code)):
         row.attempts += 1
         if row.attempts >= MAX_ATTEMPTS:
             row.consumed_at = _now()
         db.commit()
-        raise HTTPException(400, "Invalid verification code")
+        raise InvalidInput("Invalid verification code")
 
     row.consumed_at = _now()
     # Stamped on the identity, so the person counts as verified in every

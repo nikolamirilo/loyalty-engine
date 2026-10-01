@@ -18,7 +18,7 @@ What this guards:
 Runs against an in-memory SQLite database with the Resend SDK stubbed out, so
 it never touches Supabase and never sends mail.
 
-Run: ./venv/bin/python -m tests.test_doi_link_flow
+Run: ./venv/bin/python -m tests.regression.test_doi_link_flow
 """
 
 import os

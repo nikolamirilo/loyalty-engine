@@ -7,10 +7,10 @@ all in one transaction.
 
 from typing import Any, Dict, List, Set, Tuple
 
-from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core.errors import InvalidInput, NotFound
 from app.models import EventRule, EventRuleRun, EventType, Member, MemberEvent, Program
 from app.schemas import EventAttributeIn, TrackEventRequest
 from app.services.custom_attributes import normalize_options, slugify
@@ -18,6 +18,28 @@ from app.services.rules.conditions import matches
 from app.services.rules.effects import EffectContext, apply_effect
 from app.services.rules.fields import EVENT_PREFIX, build_context, coerce_value, event_fields
 from app.services.tiers import apply_tier
+
+# ── event type names ─────────────────────────────────────────────────────────
+
+
+def assert_name_free(db: Session, program: Program, name: str, current: EventType | None = None) -> None:
+    """Event names are unique in a program, so the console never lists two alike."""
+    taken = db.query(EventType).filter(EventType.program_id == program.id, EventType.name == name)
+    if current is not None:
+        taken = taken.filter(EventType.id != current.id)
+    if taken.first():
+        raise InvalidInput(f"An event named '{name}' already exists")
+
+
+def new_event_key(db: Session, program: Program, name: str) -> str:
+    """The key a new event type named `name` gets, refused if another event
+    type in the program already has it. Keys never change after creation:
+    integrations send them, and received events are stored under them."""
+    key = slugify(name)
+    if db.query(EventType).filter(EventType.program_id == program.id, EventType.key == key).first():
+        raise InvalidInput(f"An event with the key '{key}' already exists")
+    return key
+
 
 # ── event type attributes ────────────────────────────────────────────────────
 
@@ -35,9 +57,9 @@ def build_attributes(items: List[EventAttributeIn], existing: List[Dict[str, Any
         if item.key is not None:
             old = current.get(item.key)
             if old is None:
-                raise HTTPException(400, f"Unknown attribute '{item.key}'. Leave the key out to add a new one.")
+                raise InvalidInput(f"Unknown attribute '{item.key}'. Leave the key out to add a new one.")
             if item.type.value != old["type"]:
-                raise HTTPException(400, f"The type of '{old['label']}' can't change once created.")
+                raise InvalidInput(f"The type of '{old['label']}' can't change once created.")
             key = item.key
         else:
             key = slugify(item.label)
@@ -52,7 +74,7 @@ def build_attributes(items: List[EventAttributeIn], existing: List[Dict[str, Any
     keys = [a["key"] for a in out]
     duplicates = sorted({k for k in keys if keys.count(k) > 1})
     if duplicates:
-        raise HTTPException(400, f"Two attributes share the key '{duplicates[0]}'. Rename one of them.")
+        raise InvalidInput(f"Two attributes share the key '{duplicates[0]}'. Rename one of them.")
     return out
 
 
@@ -77,8 +99,8 @@ def assert_attributes_unused(event_type: EventType, kept: Set[str]) -> None:
     for rule in event_type.rules:
         in_use = sorted(removed & _attributes_used_by(rule))
         if in_use:
-            raise HTTPException(
-                400, f"'{labels[in_use[0]]}' is used by the rule '{rule.name}'. Change or delete that rule first."
+            raise InvalidInput(
+                f"'{labels[in_use[0]]}' is used by the rule '{rule.name}'. Change or delete that rule first."
             )
 
 
@@ -91,7 +113,7 @@ def validate_event_attributes(event_type: EventType, payload: Dict[str, Any]) ->
     specs = event_fields(event_type)
     unknown = sorted(k for k in payload if EVENT_PREFIX + k not in specs)
     if unknown:
-        raise HTTPException(400, f"Unknown attribute(s) for '{event_type.key}': {', '.join(unknown)}")
+        raise InvalidInput(f"Unknown attribute(s) for '{event_type.key}': {', '.join(unknown)}")
     return {k: coerce_value(specs[EVENT_PREFIX + k], v) for k, v in payload.items()}
 
 
@@ -161,7 +183,7 @@ def track_event(db: Session, program: Program, body: TrackEventRequest) -> Tuple
         .first()
     )
     if member is None:
-        raise HTTPException(404, "Member not found")
+        raise NotFound("Member not found")
 
     # Per type, so one order number can mark both orderPlaced and orderRefunded.
     if body.event_id is not None:
@@ -183,9 +205,9 @@ def track_event(db: Session, program: Program, body: TrackEventRequest) -> Tuple
         .first()
     )
     if event_type is None:
-        raise HTTPException(400, f"Unknown event type '{body.type}'. Define it in the console first.")
+        raise InvalidInput(f"Unknown event type '{body.type}'. Define it in the console first.")
     if not event_type.is_active:
-        raise HTTPException(400, f"The event type '{body.type}' is inactive.")
+        raise InvalidInput(f"The event type '{body.type}' is inactive.")
 
     event = MemberEvent(
         member_id=member.id,

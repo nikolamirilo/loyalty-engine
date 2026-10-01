@@ -11,7 +11,7 @@ person across programs, while their points, tier and progress are separate.
 Runs against an in-memory SQLite database. It never touches Supabase and
 never sends mail.
 
-Run: ./venv/bin/python -m tests.test_program_isolation
+Run: ./venv/bin/python -m tests.regression.test_program_isolation
 """
 
 import os

@@ -15,7 +15,6 @@ from app.models import (
     ChallengeSegmentAssignment,
     ChallengeStatus,
     Member,
-    MemberSegment,
     Program,
     Reward,
     Segment,
@@ -33,14 +32,12 @@ from app.schemas import (
 from app.services.challenges import (
     apply_progress,
     assert_joinable,
-    assignment_is_expired,
-    complete_assignment,
-    compute_assignment_expiry,
+    assign_to_segment,
+    force_complete,
     get_assignment_or_404,
     get_challenge_or_404,
-    is_expired,
+    member_progress,
     new_assignment,
-    now,
     progress_blocker,
 )
 from app.services.scoping import get_scoped_or_404
@@ -204,59 +201,12 @@ def get_member_challenge_progress(
     """Challenge info + this member's progress on it, combined into one response.
 
     Works whether or not the member has been assigned the challenge yet
-    (`is_assigned` covers that). Once assigned, `expires_at`/`is_expired`/
-    `effective_status` describe the member's personal deadline
-    (`assignment.expires_at`, resolved from the challenge's `expiry_days` or
-    absolute `expires_at` at assignment time) rather than the challenge's own
-    campaign window - and are recomputed here rather than trusted from the
-    assignment's stored `status`, since that field is only updated lazily by
-    the write paths (assign/progress) and can lag past the actual deadline.
-    Before assignment there's no personal deadline yet, so this falls back to
-    the challenge's absolute `expires_at`, which is what gates joinability.
+    (`isAssigned` covers that). Once assigned, the deadline and status are the
+    member's own; before that, they are the challenge's.
     """
     get_scoped_or_404(db, Member, member_id, program, "Member")
     challenge = get_challenge_or_404(db, challenge_id, program)
-
-    assignment = (
-        db.query(ChallengeAssignment)
-        .filter(
-            ChallengeAssignment.member_id == member_id,
-            ChallengeAssignment.challenge_id == challenge_id,
-        )
-        .first()
-    )
-
-    if assignment:
-        expired = assignment_is_expired(assignment)
-        effective_expires_at = assignment.expires_at
-    else:
-        expired = is_expired(challenge)
-        effective_expires_at = challenge.expires_at
-    current_value = assignment.current_value if assignment else 0
-    effective_status = assignment.status if assignment else None
-    if assignment and expired and effective_status not in (ChallengeStatus.completed, ChallengeStatus.cancelled):
-        effective_status = ChallengeStatus.expired
-
-    return ChallengeProgressOut(
-        id=challenge.id,
-        name=challenge.name,
-        description=challenge.description,
-        target_value=challenge.target_value,
-        reward_points=challenge.reward_points,
-        reward_id=challenge.reward_id,
-        is_active=challenge.is_active,
-        starts_at=challenge.starts_at,
-        expires_at=effective_expires_at,
-        is_assigned=assignment is not None,
-        assignment_id=assignment.id if assignment else None,
-        current_value=current_value,
-        progress_percent=min(100, round(current_value / challenge.target_value * 100)),
-        remaining=max(challenge.target_value - current_value, 0),
-        is_expired=expired,
-        effective_status=effective_status,
-        assigned_at=assignment.assigned_at if assignment else None,
-        completed_at=assignment.completed_at if assignment else None,
-    )
+    return member_progress(db, challenge, member_id)
 
 
 @router.post("/members/{member_id}/challenges/{challenge_id}/progress", response_model=ChallengeAssignmentOut)
@@ -294,11 +244,7 @@ def complete_challenge(
     """Admin force-complete - grants rewards regardless of progress or deadline."""
     get_scoped_or_404(db, Member, member_id, program, "Member")
     assignment = get_assignment_or_404(db, member_id, challenge_id, lock=True)
-    if assignment.status == ChallengeStatus.completed:
-        raise HTTPException(400, "Challenge is already completed")
-    if assignment.status == ChallengeStatus.cancelled:
-        raise HTTPException(400, "Challenge is cancelled")
-    complete_assignment(db, assignment)
+    force_complete(db, assignment)
     db.commit()
     db.refresh(assignment)
     return assignment
@@ -329,55 +275,7 @@ def assign_challenge_to_segment(
     challenge = get_challenge_or_404(db, challenge_id, program)
     assert_joinable(challenge)
     get_scoped_or_404(db, Segment, body.segment_id, program, "Segment")
-
-    # Members already holding this challenge - skip them.
-    already = {
-        member_id
-        for (member_id,) in db.query(ChallengeAssignment.member_id)
-        .filter(ChallengeAssignment.challenge_id == challenge_id)
-        .all()
-    }
-
-    member_ids = {
-        member_id
-        for (member_id,) in db.query(MemberSegment.member_id)
-        .join(MemberSegment.member)
-        .filter(MemberSegment.segment_id == body.segment_id, Member.program_id == program.id)
-        .all()
-    }
-
-    assigned = 0
-    skipped = 0
-    for member_id in member_ids:
-        if member_id in already:
-            skipped += 1
-            continue
-        assigned_at = now()
-        db.add(
-            ChallengeAssignment(
-                member_id=member_id,
-                challenge_id=challenge_id,
-                assigned_at=assigned_at,
-                expires_at=compute_assignment_expiry(challenge, assigned_at),
-            )
-        )
-        assigned += 1
-
-    # Remember the segment this challenge was pushed to (only when it actually
-    # matched members, so an empty segment doesn't get recorded). Idempotent
-    # thanks to the uq_challenge_segment constraint + this pre-check.
-    if assigned + skipped > 0:
-        already_recorded = (
-            db.query(ChallengeSegmentAssignment.id)
-            .filter(
-                ChallengeSegmentAssignment.challenge_id == challenge_id,
-                ChallengeSegmentAssignment.segment_id == body.segment_id,
-            )
-            .first()
-        )
-        if not already_recorded:
-            db.add(ChallengeSegmentAssignment(challenge_id=challenge_id, segment_id=body.segment_id))
-
+    assigned, skipped = assign_to_segment(db, program, challenge, body.segment_id)
     db.commit()
     return SegmentAssignResult(
         challenge_id=challenge_id,

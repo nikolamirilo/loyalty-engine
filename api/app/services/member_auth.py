@@ -14,19 +14,15 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import HTTPException
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.errors import InvalidInput, Misconfigured, NotFound, UpstreamError
 from app.core.program import default_program
 from app.models import Member, MemberIdentity, MemberLoginCode
-from app.services.email_sending import (
-    EmailDeliveryError,
-    code_email_html,
-    enforce_resend_cooldown,
-    send_email,
-)
+from app.integrations.email import EmailDeliveryError, send_email
+from app.services.code_emails import code_email_html, enforce_resend_cooldown
 from app.services.memberships import enrol_everywhere, join
 
 logger = logging.getLogger("uvicorn.error")
@@ -129,11 +125,10 @@ def _issue_and_send_code(db: Session, identity: MemberIdentity) -> None:
             exc.reason,
         )
         if exc.transient:
-            raise HTTPException(
-                502, "Could not send the login code. Please try again shortly."
+            raise UpstreamError(
+                "Could not send the login code. Please try again shortly."
             ) from exc
-        raise HTTPException(
-            500,
+        raise Misconfigured(
             f"Login code could not be sent - email delivery is misconfigured. {exc.reason}",
         ) from exc
 
@@ -156,7 +151,7 @@ def trigger_signup(db: Session, email: str, name: str, phone: Optional[str]) -> 
     if identity is not None:
         # Members are global, so an existing person already holds a membership
         # in every program - including this one. There is nothing to sign up to.
-        raise HTTPException(400, "An account with this email already exists. Log in instead.")
+        raise InvalidInput("An account with this email already exists. Log in instead.")
 
     identity = MemberIdentity(name=name, email=email, phone=phone)
     db.add(identity)
@@ -171,7 +166,7 @@ def trigger_signup(db: Session, email: str, name: str, phone: Optional[str]) -> 
 def trigger_login(db: Session, email: str) -> None:
     identity = find_identity_by_email(db, email)
     if identity is None:
-        raise HTTPException(404, "No account found for this email. Sign up instead.")
+        raise NotFound("No account found for this email. Sign up instead.")
 
     # Everyone is enrolled everywhere already; this only repairs a person who
     # predates a program, so they can sign into it like anyone else.
@@ -184,20 +179,20 @@ def trigger_login(db: Session, email: str) -> None:
 def verify_login_code(db: Session, email: str, code: str) -> Member:
     identity = find_identity_by_email(db, email)
     if identity is None:
-        raise HTTPException(404, "No account found for this email.")
+        raise NotFound("No account found for this email.")
 
     row = _latest_active_code(db, identity.id)
     if row is None:
-        raise HTTPException(400, "No active login code for this member")
+        raise InvalidInput("No active login code for this member")
     if _now() > _as_aware(row.expires_at):
-        raise HTTPException(400, "Login code has expired")
+        raise InvalidInput("Login code has expired")
 
     if not secrets.compare_digest(row.code_hash, _hash_code(identity.id, code)):
         row.attempts += 1
         if row.attempts >= MAX_ATTEMPTS:
             row.consumed_at = _now()
         db.commit()
-        raise HTTPException(400, "Invalid login code")
+        raise InvalidInput("Invalid login code")
 
     row.consumed_at = _now()
     # The code proves who they are. Signing in always lands in the default

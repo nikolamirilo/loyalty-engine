@@ -33,6 +33,7 @@ such as `apply_tier`, lives in `app/services` instead.
 flowchart LR
     HTTP["HTTP request"] --> R["routers/<br/>validate and shape"]
     R --> S["services/<br/>business logic"]
+    S --> I["integrations/<br/>Resend, Supabase Storage"]
     S --> M["models/<br/>SQLAlchemy ORM"]
     M --> DB[("Postgres")]
     R -.->|"plain CRUD"| M
@@ -41,27 +42,41 @@ flowchart LR
 
 - **routers** translate HTTP to ORM and back. Plain reads and writes may touch a
   model directly. Anything more goes to a service.
-- **services** hold logic shared between routers, or logic too involved for a
-  route function.
+- **services** hold the business logic: anything shared between routers, or too
+  involved for a route function. They never import FastAPI. When a request
+  can't go ahead they raise an error from `app/core/errors.py` (`NotFound`,
+  `InvalidInput`, `RateLimited` and so on), and `app/main.py` turns it into the
+  matching status with the usual `{"detail": "..."}` body.
+- **integrations** wrap the external services, one module per provider, so a
+  provider change or a test fake touches one file.
 - **models** are the ORM classes, **schemas** the Pydantic shapes, mirrored one
   to one.
 
 ```
 api/
-├── main.py                       # Shim: `from app.main import app`, kept for old deploy config
+├── main.py                       # Shim: `from app.main import app`, kept for deploy config
 ├── requirements.txt
 ├── .env.example
-├── tests/                        # Standalone regression scripts, see Testing
+├── tests/
+│   ├── integration/              # pytest flow suite against Postgres, see Testing
+│   └── regression/               # standalone incident regression scripts, see Testing
 ├── scripts/                      # One off data migrations
 └── app/
-    ├── main.py                   # Creates the app, wires routers, handles DB errors
+    ├── main.py                   # Creates the app, wires routers, turns errors into responses
     ├── core/
     │   ├── config.py             # Settings, the only place env vars are read
     │   ├── database.py           # Engine, session, Base, get_db
+    │   ├── errors.py             # Domain errors services raise, each with its HTTP status
+    │   ├── program.py            # X-Program-Id dependency
     │   └── security.py           # Bearer token dependency
+    ├── integrations/
+    │   ├── email.py              # Resend transport
+    │   └── storage.py            # Supabase Storage for program logos
     ├── models/                   # One module per resource
     ├── schemas/                  # Pydantic shapes, mirrored with models/
     ├── services/
+    │   ├── members.py            # create, edit and summarise members
+    │   ├── memberships.py        # every person in every program
     │   ├── tiers.py              # apply_tier, re-run whenever a tier's conditions can shift
     │   ├── points.py             # record_transaction, the only path that moves total_points
     │   ├── rewards.py            # availability checks and prize granting
@@ -69,10 +84,10 @@ api/
     │   ├── events.py             # track_event: records an event and runs its rules
     │   ├── rules/                # the rule engine: fields, conditions, one handler per effect
     │   ├── products.py           # purchase recording and spend stats
+    │   ├── segments.py           # a member's segments, and the challenges they carry
     │   ├── member_auth.py        # passwordless member login codes
     │   ├── email_verification.py # DOI codes and links
-    │   ├── email_sending.py      # Resend transport
-    │   ├── segments.py
+    │   ├── code_emails.py        # layout and resend cooldown shared by both code emails
     │   └── custom_attributes.py  # type validation for member custom attributes
     └── routers/                  # members, member_attributes, points, rewards,
                                   # redemptions, products, purchases, challenges,
@@ -80,11 +95,6 @@ api/
 ```
 
 SQL migrations live in [`../supabase/migrations`](../supabase), not in this folder.
-
-> A few files still sit at the top of `api/`: `models.py`, `schemas.py`,
-> `database.py`, `auth.py`, `custom_attributes.py` and a `routers/` folder. They
-> are leftovers from before the move into `app/` and nothing imports them. Read
-> `app/` instead.
 
 ## Setup
 
@@ -520,23 +530,26 @@ request touching `api/`.
 
 ### Incident regression scripts
 
-The scripts directly under `tests/` are standalone programs guarding against
-past production incidents, each runnable on its own. They are not pytest tests,
-which is why `pytest.ini` points `testpaths` at `tests/integration` only:
+The scripts in `tests/regression/` are standalone programs guarding against
+past production incidents, each runnable on its own against an in-memory
+SQLite database. They are not pytest tests, which is why `pytest.ini` points
+`testpaths` at `tests/integration` only:
 
 ```bash
-./venv/bin/python -m tests.test_database_pool          # NullPool must be in use
-./venv/bin/python -m tests.test_database_pooler_port   # session pooler is rewritten to transaction pooler
-./venv/bin/python -m tests.test_doi_email_errors       # send failures are classified, not swallowed
-./venv/bin/python -m tests.test_doi_trigger_flow       # /doi/trigger resends a fresh code, 429 within cooldown
-./venv/bin/python -m tests.test_doi_link_flow          # type="link" mails a working /verify link
-./venv/bin/python -m tests.test_member_login_resend    # /auth/login resends a fresh code, 429 within cooldown
-./venv/bin/python -m tests.test_event_rules            # every rule effect, limits, retries, save-time checks
-./venv/bin/python -m tests.test_database_url           # DATABASE_URL driver normalization
-./venv/bin/python -m tests.test_program_branding       # brand colours validate, logos upload/replace/delete
+./venv/bin/python -m tests.regression.test_database_pool          # NullPool must be in use
+./venv/bin/python -m tests.regression.test_database_pooler_port   # session pooler is rewritten to transaction pooler
+./venv/bin/python -m tests.regression.test_doi_email_errors       # send failures are classified, not swallowed
+./venv/bin/python -m tests.regression.test_doi_trigger_flow       # /doi/trigger resends a fresh code, 429 within cooldown
+./venv/bin/python -m tests.regression.test_doi_link_flow          # type="link" mails a working /verify link
+./venv/bin/python -m tests.regression.test_member_login_resend    # /auth/login resends a fresh code, 429 within cooldown
+./venv/bin/python -m tests.regression.test_event_rules            # every rule effect, limits, retries, save-time checks
+./venv/bin/python -m tests.regression.test_program_branding       # brand colours validate, logos upload/replace/delete
+./venv/bin/python -m tests.regression.test_program_isolation      # programs never see each other's data
+./venv/bin/python -m tests.regression.test_tier_conditions        # tier conditions combine and stay in sync
 ```
 
-`test_database_url.py` fails with an `ImportError`. It imports a
-`_normalize_database_url` helper that does not exist in `app/core/database.py`,
-and did not exist in the old flat `database.py` either. It is left failing rather
-than quietly patched over.
+Or all of them at once:
+
+```bash
+for f in tests/regression/test_*.py; do ./venv/bin/python -m tests.regression.$(basename "$f" .py) || break; done
+```
