@@ -13,12 +13,17 @@ export function DropdownMenu({
   trigger,
   children,
   align = "end",
+  side = "bottom",
   className,
   panelClassName,
 }: {
   trigger: React.ReactElement<{ onClick?: () => void }>;
   children: React.ReactNode;
   align?: "start" | "end";
+  /** Which way the panel opens. `top` is for a trigger that sits at the foot
+   *  of a screen, where a panel dropping down would land under whatever is
+   *  pinned there (the member app's tab bar). */
+  side?: "bottom" | "top";
   /** Replaces the root's default `inline-block` - e.g. `block` for a
    *  full-width trigger. */
   className?: string;
@@ -57,7 +62,8 @@ export function DropdownMenu({
         <div
           role="menu"
           className={cn(
-            "absolute z-20 mt-1 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-lg",
+            "absolute z-20 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-lg",
+            side === "top" ? "bottom-full mb-1" : "mt-1",
             align === "end" ? "right-0" : "left-0",
             panelClassName ?? "w-48",
           )}

@@ -63,6 +63,10 @@ export function ProgramSwitcher({
 
       <DropdownMenu
         align="start"
+        // Opens upward: this card is the last thing on the Account page, so
+        // a panel dropping down would put its lower items under the fixed
+        // tab bar, with no page left below to scroll them into view.
+        side="top"
         // Full width, and the panel matched to it, so the open menu lines up
         // with the closed control instead of hanging off one corner of it.
         className="mt-2 block w-full"
