@@ -196,7 +196,7 @@ function ProfileCardForm({
                     </Button>
                   }
                   title={`Delete ${member.name}?`}
-                  description="This permanently deletes the member and all of their points, redemptions, and challenge history."
+                  description="This permanently deletes the member from every program, with all of their points, redemptions, and challenge history."
                   confirmLabel="Delete member"
                   action={deleteMember.bind(null, member.id)}
                   redirectTo="/admin/members"

@@ -93,6 +93,19 @@ def edit_member(db: Session, program: Program, member: Member, body: MemberUpdat
         apply_tier(db, member)
 
 
+def remove_member(db: Session, member: Member) -> None:
+    """Delete the person behind `member`, everywhere.
+
+    Members are global, so deleting one removes the person rather than just
+    this program's membership: deleting the membership alone would leave the
+    identity holding the email, and re-creating the person would then be
+    rejected as a duplicate. The database cascades the delete to every
+    membership (and everything hanging off each one), so custom attributes,
+    points and history go in every program. The caller commits.
+    """
+    db.delete(member.identity)
+
+
 def summarize_members(db: Session, program: Program) -> dict:
     """Dashboard aggregates computed server-side so the client doesn't download
     every member just to tally them: total count, points in circulation, and the

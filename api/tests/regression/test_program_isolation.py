@@ -37,6 +37,12 @@ database.engine = sqlalchemy.create_engine(
 database.SessionLocal.configure(bind=database.engine)
 
 
+# Postgres enforces ON DELETE CASCADE; SQLite only does once asked to.
+@sqlalchemy.event.listens_for(database.engine, "connect")
+def _enforce_foreign_keys(dbapi_connection, _record):
+    dbapi_connection.execute("PRAGMA foreign_keys=ON")
+
+
 @compiles(JSONB, "sqlite")
 def _jsonb_on_sqlite(type_, compiler, **kw):  # postgres-only type
     return "JSON"
@@ -249,6 +255,25 @@ def main() -> None:
         f"retail balance changed to {retail_after} when a program was added",
     )
     client.delete(f"/programs/{grocery}", headers=AUTH)
+
+    # 8c. Deleting a member deletes the person, not one membership: they are
+    # gone from every program, and their email can be registered again.
+    leaving = post("/members", {"name": "Leaving", "email": "leaving@example.com"}, "retail-demo")
+    leaving_id = leaving.json()["id"]
+    leaving_airline = {
+        p["slug"]: p["memberId"] for p in get(f"/members/{leaving_id}/programs", "retail-demo").json()
+    }["airline-demo"]
+    removed = client.delete(f"/members/{leaving_id}", headers=headers("retail-demo"))
+    check(removed.status_code == 204, f"deleting a member answered {removed.status_code}: {removed.text}")
+    check(
+        get(f"/members/{leaving_airline}", "airline-demo").status_code == 404,
+        "deleting a member left their membership in the other program",
+    )
+    back = post("/members", {"name": "Leaving", "email": "leaving@example.com"}, "airline-demo")
+    check(
+        back.status_code == 201,
+        f"re-creating a deleted member's email answered {back.status_code}: {back.text}",
+    )
 
     # 9. Deleting a program takes its own rows and nothing else.
     post("/rewards", {"name": "Lounge Pass", "pointsCost": 500}, "airline-demo")

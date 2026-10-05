@@ -119,9 +119,9 @@ async def update_member(
 
 @mcp.tool(title="Delete Member", annotations=ann.DELETE)
 async def delete_member(member_id: str, program: Optional[str] = None) -> None:
-    """Remove a member from this program, along with their balance, history,
-    challenges and redemptions here. The person keeps their memberships in
-    other programs, and their email stays registered.
+    """Delete a member from every program, along with their balances,
+    history, challenges, redemptions and custom attributes in each. Members
+    are global, so afterwards their email can be registered again.
 
     `program` is the program slug or id to act in; defaults to the server's
     configured program.

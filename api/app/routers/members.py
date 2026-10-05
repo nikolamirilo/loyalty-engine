@@ -16,7 +16,7 @@ from app.schemas import (
     MemberStatsOut,
     MemberUpdate,
 )
-from app.services.members import edit_member, register_member, summarize_members
+from app.services.members import edit_member, register_member, remove_member, summarize_members
 from app.services.memberships import join
 
 router = APIRouter(prefix="/members", tags=["Members"])
@@ -188,12 +188,11 @@ def delete_member(
     db: Session = Depends(get_db),
     program: Program = Depends(get_program),
 ):
-    """Remove the member from this program.
+    """Delete the member from every program.
 
-    Deletes the membership and everything hanging off it. The identity
-    survives, so the person keeps their memberships in other programs and
-    their email address stays registered.
+    Members are global, so this removes the person and all of their
+    memberships, after which their email address is free to register again.
     """
     member = _get_member_or_404(db, member_id, program)
-    db.delete(member)
+    remove_member(db, member)
     db.commit()
