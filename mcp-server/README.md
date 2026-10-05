@@ -135,7 +135,7 @@ Point a client at `/mcp` with `Authorization: Bearer <one of MCP_CLIENT_TOKENS>`
 
 ## Tool reference
 
-76 tools. Inputs use snake_case field names, outputs pass the API response
+78 tools. Inputs use snake_case field names, outputs pass the API response
 straight through, already camelCase. The headings below group by domain for
 reading only; the title a client actually shows is verb first, see
 [How tools are grouped](#how-tools-are-grouped).
@@ -168,6 +168,7 @@ No `delete_program`, by design. See [Status](#status).
 | `write` | `create_member(name, email, phone?, segment_ids?, custom_attributes?)` | `POST /members` |
 | `write` | `update_member(member_id, ...)` | `PATCH /members/{id}` |
 | `write` | `delete_member(member_id)` | `DELETE /members/{id}` |
+| `write` | `delete_members(member_ids)` | `POST /members/bulk-delete` |
 
 **Member attributes**
 
@@ -292,7 +293,7 @@ example `404: Member not found`.
 
 ## How tools are grouped
 
-A client sorts this server's 76 tools along two axes, and they work differently.
+A client sorts this server's 78 tools along two axes, and they work differently.
 
 ### By behaviour, which the protocol does support
 

@@ -9,6 +9,8 @@ from app.core.database import get_db
 from app.core.program import get_program
 from app.models import Member, MemberIdentity, MemberSegment, Program
 from app.schemas import (
+    MemberBulkDelete,
+    MemberBulkDeleteOut,
     MemberCountOut,
     MemberCreate,
     MemberOut,
@@ -16,7 +18,13 @@ from app.schemas import (
     MemberStatsOut,
     MemberUpdate,
 )
-from app.services.members import edit_member, register_member, remove_member, summarize_members
+from app.services.members import (
+    edit_member,
+    register_member,
+    remove_member,
+    remove_members,
+    summarize_members,
+)
 from app.services.memberships import join
 
 router = APIRouter(prefix="/members", tags=["Members"])
@@ -85,6 +93,23 @@ def list_members(
         .limit(limit)
         .all()
     )
+
+
+@router.post("/bulk-delete", response_model=MemberBulkDeleteOut)
+def bulk_delete_members(
+    body: MemberBulkDelete,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    """Delete several members from every program at once.
+
+    A POST rather than a DELETE with a body, which many clients and proxies
+    drop. All or nothing: an id that isn't a member of this program is a 404
+    and nothing is deleted.
+    """
+    deleted = remove_members(db, program, body.member_ids)
+    db.commit()
+    return {"deleted": deleted}
 
 
 @router.get("/count", response_model=MemberCountOut)

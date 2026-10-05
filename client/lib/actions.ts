@@ -171,6 +171,20 @@ export async function deleteMember(id: string): Promise<ActionState> {
   }
 }
 
+export async function deleteMembers(ids: string[]): Promise<ActionState> {
+  try {
+    const { deleted } = await apiRequest<{ deleted: number }>("/members/bulk-delete", {
+      method: "POST",
+      json: { memberIds: ids },
+    });
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/members");
+    return { ok: true, message: `${deleted} member${deleted === 1 ? "" : "s"} deleted.` };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 // ── Points ───────────────────────────────────────────────────────────────────
 
 export async function earnPoints(

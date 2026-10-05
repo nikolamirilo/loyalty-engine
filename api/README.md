@@ -244,7 +244,8 @@ own, and `POST /complete` forces it regardless of progress or deadline.
 | `POST` `GET` | `/members` | Create, list and search members |
 | `GET` | `/members/count` | Member count |
 | `GET` | `/members/stats` | Dashboard stats: points in circulation, tier spread |
-| `GET` `PATCH` `DELETE` | `/members/{id}` | Get, update, delete a member |
+| `GET` `PATCH` `DELETE` | `/members/{id}` | Get, update, delete a member. Deleting removes the person from every program |
+| `POST` | `/members/bulk-delete` | Delete several members at once (`{"memberIds": [...]}`), all or nothing |
 | `POST` `GET` `GET` `PATCH` `DELETE` | `/member-attributes` | Custom field definitions |
 
 **Points**

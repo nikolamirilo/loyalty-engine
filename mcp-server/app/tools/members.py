@@ -128,3 +128,16 @@ async def delete_member(member_id: str, program: Optional[str] = None) -> None:
     """
     require_scope("write")
     return await api.delete(f"/members/{member_id}", program=program)
+
+
+@mcp.tool(title="Delete Members", annotations=ann.DELETE)
+async def delete_members(member_ids: List[str], program: Optional[str] = None) -> Dict[str, Any]:
+    """Delete several members at once, each from every program, as
+    `delete_member` does for one. All or nothing: if any id isn't a member of
+    this program, nothing is deleted. Returns `{"deleted": n}`.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("write")
+    return await api.post("/members/bulk-delete", {"memberIds": member_ids}, program=program)

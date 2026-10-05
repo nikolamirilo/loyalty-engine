@@ -32,6 +32,14 @@ class MemberUpdate(CamelModel):
     email_verified: Optional[bool] = None
 
 
+class MemberBulkDelete(CamelModel):
+    member_ids: List[UUID] = Field(min_length=1)
+
+
+class MemberBulkDeleteOut(CamelModel):
+    deleted: int
+
+
 class MemberOut(CamelModel):
     id: UUID
     # Which program this membership is in. The id is per program, so a client

@@ -275,6 +275,32 @@ def main() -> None:
         f"re-creating a deleted member's email answered {back.status_code}: {back.text}",
     )
 
+    # 8d. Bulk delete is the same, for several at once - and all or nothing:
+    # an id from another program is a 404 that deletes none of them.
+    pair = [
+        post("/members", {"name": f"Bulk {n}", "email": f"bulk{n}@example.com"}, "retail-demo").json()["id"]
+        for n in (1, 2)
+    ]
+    refused = post("/members/bulk-delete", {"memberIds": [*pair, airline_member]}, "retail-demo")
+    check(refused.status_code == 404, f"bulk delete with a foreign id answered {refused.status_code}")
+    check(
+        all(get(f"/members/{m}", "retail-demo").status_code == 200 for m in pair),
+        "a refused bulk delete still deleted some members",
+    )
+    bulk = post("/members/bulk-delete", {"memberIds": pair}, "retail-demo")
+    check(
+        bulk.status_code == 200 and bulk.json() == {"deleted": 2},
+        f"bulk delete answered {bulk.status_code}: {bulk.text}",
+    )
+    check(
+        all(get(f"/members/{m}", "retail-demo").status_code == 404 for m in pair),
+        "bulk delete left members behind",
+    )
+    check(
+        post("/members", {"name": "Bulk 1", "email": "bulk1@example.com"}, "airline-demo").status_code == 201,
+        "a bulk-deleted member's email could not be registered again",
+    )
+
     # 9. Deleting a program takes its own rows and nothing else.
     post("/rewards", {"name": "Lounge Pass", "pointsCost": 500}, "airline-demo")
     deleted = client.delete(f"/programs/{airline}", headers=AUTH)

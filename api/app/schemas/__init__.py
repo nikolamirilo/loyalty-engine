@@ -55,6 +55,8 @@ from app.schemas.event import (
     UpdateMemberEffect,
 )
 from app.schemas.member import (
+    MemberBulkDelete,
+    MemberBulkDeleteOut,
     MemberCountOut,
     MemberCreate,
     MemberOut,
@@ -135,6 +137,8 @@ __all__ = [
     "MemberAttributeCreate",
     "MemberAttributeOut",
     "MemberAttributeUpdate",
+    "MemberBulkDelete",
+    "MemberBulkDeleteOut",
     "MemberCountOut",
     "MemberCreate",
     "MemberEventOut",

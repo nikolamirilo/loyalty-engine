@@ -6,11 +6,12 @@ person-per-program rule, lives in ``app.services.memberships``.
 """
 
 from datetime import datetime, timezone
+from uuid import UUID
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
-from app.core.errors import InvalidInput
+from app.core.errors import InvalidInput, NotFound
 from app.models import Member, MemberIdentity, Program
 from app.schemas import MemberCreate, MemberUpdate
 from app.services.custom_attributes import defaults_for_new_member, validate_payload
@@ -104,6 +105,27 @@ def remove_member(db: Session, member: Member) -> None:
     points and history go in every program. The caller commits.
     """
     db.delete(member.identity)
+
+
+def remove_members(db: Session, program: Program, member_ids: list[UUID]) -> int:
+    """Delete several members everywhere at once, as `remove_member` does for
+    one. All or nothing: an id that is not a member of `program` raises
+    `NotFound` and nothing is deleted. Returns the number deleted. The caller
+    commits.
+    """
+    wanted = set(member_ids)
+    members = (
+        db.query(Member)
+        .options(selectinload(Member.identity))
+        .filter(Member.id.in_(wanted), Member.program_id == program.id)
+        .all()
+    )
+    missing = wanted - {m.id for m in members}
+    if missing:
+        raise NotFound(f"Member(s) not found: {', '.join(str(i) for i in missing)}")
+    for member in members:
+        remove_member(db, member)
+    return len(members)
 
 
 def summarize_members(db: Session, program: Program) -> dict:
