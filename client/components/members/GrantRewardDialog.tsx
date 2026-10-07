@@ -10,6 +10,7 @@ import { ActionButton } from "@/components/ui/ActionButton";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Checkbox } from "@/components/ui/Field";
 import { GiftIcon } from "@/components/ui/icons";
 
 export function GrantRewardDialog({
@@ -22,6 +23,7 @@ export function GrantRewardDialog({
   balance: number;
 }) {
   const [open, setOpen] = useState(false);
+  const [sendEmail, setSendEmail] = useState(false);
   const revalidate = useRevalidate();
   const onMutated = () => {
     revalidate.members();
@@ -50,47 +52,53 @@ export function GrantRewardDialog({
             description="Create an active, in-stock reward first."
           />
         ) : (
-          <ul className="max-h-[60vh] divide-y divide-line overflow-y-auto">
-            {available.map((reward) => {
-              const affordable = balance >= reward.pointsCost;
-              return (
-                <li key={reward.id} className="flex items-center gap-3 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-foreground">
-                      {reward.name}
-                    </p>
-                    <p className="text-xs text-muted">
-                      {formatNumber(reward.pointsCost)} pts
-                      {reward.stock != null && ` · ${reward.stock} left`}
-                    </p>
-                  </div>
-                  <ActionButton
-                    size="sm"
-                    variant="secondary"
-                    action={assignPrize.bind(null, memberId, reward.id)}
-                    successMessage="Prize assigned."
-                    onDone={onMutated}
-                  >
-                    Assign free
-                  </ActionButton>
-                  <ActionButton
-                    size="sm"
-                    action={redeemReward.bind(null, memberId, reward.id)}
-                    successMessage="Reward redeemed."
-                    onDone={onMutated}
-                    disabled={!affordable}
-                    title={
-                      affordable
-                        ? undefined
-                        : "Insufficient points to redeem"
-                    }
-                  >
-                    Redeem
-                  </ActionButton>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <Checkbox
+              label="Email free prizes to the member, with a link to claim them"
+              checked={sendEmail}
+              onChange={(e) => setSendEmail(e.target.checked)}
+            />
+            <ul className="mt-3 max-h-[60vh] divide-y divide-line overflow-y-auto">
+              {available.map((reward) => {
+                const affordable = balance >= reward.pointsCost;
+                return (
+                  <li key={reward.id} className="flex items-center gap-3 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">
+                        {reward.name}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {formatNumber(reward.pointsCost)} pts
+                        {reward.stock != null && ` · ${reward.stock} left`}
+                      </p>
+                    </div>
+                    <ActionButton
+                      size="sm"
+                      variant="secondary"
+                      action={assignPrize.bind(null, memberId, reward.id, sendEmail)}
+                      onDone={onMutated}
+                    >
+                      Assign free
+                    </ActionButton>
+                    <ActionButton
+                      size="sm"
+                      action={redeemReward.bind(null, memberId, reward.id)}
+                      successMessage="Reward redeemed."
+                      onDone={onMutated}
+                      disabled={!affordable}
+                      title={
+                        affordable
+                          ? undefined
+                          : "Insufficient points to redeem"
+                      }
+                    >
+                      Redeem
+                    </ActionButton>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         )}
       </Dialog>
     </>

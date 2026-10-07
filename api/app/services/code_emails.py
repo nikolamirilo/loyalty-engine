@@ -32,11 +32,12 @@ CODE_BG = "#efecfd"  # --primary-subtle
 CODE_FG = "#4338ca"  # --primary-subtle-fg
 
 
-def email_shell(content: str) -> str:
+def email_shell(content: str, accent: str = PRIMARY) -> str:
     """Wrap an email's content in the shared card layout.
 
     Table layout + inline styles: the only markup broadly supported across
-    email clients (no external stylesheets, no flex/grid).
+    email clients (no external stylesheets, no flex/grid). ``accent`` colours
+    the top stripe, so a program-branded email can wear its own colour.
     """
     return f"""\
 <!DOCTYPE html>
@@ -47,7 +48,7 @@ def email_shell(content: str) -> str:
         <td align="center">
           <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:{SURFACE};border:1px solid {LINE};border-radius:12px;max-width:480px;width:100%;overflow:hidden;">
             <tr>
-              <td style="background-color:{PRIMARY};height:4px;line-height:4px;font-size:0;">&nbsp;</td>
+              <td style="background-color:{accent};height:4px;line-height:4px;font-size:0;">&nbsp;</td>
             </tr>
             <tr>
               <td style="padding:40px;text-align:center;">

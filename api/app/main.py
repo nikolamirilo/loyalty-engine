@@ -18,6 +18,7 @@ from app.routers import (
     member_attributes,
     members,
     points,
+    prize_claims,
     products,
     programs,
     purchases,
@@ -64,6 +65,7 @@ works on**. It takes a program's id (UUID) or its slug, e.g. `retail-demo`.
 | Program data: members, points, rewards, redemptions, tiers, challenges, segments, products, purchases, events | Picks the program. If left out, the **default program** is used. |
 | `/programs` | Not used. This is how you find the programs. |
 | `/doi/*`, `/auth/*` | Not used. These are about the person, not a program. |
+| `/prizes/claim/*` | Not used. The claim token names the prize, and the prize's program comes from it. |
 
 **Every member belongs to every program.** Their name, email and email
 verification are shared across all programs. Points, tier, rewards and
@@ -96,6 +98,7 @@ app.include_router(member_attributes.router, dependencies=protected)
 app.include_router(points.router, dependencies=protected)
 app.include_router(rewards.router, dependencies=protected)
 app.include_router(redemptions.router, dependencies=protected)
+app.include_router(prize_claims.router, dependencies=protected)
 app.include_router(products.router, dependencies=protected)
 app.include_router(purchases.router, dependencies=protected)
 app.include_router(challenges.router, dependencies=protected)

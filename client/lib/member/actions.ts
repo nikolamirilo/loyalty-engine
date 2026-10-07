@@ -77,3 +77,29 @@ export async function purchaseProduct(productId: string): Promise<ActionState> {
   revalidatePath("/products");
   return { ok: true, message: "Purchase complete." };
 }
+
+/**
+ * Claim one of the signed-in member's assigned prizes from their wallet - the
+ * same thing the prize email's link does. The member id comes from the session
+ * cookie, never from the caller, so a member can only claim their own prizes.
+ */
+export async function claimMyPrize(redemptionId: string): Promise<ActionState> {
+  const memberId = await getSessionMemberId();
+  if (!memberId) {
+    return { ok: false, error: "Your session has expired. Please sign in again." };
+  }
+
+  try {
+    await apiRequest(`/members/${memberId}/prizes/${redemptionId}/claim`, {
+      method: "POST",
+      programId: await memberProgramId(),
+    });
+  } catch (e) {
+    if (e instanceof ApiError) return { ok: false, error: e.message };
+    console.error("[action] unexpected error:", e);
+    return { ok: false, error: "Something went wrong. Please try again." };
+  }
+
+  revalidatePath("/wallet");
+  return { ok: true, message: "Prize claimed." };
+}

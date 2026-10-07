@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Uuid
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -22,6 +22,13 @@ class Redemption(Base):
     points_spent: Mapped[int] = mapped_column(Integer, nullable=False)
     source: Mapped[RedemptionSource] = mapped_column(Enum(RedemptionSource), nullable=False, default=RedemptionSource.redeemed)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    # When the member claimed an assigned prize; null until then. Only
+    # `assigned` prizes are claimed - a `redeemed` one was bought on the spot.
+    claimed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # The emailed claim link's token, as an HMAC hash (app.services.prize_claims).
+    # Null when the prize was never emailed.
+    claim_token_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True, unique=True, index=True)
+    claim_token_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     member: Mapped["Member"] = relationship("Member", back_populates="redemptions")
     reward: Mapped["Reward"] = relationship("Reward", back_populates="redemptions")

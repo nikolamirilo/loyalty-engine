@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import { getBalance, getPrizes } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { getSessionMemberId } from "@/lib/memberAuth/session";
+import { claimMyPrize } from "@/lib/member/actions";
 import { memberProgramId } from "@/lib/server/program";
+import { ActionButton } from "@/components/ui/ActionButton";
+import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -24,15 +27,15 @@ export default async function WalletPage() {
   const [balance, prizes] = await Promise.all([
     getBalance(memberId, programId),
     // "assigned" prizes are the ones granted to the member that they haven't
-    // paid points for ("redeemed" is the other `RedemptionSource`) - i.e. the
-    // products they have that aren't redeemed yet.
+    // paid points for ("redeemed" is the other `RedemptionSource`). Each is
+    // unclaimed until the member claims it here or from the prize email.
     getPrizes(memberId, "assigned", programId),
   ]);
 
   return (
     <div className="space-y-6">
       <BalanceAutoRefresh />
-      <PageHeader title="Wallet" description="Your points and unredeemed products." />
+      <PageHeader title="Wallet" description="Your points and the prizes you've won." />
 
       <StatTile
         label="Points balance"
@@ -43,14 +46,14 @@ export default async function WalletPage() {
 
       <Card>
         <CardHeader
-          title="Rewards"
-          description="Rewards you have that aren't redeemed yet."
+          title="Prizes"
+          description="Prizes you've won. Claim them here or from your email."
         />
         {prizes.length === 0 ? (
           <EmptyState
             icon={<WalletIcon />}
             title="Nothing here yet"
-            description="Unredeemed products you're given will show up here."
+            description="Prizes you win will show up here."
           />
         ) : (
           <ul className="divide-y divide-line">
@@ -62,12 +65,19 @@ export default async function WalletPage() {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-orange/12 text-lg text-accent-orange">
                   <GiftIcon />
                 </span>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">
                     {prize.reward.name}
                   </p>
                   <p className="text-xs text-faint">{formatDateTime(prize.createdAt)}</p>
                 </div>
+                {prize.claimedAt ? (
+                  <Badge tone="success">Claimed</Badge>
+                ) : (
+                  <ActionButton size="sm" action={claimMyPrize.bind(null, prize.id)}>
+                    Claim
+                  </ActionButton>
+                )}
               </li>
             ))}
           </ul>

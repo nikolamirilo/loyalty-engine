@@ -1,14 +1,15 @@
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
 from app.core.program import get_program
 from app.models import Member, Program, Redemption, RedemptionSource, TransactionType
-from app.schemas import RedemptionOut
+from app.schemas import PrizeAssignOut, PrizeAssignRequest, RedemptionOut
 from app.services.points import record_transaction
+from app.services.prize_claims import claim_prize, issue_claim_token, send_prize_email
 from app.services.rewards import assert_available, consume_stock, get_reward_or_404, grant_prize
 from app.services.scoping import get_scoped_or_404
 
@@ -54,10 +55,12 @@ def redeem_reward(
     return redemption
 
 
-@router.post("/members/{member_id}/prizes/{reward_id}", response_model=RedemptionOut, status_code=201)
+@router.post("/members/{member_id}/prizes/{reward_id}", response_model=PrizeAssignOut, status_code=201)
 def assign_prize(
     member_id: UUID,
     reward_id: UUID,
+    # Optional so callers that send no body keep working.
+    body: Optional[PrizeAssignRequest] = Body(default=None),
     db: Session = Depends(get_db),
     program: Program = Depends(get_program),
 ):
@@ -67,9 +70,38 @@ def assign_prize(
     assert_available(reward)
 
     redemption = grant_prize(db, member.id, reward)
+    token = issue_claim_token(redemption) if body and body.send_email else None
     db.commit()
     db.refresh(redemption)
-    return redemption
+
+    out = PrizeAssignOut.model_validate(redemption)
+    # Sent only after the commit: the email links to a prize that must exist,
+    # and a failed send leaves the prize assigned (see email_error).
+    if token is not None:
+        out.email_error = send_prize_email(member, reward, program, token)
+        out.email_sent = out.email_error is None
+    return out
+
+
+@router.post(
+    "/members/{member_id}/prizes/{redemption_id}/claim", response_model=RedemptionOut
+)
+def claim_member_prize(
+    member_id: UUID,
+    redemption_id: UUID,
+    db: Session = Depends(get_db),
+    program: Program = Depends(get_program),
+):
+    """Claim an assigned prize for a signed-in member. Claiming twice changes nothing."""
+    get_scoped_or_404(db, Member, member_id, program, "Member")
+    redemption = (
+        db.query(Redemption)
+        .filter(Redemption.id == redemption_id, Redemption.member_id == member_id)
+        .first()
+    )
+    if not redemption:
+        raise HTTPException(404, "Prize not found")
+    return claim_prize(db, redemption)
 
 
 @router.get("/members/{member_id}/prizes", response_model=list[RedemptionOut])

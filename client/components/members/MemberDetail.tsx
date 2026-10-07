@@ -278,6 +278,7 @@ export function MemberDetail({ id }: { id: string }) {
                 <TR>
                   <TH>Reward</TH>
                   <TH>Source</TH>
+                  <TH>Claimed</TH>
                   <TH>Points spent</TH>
                   <TH>When</TH>
                 </TR>
@@ -292,6 +293,14 @@ export function MemberDetail({ id }: { id: string }) {
                       ) : (
                         <Badge tone="neutral">Redeemed</Badge>
                       )}
+                    </TD>
+                    <TD className="whitespace-nowrap text-muted">
+                      {/* Only assigned prizes are claimed; a redeemed one was bought on the spot. */}
+                      {r.source !== "assigned"
+                        ? "—"
+                        : r.claimedAt
+                          ? formatDateTime(r.claimedAt)
+                          : <Badge tone="warning">Not yet</Badge>}
                     </TD>
                     <TD className="font-medium tabular-nums">
                       {r.pointsSpent > 0 ? formatNumber(r.pointsSpent) : "Free"}

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import type { ActionState } from "./action-state";
-import type { MemberAttribute, RuleCondition } from "./types";
+import type { MemberAttribute, PrizeAssignment, RuleCondition } from "./types";
 import { ApiError, apiRequest } from "./api";
 
 function fail(error: unknown): ActionState {
@@ -268,14 +268,23 @@ export async function redeemReward(
 export async function assignPrize(
   memberId: string,
   rewardId: string,
+  sendEmail = false,
 ): Promise<ActionState> {
   try {
-    await apiRequest(`/members/${memberId}/prizes/${rewardId}`, {
-      method: "POST",
-    });
+    const prize = await apiRequest<PrizeAssignment>(
+      `/members/${memberId}/prizes/${rewardId}`,
+      { method: "POST", json: { sendEmail } },
+    );
     revalidateMember(memberId);
     revalidatePath("/admin/rewards");
-    return { ok: true, message: "Prize assigned." };
+    if (!sendEmail) return { ok: true, message: "Prize assigned." };
+    // The prize is assigned even when the email fails, so this is still a
+    // success - but one that says the member wasn't told.
+    if (prize.emailSent) return { ok: true, message: "Prize assigned and emailed." };
+    return {
+      ok: true,
+      message: `Prize assigned, but the email was not sent. ${prize.emailError ?? ""}`.trim(),
+    };
   } catch (e) {
     return fail(e);
   }

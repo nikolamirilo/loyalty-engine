@@ -46,6 +46,7 @@ async def list_member_redemptions(
 async def assign_prize(
     member_id: str,
     reward_id: str,
+    send_email: bool = False,
     program: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Grant a reward to a member at no points cost (source "assigned"), e.g.
@@ -53,11 +54,36 @@ async def assign_prize(
     reward's own availability (active, in stock) - just skips the balance
     check and debit that `redeem_reward` performs.
 
+    `send_email` also emails the member about the prize, with a button that
+    opens the member app's claim page for it. The prize is assigned even if
+    the email fails; `emailSent` and `emailError` in the result say how it went.
+
     `program` is the program slug or id to act in; defaults to the server's
     configured program.
     """
     require_scope("write")
-    return await api.post(f"/members/{member_id}/prizes/{reward_id}", program=program)
+    return await api.post(
+        f"/members/{member_id}/prizes/{reward_id}",
+        {"sendEmail": send_email},
+        program=program,
+    )
+
+
+@mcp.tool(title="Claim Prize", annotations=ann.WRITE)
+async def claim_prize(
+    member_id: str, redemption_id: str, program: Optional[str] = None
+) -> Dict[str, Any]:
+    """Mark a member's assigned prize as claimed (sets `claimedAt`), the same
+    as the member pressing "Claim" in their wallet. `redemption_id` is the
+    prize's id from `list_member_prizes`. Claiming twice changes nothing.
+
+    `program` is the program slug or id to act in; defaults to the server's
+    configured program.
+    """
+    require_scope("write")
+    return await api.post(
+        f"/members/{member_id}/prizes/{redemption_id}/claim", program=program
+    )
 
 
 @mcp.tool(title="List Member Prizes", annotations=ann.READ)
@@ -71,6 +97,7 @@ async def list_member_prizes(
     """List a member's prize/redemption history, newest first. `source`
     optionally filters to "redeemed" (member spent points) or "assigned"
     (granted at no cost, e.g. via `assign_prize` or a completed challenge).
+    An assigned prize's `claimedAt` is null until the member claims it.
 
     `program` is the program slug or id to act in; defaults to the server's
     configured program.

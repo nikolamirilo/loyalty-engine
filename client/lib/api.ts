@@ -18,6 +18,7 @@ import type {
   Program,
   Purchase,
   PurchaseStats,
+  PrizeClaim,
   Redemption,
   RedemptionSource,
   Reward,
@@ -228,6 +229,13 @@ export const getPrizes = (
   apiRequest<Redemption[]>(`/members/${id}/prizes`, {
     query: { limit: 200, source },
     programId,
+  });
+
+/** The prize behind an emailed claim link. Unscoped: the token names the
+ *  prize, and the API reads its program from it. */
+export const getPrizeClaim = (token: string) =>
+  apiRequest<PrizeClaim>(`/prizes/claim/${encodeURIComponent(token)}`, {
+    programId: null,
   });
 
 export const getMemberChallenges = (id: string, status?: ChallengeStatus) =>

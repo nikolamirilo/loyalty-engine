@@ -205,6 +205,26 @@ export interface Redemption {
   source: RedemptionSource;
   reward: Reward;
   createdAt: string;
+  /** When the member claimed an assigned prize; null until then. */
+  claimedAt: string | null;
+}
+
+/** Returned by assigning a prize: the prize, plus how its email went. */
+export interface PrizeAssignment extends Redemption {
+  emailSent: boolean;
+  emailError: string | null;
+}
+
+/** An emailed prize as its public claim page sees it. `program` is the
+ *  prize's own program, read from the link's token. */
+export interface PrizeClaim {
+  redemptionId: UUID;
+  reward: Reward;
+  program: Program;
+  memberName: string;
+  claimedAt: string | null;
+  expiresAt: string;
+  expired: boolean;
 }
 
 export interface Challenge {

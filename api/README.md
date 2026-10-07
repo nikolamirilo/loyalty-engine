@@ -265,9 +265,21 @@ own, and `POST /complete` forces it regardless of progress or deadline.
 | `POST` `GET` | `/rewards` | Create, list rewards |
 | `GET` `PATCH` `DELETE` | `/rewards/{id}` | Get, update, delete a reward |
 | `POST` | `/members/{id}/redeem/{rewardId}` | Redeem, debits the points cost |
-| `POST` | `/members/{id}/prizes/{rewardId}` | Grant for free, no points debited |
+| `POST` | `/members/{id}/prizes/{rewardId}` | Grant for free, no points debited. Body `{ "sendEmail": true }` also emails the prize |
+| `POST` | `/members/{id}/prizes/{redemptionId}/claim` | Mark an assigned prize as claimed |
 | `GET` | `/members/{id}/prizes` | History, filter with `?source=redeemed\|assigned` |
 | `GET` | `/members/{id}/redemptions` | Redemption history |
+| `GET` | `/prizes/claim/{token}` | The prize behind an emailed claim link. No `X-Program-Id` |
+| `POST` | `/prizes/claim` | Claim with `{ "token": ... }` from the email. No `X-Program-Id` |
+
+An assigned prize starts unclaimed (`claimedAt: null`). With `sendEmail: true`
+the member gets an email in the prize's program branding, with a **Claim your
+prize** button pointing at `{CLIENT_BASE_URL}/p/<programSlug>/claim?token=<token>`.
+That page needs no sign-in, like `/verify`. The token names the prize, so the
+claim always lands in the prize's own program, whatever header is sent. The
+link lasts 30 days; after that the member can still claim from their wallet.
+The prize is assigned even if the email fails: the response says so with
+`emailSent: false` and an `emailError`.
 
 **Challenges**
 
@@ -543,6 +555,7 @@ SQLite database. They are not pytest tests, which is why `pytest.ini` points
 ./venv/bin/python -m tests.regression.test_doi_trigger_flow       # /doi/trigger resends a fresh code, 429 within cooldown
 ./venv/bin/python -m tests.regression.test_doi_link_flow          # type="link" mails a working /verify link
 ./venv/bin/python -m tests.regression.test_member_login_resend    # /auth/login resends a fresh code, 429 within cooldown
+./venv/bin/python -m tests.regression.test_prize_claims           # prize emails link to a program-routed claim page
 ./venv/bin/python -m tests.regression.test_event_rules            # every rule effect, limits, retries, save-time checks
 ./venv/bin/python -m tests.regression.test_program_branding       # brand colours validate, logos upload/replace/delete
 ./venv/bin/python -m tests.regression.test_program_isolation      # programs never see each other's data

@@ -201,7 +201,8 @@ No `delete_program`, by design. See [Status](#status).
 | `write` | `delete_reward(reward_id)` | `DELETE /rewards/{id}` |
 | `write` | `redeem_reward(member_id, reward_id)` | `POST /members/{id}/redeem/{rewardId}` |
 | `read` | `list_member_redemptions(member_id, skip?, limit?)` | `GET /members/{id}/redemptions` |
-| `write` | `assign_prize(member_id, reward_id)` | `POST /members/{id}/prizes/{rewardId}` |
+| `write` | `assign_prize(member_id, reward_id, send_email?)` | `POST /members/{id}/prizes/{rewardId}` |
+| `write` | `claim_prize(member_id, redemption_id)` | `POST /members/{id}/prizes/{redemptionId}/claim` |
 | `read` | `list_member_prizes(member_id, source?, skip?, limit?)` | `GET /members/{id}/prizes` |
 
 **Challenges**

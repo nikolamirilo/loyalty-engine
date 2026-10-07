@@ -19,7 +19,8 @@ const MEMBER_PROTECTED_ROUTES = new Set(["/home", "/products", "/wallet", "/acco
  * `/verify` is the landing page for DOI verification emails: the person
  * opening it is a loyalty member confirming their address, not a signed-in
  * member or an admin, so it carries no session data - it posts the emailed
- * id/code pair to the API and shows the answer.
+ * id/code pair to the API and shows the answer. `/p/<slug>/claim`, the prize
+ * email's landing page, is public the same way and is not in the protected set.
  *
  * Only reads the signed session cookies - no shared state, per Next.js proxy
  * guidance. Failed-login lockout is handled in the login Server Action.
