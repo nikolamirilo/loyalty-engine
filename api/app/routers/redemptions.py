@@ -59,8 +59,10 @@ def redeem_reward(
 def assign_prize(
     member_id: UUID,
     reward_id: UUID,
-    # Optional so callers that send no body keep working.
-    body: Optional[PrizeAssignRequest] = Body(default=None),
+    # Defaults to an empty request so callers that send no body keep working.
+    # Not Optional[...]: that becomes `anyOf [..., null]` in the OpenAPI
+    # schema, which Swagger UI can't build an editable example from.
+    body: PrizeAssignRequest = Body(default=PrizeAssignRequest()),
     db: Session = Depends(get_db),
     program: Program = Depends(get_program),
 ):
@@ -70,7 +72,7 @@ def assign_prize(
     assert_available(reward)
 
     redemption = grant_prize(db, member.id, reward)
-    token = issue_claim_token(redemption) if body and body.send_email else None
+    token = issue_claim_token(redemption) if body.send_email else None
     db.commit()
     db.refresh(redemption)
 
