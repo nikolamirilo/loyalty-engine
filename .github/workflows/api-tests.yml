@@ -73,7 +73,7 @@ jobs:
           API_TOKEN: ci-test-token
           # Required at import. No test sends email, so these are never used.
           RESEND_API_KEY: ci-unused
-          DOI_FROM_EMAIL: noreply@example.com
+          EMAIL_FROM: noreply@example.com
           # conftest.py writes the latency table here as well as to the run
           # summary, so the report job below can put it in an email.
           REPORT_MD_PATH: ${{ github.workspace }}/reports/latency.md

@@ -225,7 +225,7 @@ def trigger_verification(
         logger.exception(
             "DOI: could not send verification email for member %s (from=%s): %s",
             member.id,
-            settings.doi_from_email,
+            settings.EMAIL_FROM,
             exc.reason,
         )
         if exc.transient:

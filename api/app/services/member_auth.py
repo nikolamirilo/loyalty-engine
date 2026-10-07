@@ -121,7 +121,7 @@ def _issue_and_send_code(db: Session, identity: MemberIdentity) -> None:
         logger.exception(
             "Auth: could not send login code for identity %s (from=%s): %s",
             identity.id,
-            settings.doi_from_email,
+            settings.EMAIL_FROM,
             exc.reason,
         )
         if exc.transient:

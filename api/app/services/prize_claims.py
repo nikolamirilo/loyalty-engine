@@ -154,7 +154,7 @@ def send_prize_email(member: Member, reward: Reward, program: Program, token: st
         logger.exception(
             "Prize email for member %s not sent (from=%s): %s",
             member.id,
-            settings.doi_from_email,
+            settings.EMAIL_FROM,
             exc.reason,
         )
         return f"The email could not be sent. {exc.reason}"

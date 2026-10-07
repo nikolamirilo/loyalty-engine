@@ -114,7 +114,7 @@ that happens to need it.
 | `DATABASE_URL` | Yes | Supabase Postgres connection string, transaction pooler. |
 | `API_TOKEN` | Yes | The bearer token every route checks. |
 | `RESEND_API_KEY` | Yes | Sends DOI and login emails through [Resend](https://resend.com). |
-| `DOI_FROM_EMAIL` | Yes | Sender address, on a domain verified in Resend. |
+| `EMAIL_FROM` | Yes | Sender address, on a domain verified in Resend. |
 | `CLIENT_BASE_URL` | Only for DOI links | Public base URL of the client app, used to build the emailed link. |
 | `SUPABASE_URL` | Only for logo uploads | Supabase project URL, `https://<project-ref>.supabase.co`. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Only for logo uploads | Service role key the API uploads program logos with. Server-side only. |
@@ -385,7 +385,7 @@ email was accepted, so a failed send leaves the previous code working and starts
 no cooldown. `/auth/signup` and `/auth/login` behave the same way for login
 codes.
 
-**Failures.** `DOI_FROM_EMAIL` must sit on a domain verified in Resend. Until it
+**Failures.** `EMAIL_FROM` must sit on a domain verified in Resend. Until it
 does, every send is rejected and `/doi/trigger` answers `500` quoting the
 provider, for example `Resend 403 validation_error: The <domain> domain is not
 verified`. Rate limits, provider outages and network failures answer `502`

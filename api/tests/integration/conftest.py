@@ -28,7 +28,7 @@ if TEST_DATABASE_URL:
     os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ.setdefault("API_TOKEN", "test-token")
 os.environ.setdefault("RESEND_API_KEY", "test-resend-key")
-os.environ.setdefault("DOI_FROM_EMAIL", "noreply@example.com")
+os.environ.setdefault("EMAIL_FROM", "noreply@example.com")
 
 _UUID = re.compile(
     r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"

@@ -70,7 +70,7 @@ def send_email(to: str, subject: str, text: str, html: str) -> None:
     try:
         resend.Emails.send(
             {
-                "from": settings.doi_from_email,
+                "from": settings.EMAIL_FROM,
                 "to": [to],
                 "subject": subject,
                 "text": text,

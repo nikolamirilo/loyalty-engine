@@ -33,7 +33,7 @@ class Settings:
     database_url: str
     api_token: str
     resend_api_key: str
-    doi_from_email: str
+    EMAIL_FROM: str
     # Public base URL of the client app, used to build the link in the
     # `type: "link"` DOI email. Only that one flow needs it, so an install that
     # sends nothing but codes must not fail to boot for want of it - it is
@@ -66,8 +66,8 @@ def get_settings() -> Settings:
             "RESEND_API_KEY",
             "Add the Resend API key used to send DOI verification emails.",
         ),
-        doi_from_email=_required(
-            "DOI_FROM_EMAIL",
+        EMAIL_FROM=_required(
+            "EMAIL_FROM",
             "Add the verified Resend sender address for DOI verification emails.",
         ),
         # Trailing slashes stripped so links are built as `{base}/verify?...`

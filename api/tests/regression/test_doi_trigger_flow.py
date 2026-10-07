@@ -23,7 +23,7 @@ from datetime import timedelta
 os.environ.setdefault("DATABASE_URL", "postgresql://u:p@h:6543/postgres")
 os.environ.setdefault("API_TOKEN", "test-token")
 os.environ.setdefault("RESEND_API_KEY", "test-resend-key")
-os.environ.setdefault("DOI_FROM_EMAIL", "noreply@example.com")
+os.environ.setdefault("EMAIL_FROM", "noreply@example.com")
 
 import resend
 import sqlalchemy
