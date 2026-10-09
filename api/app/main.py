@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.errors import DomainError
+from app.core.monitoring import init_monitoring, report
 from app.core.security import verify_token
 from app.routers import (
     auth,
@@ -30,6 +31,9 @@ from app.routers import (
 
 logger = logging.getLogger("uvicorn.error")
 
+# Before the app exists, so Sentry's FastAPI integration sees it being built.
+init_monitoring()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,8 +43,11 @@ async def lifespan(app: FastAPI):
     # still succeed once the database is reachable again.
     try:
         Base.metadata.create_all(bind=engine)
-    except Exception:  # noqa: BLE001 - startup must be resilient
+    except Exception as exc:  # noqa: BLE001 - startup must be resilient
         logger.exception("Skipping create_all: database was unreachable at startup")
+        # Reported because it is swallowed: a failure that isn't connectivity
+        # (a bad model, missing DDL rights) would otherwise go unnoticed.
+        report(exc)
     yield
 
 
@@ -137,6 +144,7 @@ async def database_unavailable(request: Request, exc: OperationalError) -> JSONR
     logger.exception(
         "Database unavailable handling %s %s", request.method, request.url.path
     )
+    report(exc)
     return JSONResponse(
         status_code=503,
         content={"detail": "Database is temporarily unavailable. Please try again shortly."},
@@ -154,6 +162,8 @@ async def constraint_violation(request: Request, exc: IntegrityError) -> JSONRes
     logger.exception(
         "Constraint violation handling %s %s", request.method, request.url.path
     )
+    # Reaching here means a route is missing an up-front check worth adding.
+    report(exc)
     return JSONResponse(
         status_code=409,
         content={"detail": "The request conflicts with existing data."},

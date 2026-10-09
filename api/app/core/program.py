@@ -23,6 +23,7 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.monitoring import tag_program
 from app.models import Program
 
 logger = logging.getLogger("uvicorn.error")
@@ -68,6 +69,7 @@ def get_program(
         program = _by_id_or_slug(db, x_program_id)
         if program is None:
             raise HTTPException(404, f"Program not found: {x_program_id}")
+        tag_program(program.slug)
         return program
 
     program = db.query(Program).filter(Program.is_default.is_(True)).first()
@@ -83,4 +85,5 @@ def get_program(
         PROGRAM_HEADER,
         program.slug,
     )
+    tag_program(program.slug)
     return program

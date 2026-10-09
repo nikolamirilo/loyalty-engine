@@ -45,6 +45,12 @@ class Settings:
     supabase_url: str = ""
     supabase_service_role_key: str = ""
     storage_bucket: str = "program-assets"
+    # Error monitoring (app/core/monitoring.py). Without a DSN nothing is
+    # sent, which is what tests, CI and local runs want unless someone opts in.
+    sentry_dsn: str = ""
+    sentry_environment: str = "development"
+    sentry_release: str = ""
+    sentry_traces_sample_rate: float = 1.0
 
     project_name: str = "Loyalty Engine"
     version: str = "1.0.0"
@@ -76,6 +82,14 @@ def get_settings() -> Settings:
         supabase_url=_optional("SUPABASE_URL").rstrip("/"),
         supabase_service_role_key=_optional("SUPABASE_SERVICE_ROLE_KEY"),
         storage_bucket=_optional("STORAGE_BUCKET", "program-assets"),
+        sentry_dsn=_optional("SENTRY_DSN"),
+        # Vercel sets VERCEL_ENV (production / preview / development) and
+        # VERCEL_GIT_COMMIT_SHA on every deployment, so neither needs setting
+        # by hand there.
+        sentry_environment=_optional("SENTRY_ENVIRONMENT")
+        or _optional("VERCEL_ENV", "development"),
+        sentry_release=_optional("SENTRY_RELEASE") or _optional("VERCEL_GIT_COMMIT_SHA"),
+        sentry_traces_sample_rate=float(_optional("SENTRY_TRACES_SAMPLE_RATE", "1.0")),
     )
 
 

@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.errors import InvalidInput, Misconfigured, NotFound
+from app.core.monitoring import report
 from app.integrations.email import EmailDeliveryError, send_email
 from app.models import Member, Program, Redemption, RedemptionSource, Reward
 from app.services.code_emails import CODE_FG, FAINT, MUTED, PRIMARY, PRIMARY_FG, email_shell
@@ -134,7 +135,8 @@ def send_prize_email(member: Member, reward: Reward, program: Program, token: st
     """Email the member their prize. Returns why it failed, or None if it went out.
 
     Never raises: the prize is already assigned, and a failed email must not
-    make the assignment look like it failed too.
+    make the assignment look like it failed too. So the request succeeds and
+    only ``report`` tells anyone that a winner wasn't told.
     """
     try:
         link = _claim_link(program, token)
@@ -149,6 +151,7 @@ def send_prize_email(member: Member, reward: Reward, program: Program, token: st
         )
     except Misconfigured as exc:
         logger.error("Prize email for member %s not sent: %s", member.id, exc.detail)
+        report(exc)
         return exc.detail
     except EmailDeliveryError as exc:
         logger.exception(
@@ -157,6 +160,7 @@ def send_prize_email(member: Member, reward: Reward, program: Program, token: st
             settings.EMAIL_FROM,
             exc.reason,
         )
+        report(exc)
         return f"The email could not be sent. {exc.reason}"
     return None
 

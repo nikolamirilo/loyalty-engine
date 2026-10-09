@@ -119,6 +119,10 @@ that happens to need it.
 | `SUPABASE_URL` | Only for logo uploads | Supabase project URL, `https://<project-ref>.supabase.co`. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Only for logo uploads | Service role key the API uploads program logos with. Server-side only. |
 | `STORAGE_BUCKET` | No | Public bucket for program logos. Defaults to `program-assets`, which the `program_branding` migration creates. |
+| `SENTRY_DSN` | No | Turns on error monitoring with [Sentry](https://sentry.io). Leave it unset locally unless you want local errors in Sentry; the tests always switch it off. |
+| `SENTRY_ENVIRONMENT` | No | Defaults to Vercel's `VERCEL_ENV` (`production`, `preview`), else `development`. |
+| `SENTRY_RELEASE` | No | Defaults to Vercel's `VERCEL_GIT_COMMIT_SHA`, else the local git commit. |
+| `SENTRY_TRACES_SAMPLE_RATE` | No | Share of requests traced, `0` to `1`. Defaults to `1`. |
 
 ### Connecting to Supabase
 
