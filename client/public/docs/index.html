@@ -1630,14 +1630,14 @@ figure.dgm{margin:1rem 0 1.6rem}
 <ol class="steps">
 <li><b>Select New event</b><p>At the top right of the Events page.</p></li>
 <li data-n="1"><b>Enter a Name</b><p>For example "Order placed". The API key under it, such as <code>orderPlaced</code>, is what your systems send. It never changes.</p></li>
-<li data-n="2"><b>Add the data your system sends</b><p>Each attribute has a label and a type: Text, Number, Yes / No, Date or Dropdown. A dropdown needs its options, separated by commas.</p></li>
-<li data-n="3"><b>Select Add attribute for each one</b></li>
+<li data-n="3"><b>Select Add attribute for each piece of data your system sends</b><p>Each one adds an empty row.</p></li>
+<li data-n="2"><b>Give each row a label and a type</b><p>Text, Number, Yes / No, Date or Dropdown. A dropdown needs its options, separated by commas.</p></li>
 <li data-n="4"><b>Select Create event</b><span class="done">"Event created. Add a rule, then turn it on." The event's page opens.</span></li>
 </ol></div></div>
 
 <h2><span class="k k-opts"><svg class="ico" aria-hidden="true"><use href="#i-sliders-horizontal"/></svg></span><span>Event settings</span></h2>
 <div class="opts">
-<div class="opt"><div class="n">Name<div class="tags"><span class="tg req">Required</span><span class="tg lim">1 to 100 characters</span></div></div><div class="d">Must start with a letter and be unique in the program.</div></div>
+<div class="opt"><div class="n">Name<div class="tags"><span class="tg req">Required</span><span class="tg lim">1 to 100 characters</span></div></div><div class="d">Must contain letters, and its first letter or digit must be a letter. Unique in the program.</div></div>
 <div class="opt"><div class="n">Description<div class="tags"><span class="tg opt-">Optional</span></div></div><div class="d">Who sends it, and when.</div></div>
 <div class="opt"><div class="n">Attributes<div class="tags"><span class="tg opt-">Optional</span></div></div><div class="d">Data sent with each event. Rules can check these values or copy them onto the member. All are optional when sending.</div></div>
 </div>
@@ -1651,7 +1651,9 @@ figure.dgm{margin:1rem 0 1.6rem}
 
 <h2><span class="k k-rules"><svg class="ico" aria-hidden="true"><use href="#i-shield-alert"/></svg></span><span>Good to know</span></h2>
 <ul class="rules">
-<li>The API key <button type="button" class="nchip" data-n="4" aria-label="Show item 4 on the screen">4</button> is made from the name in camelCase and never changes, even if you rename the event.</li>
+<li>The API key <button type="button" class="nchip" data-n="4" aria-label="Show item 4 on the screen">4</button> is made from the letters and digits of the name in camelCase, up to 63 characters. It never changes, even if you rename the event.</li>
+<li>While an event is off, its page says "This event is off, so incoming events are rejected and no rules run."</li>
+<li>Events created by your developers through the API start on. Only the console creates them off.</li>
 <li>An attribute's key and type never change. You can rename its label.</li>
 <li>You cannot remove an attribute that a rule uses. Change or delete the rule first.</li>
 <li>Events are listed oldest first.</li>
@@ -1668,7 +1670,9 @@ figure.dgm{margin:1rem 0 1.6rem}
 <tr><td>"An event named 'Order placed' already exists"</td><td>Pick another name.</td></tr>
 <tr><td>"An event with the key 'orderPlaced' already exists"</td><td>Two names make the same key, such as "Order placed" and "Order placed!". Pick a different name.</td></tr>
 <tr><td>"'Amount' is used by the rule 'Points per euro'. Change or delete that rule first."</td><td>Edit that rule, then remove the attribute.</td></tr>
-<tr><td>"The type of 'Amount' can't change once created."</td><td>Remove the attribute and add a new one with another label.</td></tr>
+<tr><td>"Label must contain at least one letter and start with one, so a valid internal key can be derived from it."</td><td>Make the name start with a letter, for example "First order" instead of "1st order".</td></tr>
+<tr><td>"A dropdown attribute needs at least one option."</td><td>Add the options, separated by commas.</td></tr>
+<tr><td>"Two attributes share the key 'amount'. Rename one of them."</td><td>Give the two attributes clearly different labels.</td></tr>
 </tbody></table></div></details>
 </section>
 <section class="page" id="rules" data-group="Events and rules" data-title="Rules" data-related="test-events event-logs"><header><h1>Rules</h1><dl class="inshort"><dt>In short</dt><dd>A rule says what an event does for the member: when the event happens, if all conditions hold, then all effects run. Add as many rules to an event as you need.</dd><dt>Result</dt><dd>Events that award exactly what you intend.</dd></dl><div class="where"><b><svg class="ico" aria-hidden="true"><use href="#i-map-pin"/></svg> Where</b><span class="m"><svg class="ico" aria-hidden="true"><use href="#i-zap"/></svg> Events</span><span class="sep">›</span><span class="m">an event</span><span class="sep">›</span><span class="m">Rules</span></div><div class="before"><b><svg class="ico" aria-hidden="true"><use href="#i-list-checks"/></svg> Before you start</b><ul><li>An event. See <a href="#events">Events</a></li></ul></div></header>
@@ -1702,14 +1706,14 @@ figure.dgm{margin:1rem 0 1.6rem}
 
 <h2><span class="k k-opts"><svg class="ico" aria-hidden="true"><use href="#i-sliders-horizontal"/></svg></span><span>Effects: what THEN can do</span></h2>
 <div class="opts">
-<div class="opt"><div class="n">Earn points</div><div class="d">A fixed amount, or the value of a number attribute such as the event's amount. The member's tier multiplier applies.</div></div>
-<div class="opt"><div class="n">Burn points</div><div class="d">A fixed amount or a number attribute. Skipped if the member does not have enough points.</div></div>
-<div class="opt"><div class="n">Give a reward</div><div class="d">A free prize. Uses one unit of stock. Skipped if the reward is inactive or out of stock.</div></div>
+<div class="opt"><div class="n">Earn points</div><div class="d">A fixed amount, or the value of a number attribute such as the event's amount. The member's tier multiplier applies. Skipped if the event did not send the attribute.</div></div>
+<div class="opt"><div class="n">Burn points</div><div class="d">A fixed amount or a number attribute, without the multiplier. Skipped if the member does not have enough points.</div></div>
+<div class="opt"><div class="n">Give a reward</div><div class="d">A free prize. Uses one unit if the reward has limited stock. Skipped if the reward is inactive, out of stock or deleted.</div></div>
 <div class="opt"><div class="n">Assign challenge</div><div class="d">Skipped if the member already has it, or it is inactive or expired.</div></div>
-<div class="opt"><div class="n">Add challenge progress</div><div class="d">By a fixed amount (default 1) or a number attribute. Completing the challenge pays it out.</div></div>
-<div class="opt"><div class="n">Add to segment</div><div class="d">Also hands out the segment's challenges.</div></div>
-<div class="opt"><div class="n">Remove from segment</div><div class="d">Challenges the segment handed out stay.</div></div>
-<div class="opt"><div class="n">Update member</div><div class="d">Set Name, Phone or custom fields to a fixed value or to an attribute's value. Email cannot be set by a rule.</div></div>
+<div class="opt"><div class="n">Add challenge progress</div><div class="d">By a fixed amount (default 1) or a number attribute. Completing the challenge pays it out. Skipped if the member does not have the challenge, or it is completed or expired.</div></div>
+<div class="opt"><div class="n">Add to segment</div><div class="d">Also hands out the segment's challenges. Skipped if the member is already in it.</div></div>
+<div class="opt"><div class="n">Remove from segment</div><div class="d">Challenges the segment handed out stay. Skipped if the member is not in it.</div></div>
+<div class="opt"><div class="n">Update member</div><div class="d">Set Name, Phone or custom fields to a fixed value or to an attribute's value. A value can be copied only from an attribute of the same type, but anything can go into a text field. An empty value clears the field, except Name. Email cannot be set by a rule. Name and Phone changes show in every program.</div></div>
 </div>
 
 <h2><span class="k k-steps"><svg class="ico" aria-hidden="true"><use href="#i-list-ordered"/></svg></span><span>Pause, edit or delete a rule</span></h2>
@@ -1728,12 +1732,13 @@ figure.dgm{margin:1rem 0 1.6rem}
 <li>Conditions look at the member as they were when the event arrived, so one rule never changes whether another rule matches.</li>
 <li>Effects that depend on the current state still see earlier effects. A Burn after an Earn sees the new balance, and Add challenge progress works right after Assign challenge.</li>
 <li>Rules run oldest first. There is no way to reorder them.</li>
-<li>The member's tier is checked once, after all rules ran.</li>
+<li>The tier is checked after every points change, and again after all rules ran. Earned points use the multiplier the member had when the event arrived.</li>
 </ul>
 <h2><span class="k k-rules"><svg class="ico" aria-hidden="true"><use href="#i-shield-alert"/></svg></span><span>Good to know</span></h2>
 <ul class="rules">
 <li>A skipped effect never stops the others. The log says why it was skipped.</li>
-<li>"Only the first time per member" counts a run even when every effect was skipped, for example because the reward was out of stock.</li>
+<li>"Only the first time per member" counts a run even when every effect was skipped, for example because the reward was out of stock. Editing the rule keeps this history.</li>
+<li>Rule names can be up to 100 characters.</li>
 <li>"is not" also matches when the attribute was not sent, or the member has no tier.</li>
 <li>For text, "is" needs an exact match, including upper and lower case. "contains" ignores case.</li>
 <li>Points from a rule show in Points activity as "Effect of event Order placed".</li>
@@ -1745,7 +1750,8 @@ figure.dgm{margin:1rem 0 1.6rem}
 <tr><td>"Give the rule a name."</td><td>Fill in Rule name.</td></tr>
 <tr><td>"Fill in a value for every condition."</td><td>Complete or remove the empty condition.</td></tr>
 <tr><td>"Add at least one effect, otherwise the rule does nothing."</td><td>Add an effect under THEN.</td></tr>
-<tr><td>"Points must be a whole number above 0."</td><td>Fix the amount.</td></tr>
+<tr><td>"Points must be a whole number above 0."</td><td>Fix the amount. The same goes for "Challenge progress must be a whole number above 0."</td></tr>
+<tr><td>"Choose at least one member field to set."</td><td>Add a field to Update member, or remove the effect.</td></tr>
 <tr><td>"Create a reward first, then pick it here."</td><td>Create a reward on the Rewards page. The same goes for challenges and segments.</td></tr>
 <tr><td>"A member's name can't be set to empty."</td><td>Give Name a value, or remove it from Update member.</td></tr>
 <tr><td>A chip shows "…" instead of a name</td><td>The reward, challenge or segment was deleted. Edit the rule and pick another.</td></tr>
@@ -1767,7 +1773,9 @@ figure.dgm{margin:1rem 0 1.6rem}
 <li>Test events are real. The member keeps everything the rules gave, and the event shows in the log.</li>
 <li>Each test is a new event, so it is never treated as a duplicate.</li>
 <li>The member list shows up to 1,000 members, with no search.</li>
-<li>"(2 skipped)" at the end means two effects did not apply. The log shows why.</li>
+<li>"(2 skipped)" at the end means two effects did not apply. The log shows why. If every effect was skipped, the message is "Event recorded. Nothing applied (2 skipped)."</li>
+<li>"No rules matched" also appears when the matching rules already reached their per-member limit.</li>
+<li>Test events go to the program selected in the console.</li>
 </ul>
 </section>
 <section class="page" id="event-logs" data-group="Events and rules" data-title="Event logs" data-related="rules troubleshooting"><header><h1>Event logs</h1><dl class="inshort"><dt>In short</dt><dd>See every event the program received, for which member, and what its rules did.</dd><dt>Result</dt><dd>You know what each event did, and why.</dd></dl><div class="where"><b><svg class="ico" aria-hidden="true"><use href="#i-map-pin"/></svg> Where</b><span class="m"><svg class="ico" aria-hidden="true"><use href="#i-zap"/></svg> Events</span><span class="sep">›</span><span class="m"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg> Logs</span></div></header>
@@ -1808,10 +1816,12 @@ figure.dgm{margin:1rem 0 1.6rem}
 
 <h2><span class="k k-rules"><svg class="ico" aria-hidden="true"><use href="#i-shield-alert"/></svg></span><span>Duplicates and errors</span></h2>
 <ul class="rules">
-<li>A repeat with the same eventId, type and member returns the first result and runs nothing. Use eventId so a retry never pays twice.</li>
+<li>A repeat with the same eventId, type and member returns the first result and runs nothing, even if the event was turned off since. Use eventId so a retry never pays twice.</li>
 <li>Without an eventId, every request counts as a new event.</li>
 <li>Events for an unknown or inactive event type are refused and not recorded.</li>
-<li>The response lists what each rule did.</li>
+<li>The response lists every effect of the rules that ran, applied or skipped, with the rule's name. A new event answers with status 201, a repeat with 200.</li>
+<li>Every request needs the shared bearer token. Ask whoever runs the server for it.</li>
+<li>Attribute values are checked against their type, and text is limited to 500 characters.</li>
 </ul>
 
 <details class="msgs"><summary><span class="k k-risk"><svg class="ico" aria-hidden="true"><use href="#i-life-buoy"/></svg></span>Messages your developers may see<svg class="ico chev" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary><div class="tbl"><table>
@@ -1821,6 +1831,9 @@ figure.dgm{margin:1rem 0 1.6rem}
 <tr><td>"The event type 'orderPlaced' is inactive."</td><td>Turn the event on.</td></tr>
 <tr><td>"Member not found"</td><td>The member ID belongs to another program, or the member was deleted.</td></tr>
 <tr><td>"Unknown attribute(s) for 'orderPlaced': ..."</td><td>Send only the attributes listed on the event's page, by key.</td></tr>
+<tr><td>"'Amount' must be a number."</td><td>Send the value in the attribute's type. Dates use YYYY-MM-DD.</td></tr>
+<tr><td>"Program not found: ..."</td><td>Check the program ID or slug in X-Program-Id.</td></tr>
+<tr><td>"Invalid or missing bearer token"</td><td>Send the right token in the Authorization header.</td></tr>
 </tbody></table></div></details>
 </section>
 <section class="page" id="member-sign-in" data-group="Member app" data-title="Sign up and sign in" data-related="member-account member-emails"><header><h1>Sign up and sign in</h1><div class="badges"><span class="bd role"><svg class="ico" aria-hidden="true"><use href="#i-smartphone"/></svg>Members</span></div><dl class="inshort"><dt>In short</dt><dd>Members create an account and sign in with their email and a 6-digit code. There is no password.</dd><dt>Result</dt><dd>Members can get into the member app.</dd></dl><div class="where"><b><svg class="ico" aria-hidden="true"><use href="#i-map-pin"/></svg> Where</b><span class="m">Start page</span><span class="sep">›</span><span class="m">Continue as user</span></div></header>
