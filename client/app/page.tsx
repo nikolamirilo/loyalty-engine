@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
-import { DashboardIcon, HomeIcon, ChevronRightIcon } from "@/components/ui/icons";
+import { BookIcon, DashboardIcon, HomeIcon, ChevronRightIcon } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
   title: "Loyalty Engine",
@@ -13,14 +13,19 @@ function EntryTile({
   label,
   description,
   icon,
+  staticPage = false,
 }: {
   href: string;
   label: string;
   description: string;
   icon: React.ReactNode;
+  /** A static file served outside the App Router (the docs at /docs). It gets a
+   *  plain link, so the browser loads it in full instead of asking the router. */
+  staticPage?: boolean;
 }) {
+  const Anchor = staticPage ? "a" : Link;
   return (
-    <Link
+    <Anchor
       href={href}
       className="group flex items-center gap-4 rounded-xl border border-line bg-surface p-5 shadow-sm transition-colors hover:border-primary/40 hover:bg-surface-2/60"
     >
@@ -32,7 +37,7 @@ function EntryTile({
         <span className="block truncate text-sm text-muted">{description}</span>
       </span>
       <ChevronRightIcon className="shrink-0 text-lg text-faint transition-colors group-hover:text-primary" />
-    </Link>
+    </Anchor>
   );
 }
 
@@ -68,6 +73,13 @@ export default function EntryPage() {
             label="Continue as user"
             description="Track your points and rewards"
             icon={<HomeIcon />}
+          />
+          <EntryTile
+            href="/docs"
+            label="Read the documentation"
+            description="Learn how to use Loyalty Engine"
+            icon={<BookIcon />}
+            staticPage
           />
         </div>
       </div>

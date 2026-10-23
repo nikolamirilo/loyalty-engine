@@ -5,6 +5,24 @@ product's code: its name, logo, brand color and fonts from the theme or design t
 tokens from the component styles, and its words (labels, menu names) from the UI strings.
 """
 
+# The code the docs were last checked against. Never shown in the docs. `python3 changes.py` lists
+# the commits since then that touch code in `watch` (minus `ignore`); the update routine in
+# UPDATE_ROUTINE.md updates the pages for them and then moves `commit` forward with --mark.
+SOURCE = {
+    'commit': '9c5add5e519a3c9b935755a323aaf6a5bc951843',   # the start page tile, which the docs already cover
+    'checked': '2026-10-23',
+    # code that can change what users see or what happens when they act
+    'watch': [
+        'client/app/', 'client/components/', 'client/lib/', 'client/proxy.ts', 'client/next.config.ts',
+        'api/app/', 'supabase/migrations/',
+    ],
+    # never a reason to update the docs, even inside `watch`: the docs themselves, the built page,
+    # notes for developers and tests
+    'ignore': [
+        'docs/', 'client/public/docs/', '*.md', 'api/tests/',
+    ],
+}
+
 SITE = {
     'title': 'Loyalty Engine Docs',              # browser tab and gallery name: a short name, no explanation
     'product': 'Loyalty Engine',                 # used in the logo's accessible name and the word mark fallback

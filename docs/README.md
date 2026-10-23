@@ -32,6 +32,25 @@ Needs Python 3. The checks also need Node and Playwright with Chromium.
 | `research/` | Facts from the code, with `path:line` evidence, that the pages are written from. `decisions.md` records the scope. |
 | `tooling/` | The build, screen helpers and checks. |
 
+## Keeping the docs current
+
+`site.py` records the commit the docs were last checked against (`SOURCE['commit']`). It is not
+shown anywhere in the docs.
+
+```bash
+python3 docs/changes.py          # commits since then that change app or API code
+python3 docs/changes.py --diff   # the same, with the diff
+python3 docs/changes.py --mark origin/main   # after updating the docs
+```
+
+Only paths in `SOURCE['watch']` count (the client app, the API, migrations), minus
+`SOURCE['ignore']` (the docs, the built page, Markdown, tests). A commit that only touches the
+docs never asks for an update.
+
+A scheduled Claude Code routine does this for you: it follows
+[`UPDATE_ROUTINE.md`](UPDATE_ROUTINE.md), does nothing when there is nothing to document, and
+otherwise opens a pull request with the updated docs.
+
 ## Updating after a product change
 
 1. Re-read the changed code and update the matching `research/*.md` notes.
