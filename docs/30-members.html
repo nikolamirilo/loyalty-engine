@@ -9,7 +9,7 @@
 {{h:steps|Find a member}}
 <ol class="steps">
 <li><b>Type in the search box {{n:1}}</b><p>Part of a name or email is enough. Upper and lower case do not matter. The list updates a moment after you stop typing.</p></li>
-<li><b>Open the member {{n:6}}</b><p>Select their row. Their page opens. See <a href="#member-page">A member's page</a>.</p></li>
+<li><b>Open the member {{n:6}}</b><p>Select their name or email, or the arrow at the end of the row. See <a href="#member-page">A member's page</a>.</p></li>
 </ol>
 <p>The list shows 10 members per page, newest first. Use <span class="b alt">Next</span> and <span class="b alt">Prev</span> {{n:7}} to page through.</p>
 
@@ -19,7 +19,7 @@
 <li><b>Select New member</b><p>At the top right of the Members page.</p></li>
 <li data-n="1"><b>Enter the Name</b></li>
 <li data-n="2"><b>Enter the Email</b><p>It must be a valid address that no other member uses.</p></li>
-<li data-n="3"><b>Tick any Segments</b><p>Optional. Joining a segment also hands out the challenges that were assigned to it.</p></li>
+<li data-n="3"><b>Tick any Segments</b><p>Optional. Joining a segment also hands out the segment's challenges that are still active and not past their deadline.</p></li>
 <li data-n="4"><b>Fill in custom fields</b><p>Optional. They start with each field's default value.</p></li>
 <li data-n="5"><b>Select Create member</b><span class="done">"Member created." The list reloads. The new member is not opened.</span></li>
 </ol></div></div>
@@ -38,17 +38,18 @@
 <li>A new member is added to every program, with 0 points in each.</li>
 <li>The member gets a tier straight away if a tier matches. A tier with no conditions matches everyone.</li>
 <li>Search looks at name and email only, not phone. There is no filter by tier or segment.</li>
-<li>The page title counts all members in the program, even while you search.</li>
+<li>The line under the Members title counts all members in the program, even while you search.</li>
+<li>Email addresses must be unique, but only the part after the @ ignores case. "Ada@example.com" and "ada@example.com" can be two members.</li>
 </ul>
 
 {{h:steps|Delete several members}}
 <ol class="steps">
 <li><b>Tick the members {{n:4}}</b><p>The box in the header ticks every member on this page. Ticks stay while you page and search.</p></li>
 <li><b>Select Delete selected {{n:5}}</b></li>
-<li><b>Confirm</b><span class="done">"2 member(s) deleted." The ticks are cleared.</span></li>
+<li><b>Confirm with Delete 2 members</b><span class="done">"2 members deleted." The ticks are cleared.</span></li>
 </ol>
 {{h:risk|Deleting a member}}
-<p>Deleting removes the person from every program, with all their points, redemptions, purchases, challenges, segments and events. It cannot be undone. Ticked members that your current search hides are deleted too, so check the count in the window.</p>
+<p>Deleting removes the person from every program, with all their points, redemptions, purchases, challenges, segments and events. It cannot be undone. Ticked members that your current search hides are deleted too, so check the count in the window. If one of them was already deleted, nobody is deleted and you see "Member(s) not found: ...".</p>
 
 {{h:fix|Messages}}
 <div class="tbl"><table>
@@ -91,12 +92,15 @@
 <li>Name, email and phone belong to the person, so a change shows in every program.</li>
 <li>The tier updates on its own from points balance, purchases, segments and custom attributes. You cannot pick a tier by hand.</li>
 <li>You cannot clear a phone number once it is set. Replace it instead.</li>
-<li>The <span class="f">Verified</span> tick is normally set by the verification email. Saving with it ticked sets the verification date to today.</li>
+<li>The <span class="f">Verified</span> tick is normally set by the verification email. Every save with it ticked sets the verification date to today. Saving with it unticked removes the verification, in every program.</li>
+<li>Saving the profile also hands out again any active challenge of the member's segments that they do not have, including ones you removed.</li>
+<li>While you edit, the Points and Redeem / assign buttons are greyed out.</li>
+<li>The lists on this page show the newest 200 entries. Lifetime earned adds up only Earn entries among the newest 200 points changes, so positive adjustments are not counted.</li>
 <li><span class="b">Copy ID</span> {{n:2}} copies the member's ID in this program. The same person has a different ID in each program.</li>
 </ul>
 
 {{h:risk|Delete a member}}
-<p><span class="b alt">Delete</span> {{n:4}} removes the person from every program, with all their points, redemptions and challenge history. It cannot be undone.</p>
+<p><span class="b alt">Delete</span> {{n:4}} removes the person from every program, with all their points, redemptions and challenge history. Confirm with <span class="b">Delete member</span>. "Member deleted." and you are back on the Members list. It cannot be undone.</p>
 
 {{h:fix|Messages}}
 <div class="tbl"><table>
@@ -118,7 +122,7 @@
 <li><b>Open the member and select Earn</b><p>In the <span class="f">Points:</span> row at the bottom of the profile card.</p></li>
 <li data-n="1"><b>Enter the Points</b><p>A whole number above 0, before the tier multiplier.</p></li>
 <li data-n="2"><b>Enter a Reason</b><p>Optional. It shows in <span class="f">Points activity</span>.</p></li>
-<li data-n="3"><b>Select Add points</b><span class="done">"Points earned." Check Points activity for the amount actually added.</span></li>
+<li data-n="3"><b>Select Add points</b><span class="done">"Points earned." Check Points activity for the amount actually added. Burn says "Points burned." and Adjust says "Balance adjusted."</span></li>
 </ol></div></div>
 
 {{h:opts|The three actions}}
@@ -138,7 +142,7 @@
 <li>A balance can never go below 0.</li>
 <li>The tier is checked again after every points change, so a member can move up or down a tier.</li>
 <li>Tiers look at the current balance. Burning points can drop a member to a lower tier.</li>
-<li>Points after the multiplier are rounded to a whole number. Halves round to the nearest even number.</li>
+<li>Points after the multiplier are rounded to a whole number. Halves round to the nearest even number. With a multiplier below 0.5, earning 1 point records 0.</li>
 <li>Points are per program.</li>
 </ul>
 
@@ -173,7 +177,7 @@
 <thead><tr><th></th><th>Redeem</th><th>Assign free</th></tr></thead>
 <tbody>
 <tr><td>Points</td><td>Takes the points cost</td><td>Free</td></tr>
-<tr><td>Stock</td><td>Uses 1</td><td>Uses 1</td></tr>
+<tr><td>Stock</td><td>Uses 1, unless stock is unlimited</td><td>Uses 1, unless stock is unlimited</td></tr>
 <tr><td>History</td><td>"Redeemed", and a Spend "Redeemed: &lt;reward&gt;"</td><td>"Prize", claimed or "Not yet"</td></tr>
 <tr><td>Member app</td><td>Not listed in Wallet</td><td>Listed in Wallet with a <span class="b">Claim</span> button</td></tr>
 </tbody></table></div>
@@ -181,7 +185,7 @@
 {{h:rules|Good to know}}
 <ul class="rules">
 <li>Only active rewards that are in stock are listed.</li>
-<li>Neither button asks to confirm. A double click gives the reward twice.</li>
+<li>Neither button asks to confirm. Each click gives the reward again, so select once and wait for the message.</li>
 <li>A claim email link works for 30 days. Only the newest link for a prize works.</li>
 <li>If the email fails, the prize is still assigned.</li>
 <li>Redeeming lowers the balance, which can lower the member's tier.</li>
@@ -194,7 +198,9 @@
 <tr><td>"No available rewards"</td><td>Create a reward, or activate one and give it stock. See <a href="#rewards">Rewards</a>.</td></tr>
 <tr><td>"Reward is out of stock"</td><td>Edit the reward and raise its stock, or leave stock blank for unlimited.</td></tr>
 <tr><td>"Prize assigned, but the email was not sent. ..."</td><td>The prize is assigned. Tell the member to claim it in the Wallet tab, or fix the reason shown.</td></tr>
-<tr><td>"Prize emails need CLIENT_BASE_URL set to the public base URL of the client app."</td><td>Ask whoever runs the server to set it.</td></tr>
+<tr><td>"Prize assigned, but the email was not sent. Prize emails need CLIENT_BASE_URL set to the public base URL of the client app."</td><td>The prize is assigned. Ask whoever runs the server to set it.</td></tr>
+<tr><td>"Insufficient points: has 40, needs 150"</td><td>The member's balance changed. Close and reopen the window.</td></tr>
+<tr><td>"Reward is not active"</td><td>Someone turned the reward off. Activate it on the Rewards page.</td></tr>
 </tbody></table></div>
 </section>
 
@@ -220,7 +226,8 @@
 <li><span class="b alt">Complete</span> pays out even if progress is short or the deadline has passed. It does not ask to confirm.</li>
 <li>Removing a challenge keeps any points already paid. You can assign it again, and it starts from 0.</li>
 <li>A member can have each challenge only once at a time.</li>
-<li>A challenge past its deadline keeps its old status until someone adds progress. Then it shows Expired.</li>
+<li>A challenge past its deadline keeps its old status until progress is added, by you or by an event rule. Then it shows Expired.</li>
+<li><span class="b alt">Progress</span> shows only for Assigned and In progress challenges. <span class="b alt">Complete</span> also shows for Expired ones.</li>
 <li>The <span class="f">Note</span> in the Add progress window is not saved.</li>
 </ul>
 
@@ -229,7 +236,7 @@
 <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
 <tbody>
 <tr><td>"Nothing to assign"</td><td>The member has every active challenge, or none are active.</td></tr>
-<tr><td>"Challenge has expired"</td><td>The challenge's deadline has passed. Edit the challenge to move it.</td></tr>
+<tr><td>"Challenge has expired"</td><td>When assigning: the challenge's end date has passed, so edit the challenge. When adding progress: this member's own deadline has passed, and editing the challenge does not change it. Remove and assign it again, or select Complete.</td></tr>
 <tr><td>"Challenge already assigned to this member"</td><td>Remove the old one first if you want them to start again.</td></tr>
 <tr><td>"Challenge is already completed"</td><td>Nothing to do. It has paid out.</td></tr>
 </tbody></table></div>
@@ -247,7 +254,7 @@
 <div class="walkc"><div class="walk"><!--SHOT:attribute-dialog-->
 <ol class="steps">
 <li><b>Select New custom attribute</b></li>
-<li data-n="1"><b>Enter a Name</b><p>It must start with a letter. The internal key under it is made from the name.</p></li>
+<li data-n="1"><b>Enter a Name</b><p>The first letter or digit must be a letter. The internal key under it is made from the name's letters and digits.</p></li>
 <li data-n="2"><b>Choose the Type</b><p>Text, Number, Yes / No, Date or Dropdown. It cannot change later.</p></li>
 <li data-n="3"><b>For a dropdown, add the Options</b><p>Press <kbd>Enter</kbd> or a comma after each one.</p></li>
 <li data-n="4"><b>Choose a Default value</b><p>Optional. It is written onto every existing member straight away.</p></li>
@@ -256,7 +263,7 @@
 
 {{h:opts|Field settings}}
 <div class="opts">
-{{o:Name|req;lim=1 to 100 characters}}Must start with a letter. You can rename it later; the key stays.{{/o}}
+{{o:Name|req;lim=1 to 100 characters}}The first letter or digit must be a letter (A to Z). Spaces, punctuation and accented letters are left out of the key. You can rename it later; the key stays.{{/o}}
 {{o:Type|req;def=Text}}<div class="vals"><span>Text</span><span>Number</span><span>Yes / No</span><span>Date</span><span>Dropdown</span></div>Fixed once created.{{/o}}
 {{o:Options|lim=At least 1}}Dropdown only. Duplicates are dropped.{{/o}}
 {{o:Default value|opt}}On create: applied to every existing member. On edit: only for members created from now on.{{/o}}
@@ -274,7 +281,7 @@
 <p>The <span class="f">Built-in fields</span> card above lists the fields every member has: Name, Email, Phone, Tier, Points balance and Segments. They cannot be changed.</p>
 
 {{h:risk|Delete a field}}
-<p><span class="b alt">Delete</span> {{n:4}} removes the field and its value from every member in this program. It cannot be undone. Tiers and rules that use the field stop matching.</p>
+<p><span class="b alt">Delete</span> {{n:4}} removes the field and its value from every member in this program. It cannot be undone. Conditions on the field then see it as empty: "is" stops matching, but "is not" matches everyone. Members keep their tier until their next points, purchase or profile change.</p>
 
 {{h:fix|Messages}}
 <div class="tbl"><table>
