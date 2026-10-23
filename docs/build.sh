@@ -15,5 +15,5 @@ echo "Published to client/public/docs/index.html (served at /docs)"
 
 if [[ "${1:-}" == "--check" ]]; then
   node tooling/scripts/check.js .
-  python3 tooling/scripts/check_labels.py . ../client ../api
+  python3 tooling/scripts/check_labels.py . ../client/app ../client/components ../client/lib ../api/app
 fi

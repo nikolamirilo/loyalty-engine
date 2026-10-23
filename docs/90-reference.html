@@ -9,7 +9,7 @@
 <tbody>
 <tr><td>Staff session</td><td>7 days from sign in</td></tr>
 <tr><td>Staff sign in lockout</td><td>3 wrong tries, then 10 minutes</td></tr>
-<tr><td>Member session</td><td>30 days from sign in</td></tr>
+<tr><td>Member session</td><td>30 days from sign in or the last program switch</td></tr>
 <tr><td>Member login code</td><td>6 digits, 10 minutes, 5 tries</td></tr>
 <tr><td>Time between code emails</td><td>60 seconds</td></tr>
 <tr><td>Verification link</td><td>10 minutes, 5 tries</td></tr>
@@ -22,7 +22,8 @@
 <tbody>
 <tr><td>Program logo</td><td>2 MB. PNG, JPEG, WebP or SVG</td></tr>
 <tr><td>Program colours</td><td>6-digit hex code, such as #0050aa</td></tr>
-<tr><td>Event, attribute and rule names</td><td>1 to 100 characters, starting with a letter</td></tr>
+<tr><td>Event and attribute names</td><td>1 to 100 characters. The first letter or digit must be a letter</td></tr>
+<tr><td>Rule names</td><td>1 to 100 characters</td></tr>
 <tr><td>Custom field text value</td><td>500 characters</td></tr>
 <tr><td>Event ID sent by your systems</td><td>1 to 200 characters</td></tr>
 <tr><td>Reward points cost</td><td>Whole number above 0</td></tr>
@@ -63,13 +64,13 @@
 <thead><tr><th>What you see</th><th>Fix</th></tr></thead>
 <tbody>
 <tr><td>Everything looks empty</td><td>Check the program switcher at the top of the menu. You may be viewing another program.</td></tr>
-<tr><td>The console opened on a different program</td><td>The selected program is forgotten when the browser closes. Switch back.</td></tr>
+<tr><td>The console opened on a different program</td><td>The selected program is forgotten when the browser closes, and every sign in starts on the default program. Switch back.</td></tr>
 <tr><td>"Member not found" on a member link</td><td>The link belongs to another program, or the member was deleted.</td></tr>
 <tr><td>Grey placeholders that never go away</td><td>That part did not load. Reload the page. If it stays, the server may be down.</td></tr>
 <tr><td>"Cannot reach the API at ... Make sure the server is running."</td><td>The loyalty server is down or unreachable. Contact whoever runs it.</td></tr>
 <tr><td>"The API took too long to respond. Please try again."</td><td>Try again in a moment.</td></tr>
 <tr><td>"Database is temporarily unavailable. Please try again shortly."</td><td>Wait a minute and try again.</td></tr>
-<tr><td>"The request conflicts with existing data."</td><td>Usually a reward that was already redeemed. Deactivate it instead of deleting it.</td></tr>
+<tr><td>"The request conflicts with existing data."</td><td>Usually a reward that was already redeemed or given as a prize. Deactivate it instead of deleting it.</td></tr>
 <tr><td>Edit or Delete in a reward's or product's <span class="m">{{i:ellipsis-vertical}}</span> menu does nothing</td><td>A known issue in the current version. Deactivate items you no longer want to offer.</td></tr>
 <tr><td>"Something went wrong. Please try again."</td><td>Try again. If it repeats, note what you did and contact support.</td></tr>
 </tbody></table></div>
@@ -79,10 +80,10 @@
 <thead><tr><th>What you see</th><th>Fix</th></tr></thead>
 <tbody>
 <tr><td>A member earned more points than you entered</td><td>Their tier multiplier applied. See <a href="#points">Earn, burn and adjust points</a>.</td></tr>
-<tr><td>A member dropped a tier</td><td>Tiers use the current balance. Spending points can move a member down.</td></tr>
+<tr><td>A member dropped a tier</td><td>Tiers are checked again when the balance, purchases, segments or custom fields change. Spending points or leaving a segment can move a member down.</td></tr>
 <tr><td>A member has no tier</td><td>No tier matched. Add a catch-all tier with no conditions.</td></tr>
 <tr><td>An event earned nothing</td><td>Open <a href="#event-logs">Event logs</a>. Check that the event and its rules are on, and that the conditions match.</td></tr>
-<tr><td>Events from your systems are refused</td><td>The event is off. New events start off. See <a href="#events">Events</a>.</td></tr>
+<tr><td>Events from your systems are refused</td><td>The event is off (new events start off), or your system sent a key or attribute the event does not have. See <a href="#events">Events</a>.</td></tr>
 <tr><td>A "first time per member" rule does nothing</td><td>It already ran once for this member, even if its effects were skipped.</td></tr>
 <tr><td>A challenge prize was not given</td><td>The reward was inactive or out of stock when the challenge completed. Give it by hand on the member's page.</td></tr>
 <tr><td>New segment members did not get a challenge</td><td>The challenge was assigned while the segment was empty, or it is inactive or expired. Assign it to the segment again.</td></tr>
@@ -93,7 +94,7 @@
 <thead><tr><th>What you see</th><th>Fix</th></tr></thead>
 <tbody>
 <tr><td>A member cannot find their points</td><td>They may be in another program. They can switch on the Account tab.</td></tr>
-<tr><td>The login code email never arrived</td><td>Check spam. Use Use a different email and request a new code after 60 seconds.</td></tr>
+<tr><td>The login code email never arrived</td><td>Check spam. Select Use a different email, make sure Log in is selected, and request a new code after 60 seconds.</td></tr>
 <tr><td>"No active login code for this member"</td><td>Request a new code.</td></tr>
 <tr><td>A member mistyped their new email and cannot sign in</td><td>Open the member in the console, select Edit and fix the email.</td></tr>
 </tbody></table></div>
@@ -121,7 +122,7 @@
 {{o:Redemption}}A reward a member got, either paid with points or given as a prize.{{/o}}
 {{o:Rule}}When an event happens, if conditions hold, then effects run.{{/o}}
 {{o:Segment}}A named group of members, such as VIP.{{/o}}
-{{o:Slug}}A program's short web name, such as daybreak-coffee. It never changes.{{/o}}
+{{o:Slug}}A program's short web name, such as daybreak-coffee. Renaming the program in the console does not change it.{{/o}}
 {{o:Tier}}A level, such as Gold, with conditions and a multiplier.{{/o}}
 </div>
 </section>

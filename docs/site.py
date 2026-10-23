@@ -52,7 +52,7 @@ SITE = {
         'segment': 'A named group of members, such as VIP. Segments can hand out challenges and drive tiers.',
         'tier': 'A level, such as Gold, with conditions and an earn rate multiplier. Members get one on their own.',
         'multiplier': "A tier's earn rate. 1.5 means members in the tier earn 1.5 times the points.",
-        'slug': "A program's short web name, such as daybreak-coffee. Made from the name, it never changes.",
+        'slug': "A program's short web name, such as daybreak-coffee. Made from the name; renaming the program in the console does not change it.",
         'default program': 'The program members sign in to, and the one the console opens first.',
         'API key': 'The short name of an event, such as orderPlaced, that your systems send as "type".',
     },

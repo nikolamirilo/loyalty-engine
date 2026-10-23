@@ -901,7 +901,7 @@ figure.dgm{margin:1rem 0 1.6rem}
 <ol class="steps">
 <li><b>Sign in to the admin console</b><p>Go to <code>/admin/login</code>. See <a href="#admin-sign-in">Sign in to the console</a>.</p></li>
 <li><b>Open the Programs page</b><p>Select <span class="m">Manage</span> next to <span class="f">Program</span> at the top of the menu, then <span class="b">New program</span>.</p></li>
-<li data-n="1"><b>Enter a name</b><p>For example "Daybreak Coffee". The program's short web name (its slug) is made from this name and never changes.</p></li>
+<li data-n="1"><b>Enter a name</b><p>For example "Daybreak Coffee". The program's short web name (its slug) is made from this name. Renaming the program in the console does not change it.</p></li>
 <li data-n="2"><b>Add a description</b><p>Optional. It shows under the name on the Programs page.</p></li>
 <li data-n="3"><b>Upload a logo</b><p>Optional. PNG, JPG, WebP or SVG, up to 2 MB.</p></li>
 <li data-n="4"><b>Pick a primary colour</b><p>Optional. Buttons, links and highlights in both apps take this colour.</p></li>
@@ -1088,7 +1088,7 @@ figure.dgm{margin:1rem 0 1.6rem}
 <ul class="rules">
 <li>Programs never share data. Rewards, tiers, segments and points in one program are invisible in another.</li>
 <li>Creating a program adds every existing person to it with 0 points.</li>
-<li>The program's slug (its short web name) is made from the name when you create it, such as <code>daybreak-coffee</code>. It never changes, even if you rename the program. The Programs page does not show it.</li>
+<li>The program's slug (its short web name) is made from the name when you create it, such as <code>daybreak-coffee</code>. Renaming the program in the console does not change it. The Programs page does not show it.</li>
 <li>The selected program is remembered until you close the browser or sign out, and applies to every console tab in that browser. Each sign in starts on the default program.</li>
 <li>The program you are viewing shows "Currently viewing" on the Programs page.</li>
 <li>If the name's slug is taken, a number is added, such as <code>coffee-club-2</code>.</li>
@@ -1876,15 +1876,15 @@ figure.dgm{margin:1rem 0 1.6rem}
 <h2><span class="k k-steps"><svg class="ico" aria-hidden="true"><use href="#i-list-ordered"/></svg></span><span>Get a new code</span></h2>
 <ol class="steps">
 <li><b>Select Use a different email <button type="button" class="nchip" data-n="6" aria-label="Show item 6 on the screen">6</button></b><p>There is no "resend" button. This takes you back to the first step with an empty form.</p></li>
-<li><b>Enter the same email and select Send login code</b><p>Wait at least 60 seconds after the last code.</p></li>
+<li><b>Select Log in, enter the same email and select Send login code</b><p>The form keeps the tab you were on, so check that Log in is selected. Wait at least 60 seconds after the last code.</p></li>
 </ol>
 
 <h2><span class="k k-rules"><svg class="ico" aria-hidden="true"><use href="#i-shield-alert"/></svg></span><span>Good to know</span></h2>
 <ul class="rules">
 <li>A code works for 10 minutes and for 5 tries. Only the newest code works.</li>
-<li>A new code can be sent once every 60 seconds.</li>
+<li>A new code can be sent once every 60 seconds, unless the last code was used to sign in.</li>
 <li>Signing in always opens the default program. Members switch program on the <a href="#member-account">Account</a> tab.</li>
-<li>A member session lasts 30 days. Sign out with <svg class="ico" aria-hidden="true"><use href="#i-log-out"/></svg> at the top right. It takes you to the start page.</li>
+<li>A member session lasts 30 days from sign in, or from the last program switch. Sign out with <svg class="ico" aria-hidden="true"><use href="#i-log-out"/></svg> at the top right. It takes you to the start page.</li>
 <li>Sign up creates the account before the code is checked. If the email does not arrive, use <span class="t">Log in</span> next time, not Sign up.</li>
 <li>Signing in does not verify the email address. That is a separate email.</li>
 </ul>
@@ -1896,7 +1896,8 @@ figure.dgm{margin:1rem 0 1.6rem}
 <tr><td>"An account with this email already exists. Log in instead."</td><td>Select Log in.</td></tr>
 <tr><td>"Invalid login code"</td><td>Check the code in the newest email.</td></tr>
 <tr><td>"Login code has expired"</td><td>Get a new code.</td></tr>
-<tr><td>"No active login code for this member"</td><td>The code was used up after 5 wrong tries. Get a new code.</td></tr>
+<tr><td>"No active login code for this member"</td><td>The code was used up by 5 wrong tries, or was already used to sign in. Get a new code.</td></tr>
+<tr><td>"Login code could not be sent - email delivery is misconfigured. ..."</td><td>Trying again will not help. Tell whoever runs the server.</td></tr>
 <tr><td>"A code was just sent. Please wait 42 seconds before requesting another."</td><td>Wait, then try again.</td></tr>
 <tr><td>"Could not send the login code. Please try again shortly."</td><td>Try again in a minute.</td></tr>
 </tbody></table></div></details>
@@ -1905,7 +1906,7 @@ figure.dgm{margin:1rem 0 1.6rem}
 <figure class="shot"><div class="frame"><div class="vp" data-w="820" data-h="640" role="img" aria-label="The Home tab before and after opening a campaign."><div class="stage sx" style="width:820px;height:640px"><div class="ma-phone" style="left:0px"><div class="ma-head" data-k="head"><span class="le-mark" style="width:32px;height:32px;background:rgba(235,104,52,.12);color:#eb6834">DC</span><b>Daybreak Coffee</b><span class="out" data-k="out"><svg class="ico" aria-hidden="true"><use href="#i-log-out"/></svg></span></div><div class="ma-body"><div class="le-card" data-k="launch"><div style="padding:20px;display:flex;flex-direction:column;gap:12px"><div class="w5" style="font-size:13px">Campaign URL</div><div class="le-in focus" data-hz="1">https://games.example.com/spin</div><span class="le-b p full" data-k="open" data-hz="2"><svg class="ico" aria-hidden="true"><use href="#i-target"/></svg>Open campaign</span></div></div></div><div class="ma-tabs" data-k="tabs"><div class="ma-tab on" data-k="tab-home"><svg class="ico" aria-hidden="true"><use href="#i-house"/></svg><span>Home</span></div><div class="ma-tab" data-k="tab-products"><svg class="ico" aria-hidden="true"><use href="#i-shopping-bag"/></svg><span>Products</span></div><div class="ma-tab" data-k="tab-wallet"><svg class="ico" aria-hidden="true"><use href="#i-wallet"/></svg><span>Wallet</span></div><div class="ma-tab" data-k="tab-account"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg><span>Account</span></div></div></div><div class="ma-phone" style="left:430px"><div class="ma-head"><span class="le-mark" style="width:32px;height:32px;background:rgba(235,104,52,.12);color:#eb6834">DC</span><b>Daybreak Coffee</b><span class="out"><svg class="ico" aria-hidden="true"><use href="#i-log-out"/></svg></span></div><div style="position:absolute;left:0;right:0;top:56px;bottom:72px;background:linear-gradient(160deg,#fde68a,#fb923c);display:flex;align-items:center;justify-content:center;color:#7c2d12;font-size:22px;font-weight:700">Spin to win</div><div style="position:absolute;right:12px;top:68px;display:flex;gap:8px"><span class="le-b s ic" style="border-radius:50%" data-k="reload" data-hz="3"><svg class="ico" aria-hidden="true"><use href="#i-rotate-cw"/></svg></span><span class="le-b s ic" style="border-radius:50%" data-k="close" data-hz="4"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></span></div><div class="ma-tabs"><div class="ma-tab on"><svg class="ico" aria-hidden="true"><use href="#i-house"/></svg><span>Home</span></div><div class="ma-tab"><svg class="ico" aria-hidden="true"><use href="#i-shopping-bag"/></svg><span>Products</span></div><div class="ma-tab"><svg class="ico" aria-hidden="true"><use href="#i-wallet"/></svg><span>Wallet</span></div><div class="ma-tab"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg><span>Account</span></div></div></div></div></div></div><figcaption>The Home tab before and after opening a campaign.</figcaption><ol class="legend"><li data-n="1"><i>1</i><span>Paste the campaign link</span></li><li data-n="2"><i>2</i><span>Open campaign</span></li><li data-n="3"><i>3</i><span>Reload campaign</span></li><li data-n="4"><i>4</i><span>Close campaign</span></li></ol></figure>
 <h2><span class="k k-steps"><svg class="ico" aria-hidden="true"><use href="#i-list-ordered"/></svg></span><span>Open and close a campaign</span></h2>
 <ol class="steps">
-<li><b>Paste the link into Campaign URL <button type="button" class="nchip" data-n="1" aria-label="Show item 1 on the screen">1</button></b><p>The full link, starting with <code>https://</code>.</p></li>
+<li><b>Paste the link into Campaign URL <button type="button" class="nchip" data-n="1" aria-label="Show item 1 on the screen">1</button></b><p>The full link, including its start such as <code>https://</code>.</p></li>
 <li><b>Select Open campaign <button type="button" class="nchip" data-n="2" aria-label="Show item 2 on the screen">2</button></b><p>Or press <kbd>Enter</kbd>.<span class="done">The campaign fills the screen between the header and the tabs.</span></p></li>
 <li><b>Reload it <button type="button" class="nchip" data-n="3" aria-label="Show item 3 on the screen">3</button></b><p>Starts the campaign again from the beginning.</p></li>
 <li><b>Close it <button type="button" class="nchip" data-n="4" aria-label="Show item 4 on the screen">4</button></b><p>The form comes back with the same link filled in.</p></li>
@@ -1913,8 +1914,9 @@ figure.dgm{margin:1rem 0 1.6rem}
 <h2><span class="k k-rules"><svg class="ico" aria-hidden="true"><use href="#i-shield-alert"/></svg></span><span>Good to know</span></h2>
 <ul class="rules">
 <li>The app adds the member's ID to the link as <code>userId</code>, so the campaign knows who is playing.</li>
-<li>The campaign keeps running on the other tabs, sound included.</li>
-<li>The browser remembers the link and whether it was open, also after sign out.</li>
+<li>The campaign stays loaded while the member switches tabs. It keeps running in the background, sound included.</li>
+<li>Switching program restarts an open campaign, with the member ID for the new program.</li>
+<li>The browser remembers the link and whether it was open, also after sign out. Another member signing in on the same browser gets the same campaign.</li>
 <li>Some sites refuse to open inside another app. They show the browser's own error.</li>
 </ul>
 <details class="msgs"><summary><span class="k k-risk"><svg class="ico" aria-hidden="true"><use href="#i-life-buoy"/></svg></span>Messages<svg class="ico chev" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary><div class="tbl"><table>
@@ -1938,6 +1940,7 @@ figure.dgm{margin:1rem 0 1.6rem}
 <li>Spent (7d) covers the last 7 days up to now.</li>
 <li>Purchase history shows the newest 200 purchases.</li>
 <li>Only active products are listed. See <a href="#products">Products</a>.</li>
+<li>Buying a product staff just removed shows "Product not found".</li>
 </ul>
 <details class="msgs"><summary><span class="k k-risk"><svg class="ico" aria-hidden="true"><use href="#i-life-buoy"/></svg></span>Messages<svg class="ico chev" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary><div class="tbl"><table>
 <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
@@ -1972,13 +1975,13 @@ figure.dgm{margin:1rem 0 1.6rem}
 </ol>
 <h2><span class="k k-steps"><svg class="ico" aria-hidden="true"><use href="#i-list-ordered"/></svg></span><span>Switch program</span></h2>
 <ol class="steps">
-<li><b>Open Switch Loyalty Program <button type="button" class="nchip" data-n="4" aria-label="Show item 4 on the screen">4</button></b><p>Only shown when there are two or more programs.</p></li>
+<li><b>Open Switch Loyalty Program <button type="button" class="nchip" data-n="4" aria-label="Show item 4 on the screen">4</button></b><p>Only shown when there are two or more programs. Every program is listed. Picking one the member never used joins it with 0 points.</p></li>
 <li><b>Pick a program</b><span class="done">"Switched program." The whole app shows that program's logo, colours, points, tier, products and prizes.</span></li>
 </ol>
 <h2><span class="k k-rules"><svg class="ico" aria-hidden="true"><use href="#i-shield-alert"/></svg></span><span>Good to know</span></h2>
 <ul class="rules">
 <li>The tier card <button type="button" class="nchip" data-n="1" aria-label="Show item 1 on the screen">1</button> shows only when the member has a tier. The earn rate shows when it is above 1, such as "1.5x points".</li>
-<li>A green tick next to the email means it is verified.</li>
+<li>A green tick next to the email means it is verified. The tick stays when the member changes the email, so it does not prove the new address.</li>
 <li>Profile changes apply in every program.</li>
 <li>A new email works for sign in at once, with no confirmation. A typo locks the member out, so check it.</li>
 <li><span class="m">Copy member ID</span> <button type="button" class="nchip" data-n="2" aria-label="Show item 2 on the screen">2</button> copies the ID for the current program: "User ID copied."</li>
@@ -1987,17 +1990,19 @@ figure.dgm{margin:1rem 0 1.6rem}
 <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
 <tbody>
 <tr><td>"Email already registered"</td><td>Another account uses that email.</td></tr>
-<tr><td>"Could not switch program."</td><td>Try again, or sign out and in.</td></tr>
+<tr><td>"Something went wrong. Please try again."</td><td>Try again, or sign out and in.</td></tr>
+<tr><td>"You are not signed in."</td><td>Sign in again.</td></tr>
 </tbody></table></div></details>
 </section>
-<section class="page" id="member-emails" data-group="Member app" data-title="Emails members get" data-related="member-wallet member-sign-in"><header><h1>Emails members get</h1><div class="badges"><span class="bd role"><svg class="ico" aria-hidden="true"><use href="#i-smartphone"/></svg>Members</span></div><dl class="inshort"><dt>In short</dt><dd>Loyalty Engine sends members three kinds of email: login codes, email verification links and prize claim links. Two of them open a page in the member app.</dd><dt>Result</dt><dd>You know what each email does and how long it works.</dd></dl></header>
+<section class="page" id="member-emails" data-group="Member app" data-title="Emails members get" data-related="member-wallet member-sign-in"><header><h1>Emails members get</h1><div class="badges"><span class="bd role"><svg class="ico" aria-hidden="true"><use href="#i-smartphone"/></svg>Members</span></div><dl class="inshort"><dt>In short</dt><dd>Loyalty Engine sends members three kinds of email: login codes, email verification (a link or a code) and prize claim links. The verification link and the prize link open a page in the member app.</dd><dt>Result</dt><dd>You know what each email does and how long it works.</dd></dl></header>
 <figure class="shot"><div class="frame"><div class="vp" data-w="820" data-h="420" role="img" aria-label="The pages that open from member emails: email verification and prize claim."><div class="stage sx" style="width:820px;height:420px"><div class="ma-center" style="right:auto;width:400px"><div style="width:352px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="le-mark" style="width:48px;height:48px;background:rgba(235,104,52,.12);color:#eb6834">DC</span><div style="text-align:center"><div style="font-size:18px;font-weight:600">Verify your email</div><div class="le-muted" style="font-size:14px;margin-top:2px">One tap and you're done</div></div><div class="le-card" style="width:100%;padding:24px;margin-top:8px"><div class="le-stack"><div class="le-muted" style="font-size:14px">Press the button below to confirm this email address.</div><span class="le-b p full" data-k="v" data-hz="1">Verify my email</span></div></div></div></div><div class="ma-center" style="left:420px;width:400px;right:auto"><div style="width:352px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="le-mark" style="width:48px;height:48px;background:rgba(235,104,52,.12);color:#eb6834">DC</span><div style="text-align:center"><div style="font-size:18px;font-weight:600">Congratulations, Maya!</div><div class="le-muted" style="font-size:14px;margin-top:2px">Daybreak Coffee</div></div><div class="le-card" style="width:100%;padding:24px;margin-top:8px"><div class="row g12"><span class="le-chip" style="width:48px;height:48px;border-radius:12px;background:#efecfd;color:#5b4bd6"><svg class="ico" aria-hidden="true"><use href="#i-gift"/></svg></span><div><b class="w6" style="font-size:16px">Free espresso</b><div class="le-muted" style="font-size:13px">Any single espresso drink</div></div></div><div style="margin-top:20px"><span class="le-b p full" data-k="c" data-hz="2">Claim my prize</span></div></div></div></div></div></div></div><figcaption>The pages that open from member emails: email verification and prize claim.</figcaption><ol class="legend"><li data-n="1"><i>1</i><span>Verify my email</span></li><li data-n="2"><i>2</i><span>Claim my prize</span></li></ol></figure>
 <h2><span class="k k-opts"><svg class="ico" aria-hidden="true"><use href="#i-sliders-horizontal"/></svg></span><span>The emails</span></h2>
 <div class="tbl"><table>
 <thead><tr><th>Email</th><th>Subject</th><th>Works for</th><th>Opens</th></tr></thead>
 <tbody>
 <tr><td>Login code</td><td>"Your login code"</td><td>10 minutes, 5 tries</td><td>Nothing: type the code in the app</td></tr>
-<tr><td>Email verification</td><td>"Confirm your email address"</td><td>10 minutes</td><td>The Verify your email page</td></tr>
+<tr><td>Email verification, link</td><td>"Confirm your email address"</td><td>10 minutes, 5 tries</td><td>The Verify your email page</td></tr>
+<tr><td>Email verification, code</td><td>"Your verification code"</td><td>10 minutes, 5 tries</td><td>Nothing: the member types the code where they were asked</td></tr>
 <tr><td>Prize</td><td>"You've won &lt;reward&gt;!"</td><td>30 days</td><td>The claim page</td></tr>
 </tbody></table></div>
 
@@ -2014,19 +2019,24 @@ figure.dgm{margin:1rem 0 1.6rem}
 <h2><span class="k k-rules"><svg class="ico" aria-hidden="true"><use href="#i-shield-alert"/></svg></span><span>Good to know</span></h2>
 <ul class="rules">
 <li>Neither page needs the member to be signed in.</li>
-<li>A new verification email replaces the old one, so older links stop working.</li>
+<li>Verification emails are sent by your own systems, not by the member app or the console. Members cannot ask for one in the app.</li>
+<li>A new verification email replaces the old one, so older links stop working. Once the address is verified, any link shows success.</li>
 <li>Verification counts in every program.</li>
-<li>An expired prize link still lets the member claim the prize in the app's Wallet.</li>
+<li>Prize emails are sent only when staff tick the email option while giving a prize. Prizes from rules and challenges send no email; they show in Wallet.</li>
+<li>An expired prize link still lets the member claim the prize in Wallet. Signing in opens the default program, so the member may need to switch to the prize's program on Account first.</li>
 <li>Claiming a prize twice is harmless.</li>
 </ul>
 <details class="msgs"><summary><span class="k k-risk"><svg class="ico" aria-hidden="true"><use href="#i-life-buoy"/></svg></span>Messages<svg class="ico chev" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary><div class="tbl"><table>
 <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
 <tbody>
 <tr><td>"This verification link is incomplete. Open the link from your email again, or request a new one."</td><td>Open the link from the email again, without cutting it.</td></tr>
-<tr><td>"Verification code has expired"</td><td>Ask for a new verification email.</td></tr>
+<tr><td>"Verification code has expired"</td><td>Ask the company for a new verification email. Their system sends it.</td></tr>
+<tr><td>"No active verification code for this member"</td><td>The link was used up by 5 wrong tries. Ask for a new verification email.</td></tr>
 <tr><td>"Invalid verification code"</td><td>Use the newest email. Each wrong try uses one of 5 tries.</td></tr>
-<tr><td>"This link has expired, but your prize is still waiting in your wallet."</td><td>Select Sign in to claim it and claim it in Wallet.</td></tr>
-<tr><td>"This prize link is not valid."</td><td>Use the newest prize email.</td></tr>
+<tr><td>"This link has expired, but your prize is still waiting in your wallet."</td><td>Select Sign in to claim it, switch to the prize's program on Account if needed, and claim it in Wallet.</td></tr>
+<tr><td>"This prize link is not valid."</td><td>The link was cut or changed, or the prize was deleted. Open the link from the email again. If it still fails, ask staff.</td></tr>
+<tr><td>"This prize link is incomplete. Open the link from your email again."</td><td>Open the full link from the email.</td></tr>
+<tr><td>"You claimed this prize on Oct 21, 2026."</td><td>Nothing to do. The prize is already claimed.</td></tr>
 </tbody></table></div></details>
 </section>
 <section class="page" id="limits" data-group="Reference" data-title="Limits and rules" data-related="troubleshooting"><header><h1>Limits and rules</h1><dl class="inshort"><dt>In short</dt><dd>Every number and fixed rule from these docs in one place.</dd><dt>Result</dt><dd>Every limit in one place.</dd></dl></header>
@@ -2036,7 +2046,7 @@ figure.dgm{margin:1rem 0 1.6rem}
 <tbody>
 <tr><td>Staff session</td><td>7 days from sign in</td></tr>
 <tr><td>Staff sign in lockout</td><td>3 wrong tries, then 10 minutes</td></tr>
-<tr><td>Member session</td><td>30 days from sign in</td></tr>
+<tr><td>Member session</td><td>30 days from sign in or the last program switch</td></tr>
 <tr><td>Member login code</td><td>6 digits, 10 minutes, 5 tries</td></tr>
 <tr><td>Time between code emails</td><td>60 seconds</td></tr>
 <tr><td>Verification link</td><td>10 minutes, 5 tries</td></tr>
@@ -2049,7 +2059,8 @@ figure.dgm{margin:1rem 0 1.6rem}
 <tbody>
 <tr><td>Program logo</td><td>2 MB. PNG, JPEG, WebP or SVG</td></tr>
 <tr><td>Program colours</td><td>6-digit hex code, such as #0050aa</td></tr>
-<tr><td>Event, attribute and rule names</td><td>1 to 100 characters, starting with a letter</td></tr>
+<tr><td>Event and attribute names</td><td>1 to 100 characters. The first letter or digit must be a letter</td></tr>
+<tr><td>Rule names</td><td>1 to 100 characters</td></tr>
 <tr><td>Custom field text value</td><td>500 characters</td></tr>
 <tr><td>Event ID sent by your systems</td><td>1 to 200 characters</td></tr>
 <tr><td>Reward points cost</td><td>Whole number above 0</td></tr>
@@ -2085,13 +2096,13 @@ figure.dgm{margin:1rem 0 1.6rem}
 <thead><tr><th>What you see</th><th>Fix</th></tr></thead>
 <tbody>
 <tr><td>Everything looks empty</td><td>Check the program switcher at the top of the menu. You may be viewing another program.</td></tr>
-<tr><td>The console opened on a different program</td><td>The selected program is forgotten when the browser closes. Switch back.</td></tr>
+<tr><td>The console opened on a different program</td><td>The selected program is forgotten when the browser closes, and every sign in starts on the default program. Switch back.</td></tr>
 <tr><td>"Member not found" on a member link</td><td>The link belongs to another program, or the member was deleted.</td></tr>
 <tr><td>Grey placeholders that never go away</td><td>That part did not load. Reload the page. If it stays, the server may be down.</td></tr>
 <tr><td>"Cannot reach the API at ... Make sure the server is running."</td><td>The loyalty server is down or unreachable. Contact whoever runs it.</td></tr>
 <tr><td>"The API took too long to respond. Please try again."</td><td>Try again in a moment.</td></tr>
 <tr><td>"Database is temporarily unavailable. Please try again shortly."</td><td>Wait a minute and try again.</td></tr>
-<tr><td>"The request conflicts with existing data."</td><td>Usually a reward that was already redeemed. Deactivate it instead of deleting it.</td></tr>
+<tr><td>"The request conflicts with existing data."</td><td>Usually a reward that was already redeemed or given as a prize. Deactivate it instead of deleting it.</td></tr>
 <tr><td>Edit or Delete in a reward's or product's <span class="m"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"/></svg></span> menu does nothing</td><td>A known issue in the current version. Deactivate items you no longer want to offer.</td></tr>
 <tr><td>"Something went wrong. Please try again."</td><td>Try again. If it repeats, note what you did and contact support.</td></tr>
 </tbody></table></div>
@@ -2101,10 +2112,10 @@ figure.dgm{margin:1rem 0 1.6rem}
 <thead><tr><th>What you see</th><th>Fix</th></tr></thead>
 <tbody>
 <tr><td>A member earned more points than you entered</td><td>Their tier multiplier applied. See <a href="#points">Earn, burn and adjust points</a>.</td></tr>
-<tr><td>A member dropped a tier</td><td>Tiers use the current balance. Spending points can move a member down.</td></tr>
+<tr><td>A member dropped a tier</td><td>Tiers are checked again when the balance, purchases, segments or custom fields change. Spending points or leaving a segment can move a member down.</td></tr>
 <tr><td>A member has no tier</td><td>No tier matched. Add a catch-all tier with no conditions.</td></tr>
 <tr><td>An event earned nothing</td><td>Open <a href="#event-logs">Event logs</a>. Check that the event and its rules are on, and that the conditions match.</td></tr>
-<tr><td>Events from your systems are refused</td><td>The event is off. New events start off. See <a href="#events">Events</a>.</td></tr>
+<tr><td>Events from your systems are refused</td><td>The event is off (new events start off), or your system sent a key or attribute the event does not have. See <a href="#events">Events</a>.</td></tr>
 <tr><td>A "first time per member" rule does nothing</td><td>It already ran once for this member, even if its effects were skipped.</td></tr>
 <tr><td>A challenge prize was not given</td><td>The reward was inactive or out of stock when the challenge completed. Give it by hand on the member's page.</td></tr>
 <tr><td>New segment members did not get a challenge</td><td>The challenge was assigned while the segment was empty, or it is inactive or expired. Assign it to the segment again.</td></tr>
@@ -2115,7 +2126,7 @@ figure.dgm{margin:1rem 0 1.6rem}
 <thead><tr><th>What you see</th><th>Fix</th></tr></thead>
 <tbody>
 <tr><td>A member cannot find their points</td><td>They may be in another program. They can switch on the Account tab.</td></tr>
-<tr><td>The login code email never arrived</td><td>Check spam. Use Use a different email and request a new code after 60 seconds.</td></tr>
+<tr><td>The login code email never arrived</td><td>Check spam. Select Use a different email, make sure Log in is selected, and request a new code after 60 seconds.</td></tr>
 <tr><td>"No active login code for this member"</td><td>Request a new code.</td></tr>
 <tr><td>A member mistyped their new email and cannot sign in</td><td>Open the member in the console, select Edit and fix the email.</td></tr>
 </tbody></table></div>
@@ -2138,7 +2149,7 @@ figure.dgm{margin:1rem 0 1.6rem}
 <div class="opt"><div class="n">Redemption</div><div class="d">A reward a member got, either paid with points or given as a prize.</div></div>
 <div class="opt"><div class="n">Rule</div><div class="d">When an event happens, if conditions hold, then effects run.</div></div>
 <div class="opt"><div class="n">Segment</div><div class="d">A named group of members, such as VIP.</div></div>
-<div class="opt"><div class="n">Slug</div><div class="d">A program's short web name, such as daybreak-coffee. It never changes.</div></div>
+<div class="opt"><div class="n">Slug</div><div class="d">A program's short web name, such as daybreak-coffee. Renaming the program in the console does not change it.</div></div>
 <div class="opt"><div class="n">Tier</div><div class="d">A level, such as Gold, with conditions and a multiplier.</div></div>
 </div>
 </section>
@@ -2160,7 +2171,7 @@ figure.dgm{margin:1rem 0 1.6rem}
 <button type="button" class="totop" id="totop" aria-label="Back to top"><svg class="ico" aria-hidden="true"><use href="#i-arrow-up"/></svg></button>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script type="application/json" id="docs-config">{"groupIcons": {"Get started": "#i-rocket", "Admin console": "#i-layout-dashboard", "Members": "#i-users", "Program setup": "#i-gift", "Events and rules": "#i-zap", "Member app": "#i-smartphone", "Reference": "#i-book-open"}, "glossary": {"segment": "A named group of members, such as VIP. Segments can hand out challenges and drive tiers.", "tier": "A level, such as Gold, with conditions and an earn rate multiplier. Members get one on their own.", "multiplier": "A tier's earn rate. 1.5 means members in the tier earn 1.5 times the points.", "slug": "A program's short web name, such as daybreak-coffee. Made from the name, it never changes.", "default program": "The program members sign in to, and the one the console opens first.", "API key": "The short name of an event, such as orderPlaced, that your systems send as \"type\"."}, "synonyms": {"delete": ["remove"], "points": ["balance", "credit"], "burn": ["spend", "deduct", "subtract"], "earn": ["add points", "award", "give points"], "prize": ["gift", "free reward"], "program": ["brand", "tenant", "workspace"], "segment": ["group", "cohort", "list"], "tier": ["level", "status"], "event": ["webhook", "integration", "api"], "rule": ["automation", "trigger"], "member": ["customer", "user", "person"], "login": ["sign in", "log in", "code"], "logo": ["branding", "colour", "color", "theme"], "challenge": ["goal", "mission", "quest"]}, "popular": ["quickstart", "members", "points", "rules", "tiers", "troubleshooting"], "storageKey": "loyalty-engine-docs", "url": "", "glossaryPage": "glossary"}</script>
+<script type="application/json" id="docs-config">{"groupIcons": {"Get started": "#i-rocket", "Admin console": "#i-layout-dashboard", "Members": "#i-users", "Program setup": "#i-gift", "Events and rules": "#i-zap", "Member app": "#i-smartphone", "Reference": "#i-book-open"}, "glossary": {"segment": "A named group of members, such as VIP. Segments can hand out challenges and drive tiers.", "tier": "A level, such as Gold, with conditions and an earn rate multiplier. Members get one on their own.", "multiplier": "A tier's earn rate. 1.5 means members in the tier earn 1.5 times the points.", "slug": "A program's short web name, such as daybreak-coffee. Made from the name; renaming the program in the console does not change it.", "default program": "The program members sign in to, and the one the console opens first.", "API key": "The short name of an event, such as orderPlaced, that your systems send as \"type\"."}, "synonyms": {"delete": ["remove"], "points": ["balance", "credit"], "burn": ["spend", "deduct", "subtract"], "earn": ["add points", "award", "give points"], "prize": ["gift", "free reward"], "program": ["brand", "tenant", "workspace"], "segment": ["group", "cohort", "list"], "tier": ["level", "status"], "event": ["webhook", "integration", "api"], "rule": ["automation", "trigger"], "member": ["customer", "user", "person"], "login": ["sign in", "log in", "code"], "logo": ["branding", "colour", "color", "theme"], "challenge": ["goal", "mission", "quest"]}, "popular": ["quickstart", "members", "points", "rules", "tiers", "troubleshooting"], "storageKey": "loyalty-engine-docs", "url": "", "glossaryPage": "glossary"}</script>
 <script>
 (function () {
   /* everything specific to one product comes from site.py, through this JSON block */
