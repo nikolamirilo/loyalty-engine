@@ -9,7 +9,7 @@ tokens from the component styles, and its words (labels, menu names) from the UI
 # the commits since then that touch code in `watch` (minus `ignore`); the update routine in
 # UPDATE_ROUTINE.md updates the pages for them and then moves `commit` forward with --mark.
 SOURCE = {
-    'commit': '13db3b222673788479be000558b6bb1c936c5a6d',   # main, after the docs were first merged
+    'commit': '9c5add5e519a3c9b935755a323aaf6a5bc951843',   # the start page tile, which the docs already cover
     'checked': '2026-10-23',
     # code that can change what users see or what happens when they act
     'watch': [
