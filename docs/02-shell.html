@@ -1,0 +1,32 @@
+<!--SPRITE-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>{{LOGO_SYMBOL}}</defs></svg>
+<div class="scrim" id="scrim"></div>
+<div class="app">
+<aside class="side" id="side" aria-label="Documentation navigation">
+  <a class="brand" href="#{{HOME}}">{{LOGO_USE}}<span class="tag">{{DOCS_LABEL}}</span></a>
+  <nav class="nav" id="nav" aria-label="Pages"></nav>
+</aside>
+<div class="mainwrap">
+<header class="top" id="top">
+  <button type="button" class="ibtn-d menu-btn" id="menuBtn" aria-label="Open navigation" aria-expanded="false" aria-controls="side">{{i:menu}}</button>
+  <a class="brand brand-m" href="#{{HOME}}">{{LOGO_USE_SMALL}}</a>
+  <div class="tcrumb" id="tcrumb"></div>
+  <button type="button" class="sbtn" id="searchBtn" aria-label="Search the docs">{{i:search}}<span class="lbl">Search the docs</span><kbd>/</kbd></button>
+  <button type="button" class="ibtn-d" id="linkBtn" aria-label="Copy a link to this spot" title="Copy a link to this spot">{{i:link}}</button>
+  <button type="button" class="ibtn-d" id="prefsBtn" aria-label="Reading settings" aria-expanded="false" aria-controls="prefs" title="Theme and text size">{{i:sun-moon}}</button>
+  <div class="pop" id="prefs" role="dialog" aria-label="Reading settings">
+    <h6>Theme</h6>
+    <div class="themes">{{THEME_BUTTONS}}</div>
+    <button type="button" class="sys" id="sysTheme">Match my device</button>
+    <h6 style="margin-top:.4rem">Text size</h6>
+    <div class="sizes">
+      <button type="button" data-set-size="small" aria-pressed="false" style="font-size:.85rem">A<span>Small</span></button>
+      <button type="button" data-set-size="medium" aria-pressed="true" style="font-size:1rem">A<span>Medium</span></button>
+      <button type="button" data-set-size="large" aria-pressed="false" style="font-size:1.2rem">A<span>Large</span></button>
+    </div>
+  </div>
+  <div class="progress" id="progress"></div>
+</header>
+<main class="main" id="main">
+<div class="doc">
+<div class="pages" id="pages">

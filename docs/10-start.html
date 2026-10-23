@@ -1,0 +1,57 @@
+<!-- EXAMPLE CONTENT: shows every building block. Replace it with pages written from the product's code. -->
+<section class="page on" id="welcome" data-group="Get started" data-title="Welcome">
+<header>
+<h1>Acme documentation</h1>
+<p class="lead">Acme is where your team plans projects and tracks tasks. Each page here covers one task, so you can follow along in Acme step by step.</p>
+</header>
+
+{{h:info|What you can do in Acme}}
+<div class="cards">
+  <a href="#projects"><div class="nc"><i class="k-steps">{{i:folder-kanban}}</i><b>Plan projects</b></div><span>Create a project for each piece of work.</span></a>
+  <a href="#project-settings"><div class="nc"><i class="k-opts">{{i:users}}</i><b>Work together</b></div><span>Add teammates and choose what they can change.</span></a>
+  <a href="#troubleshooting"><div class="nc"><i class="k-rules">{{i:life-buoy}}</i><b>Fix problems</b></div><span>Find what you see and follow the fix.</span></a>
+</div>
+
+{{h:info|Start here}}
+<ol class="steps">
+<li><b>Build something</b><p><a href="#quickstart">Create your first project</a> takes you from an empty workspace to a shared project.</p></li>
+<li><b>Look things up</b><p>Use the search box or the menu on the left.</p></li>
+</ol>
+
+{{h:info|How these pages work}}
+<p>Every page opens with <strong>In short</strong>: what the page helps you do and what you end up with. Sections are color coded:</p>
+<div class="legend-key">
+<span><span class="k k-steps">{{i:list-ordered}}</span>How to: steps in order</span>
+<span><span class="k k-opts">{{i:sliders-horizontal}}</span>Options: every setting</span>
+<span><span class="k k-rules">{{i:shield-alert}}</span>Rules: what Acme allows</span>
+<span><span class="k k-ex">{{i:lightbulb}}</span>Example: a setup to copy</span>
+<span><span class="k k-risk">{{i:octagon-alert}}</span>Careful: cannot be undone</span>
+</div>
+<p>Names from Acme look like they do on screen: <span class="b">Create</span> is a button, <span class="f">Name</span> is a field, <span class="m">Settings</span> is a menu item and <span class="t">Members</span> is a tab. Tags show <span class="tg req">Required</span> settings, a <span class="tg def">Default: Private</span> and <span class="tg lim">Max 80 characters</span>.</p>
+<p>On screens, hover or tap a number to see what it points at. Select a screen to enlarge it. Use the <span class="m">{{i:sun-moon}}</span> button at the top right to change the theme and text size.</p>
+</section>
+
+<section class="page" id="quickstart" data-group="Get started" data-title="Create your first project">
+<header>
+<h1>Create your first project</h1>
+<p class="lead">Create a project, add a task and share it with a teammate. It takes about five minutes.</p>
+</header>
+
+{{h:steps|Part 1: Create the project}}
+<div class="walkc"><div class="walk"><!--SHOT:qs-new-project-->
+<ol class="steps">
+<li data-n="1"><b>Select New project</b><p>At the top right of the project list.</p></li>
+<li data-n="2"><b>Enter a name</b><p>Up to 80 characters. You can change it later.</p></li>
+<li data-n="3"><b>Choose who can see it</b><p><span class="f">Private</span> is the default. Only people you add can open the project.</p></li>
+<li data-n="4"><b>Select Create</b><span class="done">The new project opens on its Tasks tab.</span></li>
+</ol></div></div>
+
+{{h:steps|Part 2: Share it}}
+<ol class="steps">
+<li><b>Open the Members tab</b><p>In <a href="#settings-members">project settings</a>.</p></li>
+<li><b>Select Add member and enter an email</b><span class="done">Your teammate gets an email with a link to the project.</span></li>
+</ol>
+<!--SHOT:anim-create-->
+[[tip Tip]]<p>Give each project a name your team will recognize in search, such as "Website relaunch 2026".</p>[[/]]
+[[warn Members see everything in the project]]<p>Anyone you add can see every task and file in it. Use a separate project for private work.</p>[[/]]
+</section>
