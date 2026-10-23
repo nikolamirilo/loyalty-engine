@@ -29,7 +29,7 @@
 <div class="opts">
 {{o:Name|req}}Unique in the program. "VIP" and "vip" count as different names.{{/o}}
 {{o:Description|opt}}Shown on the card.{{/o}}
-{{o:Color|opt}}A hex value such as <code>#f59e0b</code>, or pick one with the swatch.{{/o}}
+{{o:Color|opt}}A hex value such as <code>#f59e0b</code>, or pick one with the swatch. Other text is saved as is, but does not tint the icon.{{/o}}
 </div>
 
 {{h:rules|Good to know}}
@@ -49,7 +49,7 @@
 <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
 <tbody>
 <tr><td>"Segment name already exists"</td><td>Pick another name.</td></tr>
-<tr><td>"Everyone's already in"</td><td>Every member is in the segment already.</td></tr>
+<tr><td>"Everyone's already in"</td><td>Every one of the newest 1,000 members is in the segment already, or the program has no members yet.</td></tr>
 </tbody></table></div>
 </section>
 
@@ -92,17 +92,18 @@
 <ul class="rules">
 <li>A reward can be handed out when it is active and its stock is blank or above 0.</li>
 <li>When stock reaches 0, the Stock column says "Out of stock" {{n:4}}, but the reward still shows Active.</li>
-<li>Stock never goes back up on its own. Edit the reward to add more.</li>
+<li>Stock never goes back up on its own. Raising it needs Edit (see the known issue below).</li>
 <li>Members cannot redeem rewards themselves in the member app. Staff redeem or assign them on the <a href="#member-rewards">member's page</a>, and <a href="#rules">event rules</a> and <a href="#challenges">challenges</a> can give them out.</li>
-<li>Reward names do not have to be unique.</li>
+<li>Reward names do not have to be unique. The list has no fixed order.</li>
+<li>Event rules that give a deleted reward stay, and that effect is skipped.</li>
 </ul>
-[[warn A redeemed reward cannot be deleted]]<p>Once a reward has been redeemed or given even once, deleting it fails with "The request conflicts with existing data." Deactivate it instead.</p>[[/]]
+[[warn A redeemed reward cannot be deleted]]<p>While any member still has a redemption or prize of this reward, deleting it fails with "The request conflicts with existing data." Deactivate it instead.</p>[[/]]
 
 {{h:fix|Messages}}
 <div class="tbl"><table>
 <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
 <tbody>
-<tr><td>"Points cost must be greater than 0."</td><td>Enter a whole number above 0.</td></tr>
+<tr><td>The browser's own message, such as "Value must be greater than or equal to 1"</td><td>Enter a whole number of 1 or more in Points cost.</td></tr>
 <tr><td>"The request conflicts with existing data."</td><td>The reward has redemptions. Deactivate it instead of deleting it.</td></tr>
 </tbody></table></div>
 </section>
@@ -170,7 +171,7 @@
 {{o:Target|req;def=1;lim=Whole number above 0}}Progress needed to complete.{{/o}}
 {{o:Reward points|opt;def=0}}Granted on completion, without the tier multiplier.{{/o}}
 {{o:Prize reward|opt;def=No prize}}Assigned on completion if the reward is active and in stock. Otherwise it is skipped without a message.{{/o}}
-{{o:Expires at|opt}}A fixed deadline for everyone. After it passes, nobody new can get the challenge.{{/o}}
+{{o:Expires at|opt}}Without Expires after (days), this is everyone's deadline. With it, this is only the cut-off: after it passes, nobody new can get the challenge. Shown in your time zone.{{/o}}
 {{o:Expires after (days)|opt}}Each member's deadline is this many days after they get it. Leave blank to use the fixed date.{{/o}}
 {{o:Active (can be assigned)|def=On}}Only active challenges can be handed out. Turning it off does not stop progress for members who already have it.{{/o}}
 </div>
@@ -187,6 +188,8 @@
 <ul class="rules">
 <li>After you assign a challenge to a segment, people who join that segment later get it too, while it is active and not expired.</li>
 <li>Assigning to an empty segment records nothing, so later joiners do not get it.</li>
+<li>Challenge prizes are not emailed. They appear in the member's Wallet to claim.</li>
+<li>The Prize reward list also shows inactive rewards. Those are skipped on completion.</li>
 <li>Members who already have the challenge, in any status, are skipped.</li>
 <li>A member's deadline is set when they get the challenge. Editing the deadline later does not change deadlines already handed out.</li>
 <li>A challenge whose fixed deadline passed still shows Active on its card, but cannot be handed out.</li>
@@ -199,9 +202,9 @@
 <div class="tbl"><table>
 <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
 <tbody>
-<tr><td>"Target value must be greater than 0."</td><td>Enter a whole number above 0.</td></tr>
+<tr><td>The browser's own message, such as "Value must be greater than or equal to 1"</td><td>Enter a whole number of 1 or more in Target.</td></tr>
 <tr><td>"Challenge is not active"</td><td>Edit the challenge and tick Active (can be assigned).</td></tr>
-<tr><td>"Challenge has expired"</td><td>Move the Expires at date into the future.</td></tr>
+<tr><td>"Challenge has expired"</td><td>When handing it out: move the Expires at date into the future. When adding progress: that member's own deadline passed, and editing the challenge does not change it.</td></tr>
 <tr><td>"Couldn't load challenges"</td><td>Select Retry.</td></tr>
 </tbody></table></div>
 </section>
@@ -209,7 +212,7 @@
 <section class="page" id="tiers" data-group="Program setup" data-title="Tiers">
 <header>
 <h1>Tiers</h1>
-<p class="lead">Tiers are levels such as Silver and Gold. Each tier has conditions and an earn rate multiplier. Loyalty Engine puts every member in a tier on its own.</p>
+<p class="lead">Tiers are levels such as Silver and Gold. Each tier has conditions and an earn rate multiplier. Loyalty Engine puts each member in the right tier on its own. A member who matches no tier has none.</p>
 <div class="where"><b>{{i:map-pin}} Where</b><span class="m">{{i:layers}} Tiers</span></div>
 </header>
 <!--SHOT:tiers-page-->
@@ -219,9 +222,9 @@
 <ol class="steps">
 <li><b>Select New tier and enter a Name</b></li>
 <li data-n="1"><b>Set the Rank</b><p>Higher ranks are tried first.</p></li>
-<li data-n="2"><b>Set the Multiplier</b><p>1.5 means members earn 1.5 times the points.</p></li>
-<li data-n="3"><b>Add conditions</b><p>Pick a field, a comparison and a value. All conditions must match.</p></li>
-<li data-n="4"><b>Select Add condition for more</b></li>
+<li data-n="2"><b>Set the Multiplier</b><p>1.5 means members earn 1.5 times the points, rounded to a whole number.</p></li>
+<li data-n="4"><b>Select Add condition</b><p>A new tier starts with no conditions. Each click adds a row.</p></li>
+<li data-n="3"><b>Pick a field, a comparison and a value</b><p>All conditions must match. Number values are whole numbers.</p></li>
 <li data-n="5"><b>Select Create tier</b><span class="done">"Tier created." Every member in the program is checked again.</span></li>
 </ol></div></div>
 
@@ -233,7 +236,7 @@
 <div class="opts">
 {{o:Name|req}}Unique in the program.{{/o}}
 {{o:Rank|req;def=0}}Whole number. Highest tried first. Two tiers with the same rank: the older one wins.{{/o}}
-{{o:Multiplier|req;def=1;lim=Above 0}}Applies to points from <span class="b alt">Earn</span> and from event rules. Below 1 lowers earning.{{/o}}
+{{o:Multiplier|req;def=1;lim=Above 0, in steps of 0.1}}Applies to points from <span class="b alt">Earn</span> and from event rules. Below 1 lowers earning.{{/o}}
 {{o:Conditions|opt}}None means every member qualifies. Useful for a catch-all lowest tier.{{/o}}
 </div>
 
@@ -253,14 +256,14 @@
 <thead><tr><th>Tier</th><th>Rank</th><th>Multiplier</th><th>Conditions</th></tr></thead>
 <tbody>
 <tr><td>Gold</td><td>2</td><td>1.5</td><td>Points balance is at least 2000, and Segments include VIP</td></tr>
-<tr><td>Silver</td><td>1</td><td>1.25</td><td>Points balance is at least 500</td></tr>
+<tr><td>Silver</td><td>1</td><td>1.2</td><td>Points balance is at least 500</td></tr>
 <tr><td>Bronze</td><td>0</td><td>1</td><td>None: everyone else</td></tr>
 </tbody></table></div>
 
 {{h:rules|When tiers are checked}}
 <ul class="rules">
 <li>After every points change, purchase and member edit.</li>
-<li>After an event whose rules did something.</li>
+<li>After an event that matched at least one active rule.</li>
 <li>For every member, when you create, edit or delete a tier.</li>
 <li>Not on a schedule. Nothing changes just because time passes.</li>
 <li>Not when you delete a segment or a custom field.</li>
@@ -273,7 +276,7 @@
 </ul>
 
 {{h:risk|Delete a tier}}
-<p>Members in the tier are checked against every remaining tier and moved, or left without a tier if none match. It cannot be undone.</p>
+<p>Every member is checked again. Members of the deleted tier move to another tier, or are left without one if none match. It cannot be undone.</p>
 
 {{h:fix|Messages}}
 <div class="tbl"><table>
@@ -282,6 +285,7 @@
 <tr><td>"Tier name already exists"</td><td>Pick another name.</td></tr>
 <tr><td>"Multiplier must be greater than 0."</td><td>Enter a number above 0.</td></tr>
 <tr><td>"The condition on 'Points balance' needs a value."</td><td>Fill in the value, or remove the row.</td></tr>
-<tr><td>A condition shows "Unknown field"</td><td>The custom field it used was deleted. Edit the tier and remove that row.</td></tr>
+<tr><td>A condition shows "Unknown field"</td><td>The custom field it used was deleted. In the edit window that row shows as Points balance: find it by its value and remove it. Saving with it fails with "Unknown condition field ...".</td></tr>
+<tr><td>A condition shows a long ID instead of a segment name</td><td>The segment was deleted. Edit the tier and remove that row. Saving with it fails with "Segment not found".</td></tr>
 </tbody></table></div>
 </section>

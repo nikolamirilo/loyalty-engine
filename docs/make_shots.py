@@ -449,7 +449,7 @@ def tier_card(name, count, rank, rate, conds, first=False):
 tpage = (ph('Tiers', 'Points, purchase spend, segments and custom attributes, combined however you like, applying an earn-rate multiplier.', b('New tier', 'p', 'plus', key='new')) +
          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">' +
          tier_card('Bronze', '701 members', '0', '1', []) +
-         tier_card('Silver', '342 members', '1', '1.25', ["Member's points balance is at least 500"]) +
+         tier_card('Silver', '342 members', '1', '1.2', ["Member's points balance is at least 500"]) +
          tier_card('Gold', '128 members', '2', '1.5', ["Member's points balance is at least 2000", "Member's segments include VIP"], True) + '</div>')
 inner = admin(tpage, 'Tiers')
 for n, needle in enumerate(['<span class="le-b p" data-k="new"', '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px" data-k="rank"', '<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:16px;min-height:52px;align-content:flex-start" data-k="conds"', '<span class="le-b gh ic" data-k="edit"'], 1):

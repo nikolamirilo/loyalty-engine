@@ -23,7 +23,10 @@
 <li>There is one staff account. Its username and password are set by whoever runs the server. There is no sign up, no password reset and no "remember me".</li>
 <li>A session lasts 7 days from the moment you sign in. It does not get longer while you work. After 7 days, you sign in again.</li>
 <li>After 3 wrong tries from the same network address, sign in is blocked for 10 minutes. While blocked, even the right password is refused.</li>
-<li>The lockout counter resets when the server restarts.</li>
+<li>Wrong tries do not need to be close together. They count until someone signs in from that address.</li>
+<li>The counter is kept in the server's memory. It resets when the server restarts, and each server instance keeps its own count.</li>
+<li>After signing in you always land on the Dashboard.</li>
+<li>Signing out only ends the session in that browser.</li>
 <li>Opening any console page while signed out takes you to the sign-in page.</li>
 </ul>
 
@@ -49,7 +52,7 @@
 <div class="walkc"><div class="walk"><!--SHOT:program-switch-->
 <ol class="steps">
 <li data-n="1"><b>Open the program switcher</b><p>At the top of the menu, under <span class="f">Program</span>.</p></li>
-<li data-n="2"><b>Pick a program</b><span class="done">The console reloads with that program's data, logo and colours. You stay on the same page.</span></li>
+<li data-n="2"><b>Pick a program</b><span class="done">The console reloads with that program's data, logo and colours. You stay on the same page. On a member's or an event's own page you then see "not found", because it belongs to the other program.</span></li>
 </ol></div></div>
 <p>You can also select <span class="b alt">Switch to</span> {{n:3}} on the Programs page.</p>
 
@@ -87,14 +90,17 @@
 </ol>
 
 {{h:risk|Delete a program}}
-<p>Deleting a program removes everything inside it: memberships, points, rewards, products, challenges, tiers and segments. People keep their accounts and their memberships in other programs. There is no undo. If you were viewing the deleted program, the console switches to the default one.</p>
+<p>Deleting a program removes everything inside it: memberships and points history, rewards and prizes, products and purchases, challenges, tiers, segments, events with their rules and history, member fields and the logo. People keep their accounts and their memberships in other programs. A window asks first, with <span class="b">Delete program</span>. There is no undo. If you were viewing the deleted program, the console switches to the default one.</p>
 
 {{h:rules|Good to know}}
 <ul class="rules">
 <li>Programs never share data. Rewards, tiers, segments and points in one program are invisible in another.</li>
 <li>Creating a program adds every existing person to it with 0 points.</li>
 <li>The program's slug (its short web name) is made from the name when you create it, such as <code>daybreak-coffee</code>. It never changes, even if you rename the program. The Programs page does not show it.</li>
-<li>The selected program is remembered until you close the browser. After that, the console opens on the default program again.</li>
+<li>The selected program is remembered until you close the browser or sign out, and applies to every console tab in that browser. Each sign in starts on the default program.</li>
+<li>The program you are viewing shows "Currently viewing" on the Programs page.</li>
+<li>If the name's slug is taken, a number is added, such as <code>coffee-club-2</code>.</li>
+<li>If the logo fails while you edit a program, the other changes are already saved.</li>
 <li>Programs are listed in the order they were created.</li>
 </ul>
 
@@ -103,9 +109,10 @@
 <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
 <tbody>
 <tr><td>"Enter a name."</td><td>Fill in Name.</td></tr>
-<tr><td>"The logo must be 2 MB or smaller."</td><td>Use a smaller file.</td></tr>
+<tr><td>"The logo must be 2 MB or smaller."</td><td>Use a smaller file. Files over about 3 MB fail with a general error instead.</td></tr>
 <tr><td>"The logo must be a PNG, JPEG, WebP or SVG image."</td><td>Save the logo in one of those formats. The real file type counts, not the file name.</td></tr>
-<tr><td>"Enter the primary colour as a hex code, like #0050aa."</td><td>Use six hex digits, with or without <code>#</code>. Short codes and colour names do not work.</td></tr>
+<tr><td>"Enter the primary colour as a hex code, like #0050aa."</td><td>Use six hex digits, with or without <code>#</code>. Short codes and colour names do not work. The secondary colour has the same rule.</td></tr>
+<tr><td>"Could not reach file storage. Please try again." or "File storage rejected the upload."</td><td>Try again. If it repeats, tell whoever runs the server.</td></tr>
 <tr><td>"Program created, but the logo was not saved: ... Add it with Edit."</td><td>The program exists. Edit it and upload the logo again.</td></tr>
 <tr><td>"Logo uploads are not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the API."</td><td>Ask whoever runs the server to set up file storage.</td></tr>
 <tr><td>"Cannot delete the default program. Make another program the default first."</td><td>Make another program the default, then delete this one.</td></tr>
@@ -125,13 +132,13 @@
 {{o:Members}}The number of members in this program. Because every person belongs to every program, this is the same in every program.{{/o}}
 {{o:Points in circulation}}The sum of every member's points balance in this program.{{/o}}
 {{o:Active rewards}}Rewards that are active, with the total number of rewards under it.{{/o}}
-{{o:Active challenges}}Challenges that are active, with the total under it.{{/o}}
+{{o:Active challenges}}Challenges switched on, with the total under it. A challenge past its deadline still counts until you switch it off.{{/o}}
 {{o:Members card}}The 6 newest members, with their tier and balance. Select a member to open them, or <span class="m">View all</span> for the full list.{{/o}}
-{{o:Tier distribution}}Members per tier, highest rank first, as a count and a rounded percentage. "No tier" counts members who match no tier.{{/o}}
+{{o:Tier distribution}}Members per tier, highest rank first, as a count and a rounded percentage. A "No tier" row appears when some members match no tier. A program with no members shows "Nothing to show".{{/o}}
 </div>
 {{h:rules|Good to know}}
 <ul class="rules">
-<li>Numbers of 10,000 and more are shortened, for example "412.5K".</li>
+<li>In the four tiles at the top, numbers of 10,000 and more are shortened, for example "412.5K". Balances and tier counts show in full.</li>
 <li>If part of the Dashboard keeps showing grey placeholders, its data did not load. Reload the page.</li>
 </ul>
 </section>
