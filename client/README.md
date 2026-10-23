@@ -23,6 +23,7 @@ how this fits with the rest of the platform.
 | `/` | Landing page with two tiles, one per app. |
 | `/login` | Member sign in and sign up. Sends to `/home` if already signed in. |
 | `/verify` | Where DOI verification emails of `type: "link"` land. Marked `noindex`. |
+| `/docs` | User documentation for staff and members. A static page built by `docs/build.sh` into `public/docs/index.html`, served through a rewrite in `next.config.ts`. |
 | `/admin/login` | Staff sign in. |
 
 **Member session required:**

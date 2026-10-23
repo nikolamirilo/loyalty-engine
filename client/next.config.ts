@@ -12,6 +12,11 @@ const repoRoot = path.resolve(__dirname, "..");
 
 const nextConfig: NextConfig = {
   turbopack: { root: repoRoot },
+  // The user docs are one self-contained HTML page, built by docs/build.sh into
+  // public/docs/index.html. This serves it at /docs; pages inside it are #anchors.
+  async rewrites() {
+    return [{ source: "/docs", destination: "/docs/index.html" }];
+  },
   experimental: {
     // Program logos are uploaded through a Server Action (lib/programs/actions.ts)
     // and may be up to 2 MB - the API's own limit - which the 1 MB default

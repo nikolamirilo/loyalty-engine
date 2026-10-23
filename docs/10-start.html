@@ -1,0 +1,216 @@
+<section class="page on" id="welcome" data-group="Get started" data-title="Welcome">
+<header>
+<h1>Loyalty Engine documentation</h1>
+<p class="lead">Loyalty Engine runs a loyalty program. Staff set it up in the admin console, and members earn points, climb tiers, finish challenges and claim prizes in the member app. Each page here covers one task, so you can follow along step by step.</p>
+</header>
+
+{{h:info|What you can do}}
+<div class="cards">
+  <a href="#members"><div class="nc"><i class="k-steps">{{i:users}}</i><b>Look after members</b></div><span>Find people, change their points and give them rewards.</span></a>
+  <a href="#rewards"><div class="nc"><i class="k-opts">{{i:gift}}</i><b>Build a catalog</b></div><span>Rewards to spend points on, and products to buy.</span></a>
+  <a href="#tiers"><div class="nc"><i class="k-ex">{{i:layers}}</i><b>Reward your best members</b></div><span>Tiers with higher earn rates, and challenges with prizes.</span></a>
+  <a href="#events"><div class="nc"><i class="k-rules">{{i:zap}}</i><b>Automate it</b></div><span>Rules that turn what members do into points and prizes.</span></a>
+  <a href="#programs"><div class="nc"><i class="k-info">{{i:palette}}</i><b>Run several programs</b></div><span>Each with its own data, logo and colours.</span></a>
+  <a href="#member-sign-in"><div class="nc"><i class="k-steps">{{i:smartphone}}</i><b>Help members</b></div><span>What members see in the member app.</span></a>
+</div>
+
+{{h:info|Common goals}}
+<div class="cards goals">
+  <a href="#quickstart"><div class="nc"><i class="k-steps">{{i:rocket}}</i><b>Set up your first program</b></div><span>From an empty program to a member earning points.</span></a>
+  <a href="#recipe-order-points"><div class="nc"><i class="k-ex">{{i:shopping-cart}}</i><b>Give points for every order</b></div><span>One event, one rule.</span></a>
+  <a href="#recipe-vip-tier"><div class="nc"><i class="k-ex">{{i:crown}}</i><b>Create a VIP tier</b></div><span>A higher earn rate for your best members.</span></a>
+  <a href="#recipe-prize-email"><div class="nc"><i class="k-ex">{{i:mail}}</i><b>Email a member a prize</b></div><span>A free reward with a claim link.</span></a>
+  <a href="#recipe-challenge"><div class="nc"><i class="k-ex">{{i:target}}</i><b>Run a challenge for a segment</b></div><span>A goal with points and a prize at the end.</span></a>
+</div>
+
+{{h:info|Start here}}
+<ol class="steps">
+<li><b>Take the tour</b><p><a href="#tour">Loyalty Engine at a glance</a> shows the two apps and their main screens.</p></li>
+<li><b>Build something</b><p><a href="#quickstart">Set up your first program</a> takes you from nothing to a member earning points.</p></li>
+<li><b>Look things up</b><p>Use the search box (<kbd>/</kbd>) or the menu on the left.</p></li>
+</ol>
+
+{{h:info|How these pages work}}
+<p>Every page opens with <strong>In short</strong>: what the page helps you do and what you end up with. Sections are color coded:</p>
+<div class="legend-key">
+<span><span class="k k-steps">{{i:list-ordered}}</span>How to: steps in order</span>
+<span><span class="k k-opts">{{i:sliders-horizontal}}</span>Options: every setting</span>
+<span><span class="k k-rules">{{i:shield-alert}}</span>Rules: what Loyalty Engine allows</span>
+<span><span class="k k-ex">{{i:lightbulb}}</span>Example: a setup to copy</span>
+<span><span class="k k-risk">{{i:octagon-alert}}</span>Careful: cannot be undone</span>
+</div>
+<p>Names from Loyalty Engine look like they do on screen: <span class="b">Create reward</span> is a button, <span class="f">Points cost</span> is a field, <span class="m">Rewards</span> is a menu item and <span class="t">Catalogue</span> is a tab. Tags show <span class="tg req">Required</span> settings, a <span class="tg def">Default: 1</span> and <span class="tg lim">Max 2 MB</span>.</p>
+<p>On screens, hover or tap a number to see what it points at. Select a screen to enlarge it. Use the <span class="m">{{i:sun-moon}}</span> button at the top right to change the theme and text size.</p>
+</section>
+
+<section class="page" id="tour" data-group="Get started" data-title="Loyalty Engine at a glance">
+<header>
+<h1>Loyalty Engine at a glance</h1>
+<p class="lead">Loyalty Engine has two apps. Staff use the admin console to run the program. Members use the member app to see their points and prizes. Both open from the same start page.</p>
+</header>
+
+{{h:screen|1. The start page}}
+<p>The start page has two tiles. <span class="m">Continue as admin</span> opens the admin console sign in. <span class="m">Continue as user</span> opens the member app sign in. The two apps never share a session: signing in to one does not sign you in to the other.</p>
+
+{{h:screen|2. The admin console}}
+<!--SHOT:tour-console-->
+<p>The console always shows one program at a time. The <span class="f">Program</span> switcher {{n:1}} at the top of the menu picks it. Every list in the console belongs to that program. <span class="m">Manage</span> {{n:2}} opens the <a href="#programs">Programs</a> page.</p>
+<div class="tbl"><table>
+<thead><tr><th>Menu item</th><th>What it is for</th></tr></thead>
+<tbody>
+<tr><td><span class="m">{{i:layout-dashboard}} Dashboard</span></td><td>Program totals, the newest members and the tier breakdown. <a href="#dashboard">Dashboard</a></td></tr>
+<tr><td><span class="m">{{i:users}} Members</span></td><td>Find, add and edit members, and change their points. <a href="#members">Members</a></td></tr>
+<tr><td><span class="m">{{i:tag}} Segments</span></td><td>Named groups of members, such as VIP. <a href="#segments">Segments</a></td></tr>
+<tr><td><span class="m">{{i:gift}} Rewards</span></td><td>What members can spend points on, or win. <a href="#rewards">Rewards</a></td></tr>
+<tr><td><span class="m">{{i:shopping-bag}} Products</span></td><td>What members can buy in the member app. <a href="#products">Products</a></td></tr>
+<tr><td><span class="m">{{i:target}} Challenges</span></td><td>Goals that pay points or a prize. <a href="#challenges">Challenges</a></td></tr>
+<tr><td><span class="m">{{i:zap}} Events</span></td><td>What your other systems report, and the rules that decide what it earns. <a href="#events">Events</a></td></tr>
+<tr><td><span class="m">{{i:layers}} Tiers</span></td><td>Levels with an earn rate multiplier. <a href="#tiers">Tiers</a></td></tr>
+</tbody></table></div>
+
+{{h:screen|3. The member app}}
+<!--SHOT:tour-member-->
+<p>Members sign in with their email and a code. The app shows the selected program's logo, name and colours {{n:1}}. The four tabs {{n:4}} are <span class="t">Home</span>, <span class="t">Products</span>, <span class="t">Wallet</span> and <span class="t">Account</span>. On a computer the app is drawn inside a phone frame.</p>
+
+<!--SHOT:dg-person-->
+{{h:rules|Good to know}}
+<ul class="rules">
+<li>A person exists once, but has a separate membership in every program. Points, tier, segments, challenges, purchases and events belong to the membership.</li>
+<li>Name, email and phone belong to the person. Changing them changes them in every program.</li>
+<li>Every person is a member of every program. Creating a program adds everyone to it with 0 points.</li>
+<li>A member has a different member ID in each program.</li>
+</ul>
+</section>
+
+<section class="page" id="quickstart" data-group="Get started" data-title="Set up your first program">
+<header>
+<h1>Set up your first program</h1>
+<p class="lead">Create a program, give it a reward and a tier, then make orders earn points with an event and a rule. Finish by sending a test event and checking the result. It takes about fifteen minutes.</p>
+</header>
+
+{{h:steps|Part 1: Create the program}}
+<div class="walkc"><div class="walk"><!--SHOT:program-dialog-->
+<ol class="steps">
+<li><b>Sign in to the admin console</b><p>Go to <code>/admin/login</code>. See <a href="#admin-sign-in">Sign in to the console</a>.</p></li>
+<li><b>Open the Programs page</b><p>Select <span class="m">Manage</span> next to <span class="f">Program</span> at the top of the menu, then <span class="b">New program</span>.</p></li>
+<li data-n="1"><b>Enter a name</b><p>For example "Daybreak Coffee". The program's short web name (its slug) is made from this name. Renaming the program in the console does not change it.</p></li>
+<li data-n="2"><b>Add a description</b><p>Optional. It shows under the name on the Programs page.</p></li>
+<li data-n="3"><b>Upload a logo</b><p>Optional. PNG, JPG, WebP or SVG, up to 2 MB.</p></li>
+<li data-n="4"><b>Pick a primary colour</b><p>Optional. Buttons, links and highlights in both apps take this colour.</p></li>
+<li data-n="5"><b>Select Create program</b><span class="done">"Program created." Every existing member is added to it with 0 points.</span></li>
+<li><b>Switch to the new program</b><p>Creating a program does not switch to it. Select <span class="b alt">Switch to</span> on its row.</p></li>
+</ol></div></div>
+
+{{h:steps|Part 2: Add a reward and a tier}}
+<div class="walkc"><div class="walk"><!--SHOT:reward-dialog-->
+<ol class="steps">
+<li><b>Open Rewards and select New reward</b></li>
+<li data-n="1"><b>Name it</b><p>For example "Free espresso".</p></li>
+<li data-n="2"><b>Set the Points cost</b><p>A whole number above 0, such as 150.</p></li>
+<li data-n="3"><b>Leave Stock blank</b><p>Blank means unlimited.</p></li>
+<li data-n="4"><b>Keep Active ticked</b></li>
+<li data-n="5"><b>Select Create reward</b><span class="done">"Reward created."</span></li>
+<li><b>Open Tiers and select New tier</b><p>Name it "Member", keep <span class="f">Rank</span> 0 and <span class="f">Multiplier</span> 1, add no conditions and select <span class="b">Create tier</span>. With no conditions, every member qualifies, so everyone gets this tier. See <a href="#tiers">Tiers</a>.</p></li>
+</ol></div></div>
+
+{{h:steps|Part 3: Make orders earn points}}
+<div class="walkc"><div class="walk"><!--SHOT:event-dialog-->
+<ol class="steps">
+<li><b>Open Events and select New event</b></li>
+<li data-n="1"><b>Name it "Order placed"</b><p>The <span class="f">API key</span> under the name becomes <code>orderPlaced</code>. Your systems send this key.</p></li>
+<li data-n="2"><b>Add an attribute "Amount" of type Number</b><p>Select <span class="b alt">Add attribute</span> {{n:3}} for each one.</p></li>
+<li data-n="4"><b>Select Create event</b><span class="done">"Event created. Add a rule, then turn it on." The event's page opens.</span></li>
+<li><b>Select New rule</b><p>Name it "Points per euro". Leave <span class="f">IF</span> empty. Under <span class="f">THEN</span>, keep <span class="f">Earn points</span> and change <span class="f">a fixed amount</span> to <span class="f">the event's amount</span>.</p></li>
+<li><b>Select Create rule</b><span class="done">"Rule created."</span></li>
+<li><b>Turn the event on</b><p>New events start off. Use the switch next to <span class="f">Inactive</span> at the top of the page. <span class="done">"Event turned on."</span></p></li>
+</ol></div></div>
+
+{{h:steps|Part 4: Test it}}
+<ol class="steps">
+<li><b>Add yourself as a member</b><p>On <span class="m">Members</span>, select <span class="b">New member</span> and use your own email. See <a href="#members">Members</a>.</p></li>
+<li><b>Send a test event</b><p>On the event's page, select <span class="b alt">Test event</span>, pick your member, enter an Amount such as 12 and select <span class="b">Send test event</span>.<span class="done">"Event recorded. Earned 12 points."</span></p></li>
+<li><b>Check the member</b><p>Open the member. <span class="f">Points balance</span> shows 12, and <span class="f">Points activity</span> lists "Effect of event Order placed".</p></li>
+<li><b>Check the member app</b><p>Open <code>/login</code>, sign in with the same email and open <span class="t">Wallet</span>.</p></li>
+</ol>
+[[warn Test events are real]]<p>A test event runs the rules for real. The member keeps the points, rewards and segments it gives, and it shows in the event log.</p>[[/]]
+[[info Members sign in to the default program]]<p>The member app always signs members in to the default program. If your new program is not the default, members switch to it on the <span class="t">Account</span> tab. See <a href="#programs">Programs</a>.</p>[[/]]
+</section>
+
+<section class="page" id="recipe-order-points" data-group="Get started" data-title="Give points for every order">
+<header>
+<h1>Give points for every order</h1>
+<p class="lead">Let your till or online shop report each order, and give the member one point per euro they spend.</p>
+</header>
+{{h:steps|Steps}}
+<ol class="steps">
+<li><b>Create the event</b><p>On <span class="m">Events</span>, select <span class="b">New event</span>. Name it "Order placed" and add an attribute "Amount" of type Number. See <a href="#events">Events</a>.</p></li>
+<li><b>Add the rule</b><p>On the event's page, select <span class="b">New rule</span>. Leave <span class="f">IF</span> empty. Under <span class="f">THEN</span>, choose <span class="f">Earn points</span> and pick <span class="f">the event's amount</span> as the source. See <a href="#rules">Rules</a>.</p></li>
+<li><b>Turn the event on</b><p>Use the switch at the top of the event's page.</p></li>
+<li><b>Test it</b><p>Select <span class="b alt">Test event</span> and send one for a test member. See <a href="#test-events">Test an event</a>.</p></li>
+<li><b>Hand the request to your developers</b><p>Copy the request from the <span class="f">Send this event</span> card. Ask them to send the order number as <code>eventId</code>, so a resent order never earns twice. See <a href="#send-events">Send events from your systems</a>.</p></li>
+</ol>
+{{h:rules|Good to know}}
+<ul class="rules">
+<li>The member's tier multiplier applies to earned points. A Gold member with ×1.5 earns 18 points for a 12 euro order.</li>
+<li>Points are rounded to a whole number after the multiplier. Exact halves go to the even number (12.5 gives 12, 13.5 gives 14), and a result of 0 earns nothing.</li>
+</ul>
+</section>
+
+<section class="page" id="recipe-vip-tier" data-group="Get started" data-title="Create a VIP tier">
+<header>
+<h1>Create a VIP tier</h1>
+<p class="lead">Give hand-picked members a higher earn rate by putting them in a VIP segment and making a tier for that segment.</p>
+</header>
+{{h:steps|Steps}}
+<ol class="steps">
+<li><b>Create a segment called VIP</b><p>On <span class="m">Segments</span>, select <span class="b">New segment</span>. See <a href="#segments">Segments</a>.</p></li>
+<li><b>Add members to it</b><p>On the VIP card, select <span class="b alt">Assign members</span>, tick the members and select <span class="b">Assign</span>.</p></li>
+<li><b>Create the tier</b><p>On <span class="m">Tiers</span>, select <span class="b">New tier</span>. Name it "VIP", set <span class="f">Rank</span> higher than your other tiers and <span class="f">Multiplier</span> to 2.</p></li>
+<li><b>Add the condition</b><p>Select <span class="b alt">Add condition</span>, choose <span class="f">Segments</span>, <span class="f">include</span>, <span class="f">VIP</span>.</p></li>
+<li><b>Select Create tier</b><span class="done">"Tier created." Every member is checked again at once, and the VIP members move to the new tier.</span></li>
+</ol>
+<!--SHOT:dg-tiers-->
+[[tip Keep a catch-all tier]]<p>Give your lowest tier no conditions and rank 0. Every member who matches nothing higher lands there instead of having no tier.</p>[[/]]
+</section>
+
+<section class="page" id="recipe-prize-email" data-group="Get started" data-title="Email a member a prize">
+<header>
+<h1>Email a member a prize</h1>
+<p class="lead">Give a member a free reward and email them a link to claim it.</p>
+</header>
+{{h:steps|Steps}}
+<ol class="steps">
+<li><b>Open the member</b><p>On <span class="m">Members</span>, search for them and open their row.</p></li>
+<li><b>Select Redeem / assign</b><p>At the bottom of the profile card.</p></li>
+<li><b>Tick "Email free prizes to the member, with a link to claim them"</b></li>
+<li><b>Select Assign free on the reward</b><span class="done">"Prize assigned and emailed."</span></li>
+</ol>
+{{h:rules|Good to know}}
+<ul class="rules">
+<li>The member gets an email "You've won &lt;reward&gt;!" with a <span class="b">Claim your prize</span> button. The link works for 30 days.</li>
+<li>After 30 days, the member can still claim the prize in the member app, on <span class="t">Wallet</span>.</li>
+<li>A free prize costs no points but uses one unit of stock.</li>
+<li>If the email fails, the prize stays assigned and the message says why.</li>
+</ul>
+<p>See <a href="#member-rewards">Rewards and prizes for a member</a> and <a href="#member-emails">Emails members get</a>.</p>
+</section>
+
+<section class="page" id="recipe-challenge" data-group="Get started" data-title="Run a challenge for a segment">
+<header>
+<h1>Run a challenge for a segment</h1>
+<p class="lead">Set a goal, such as five visits in May, for everyone in a segment, and pay points and a prize when they reach it.</p>
+</header>
+{{h:steps|Steps}}
+<ol class="steps">
+<li><b>Create the challenge</b><p>On <span class="m">Challenges</span>, select <span class="b">New challenge</span>. Set <span class="f">Target</span> to 5, <span class="f">Reward points</span> to 200, pick a <span class="f">Prize reward</span> and a deadline. See <a href="#challenges">Challenges</a>.</p></li>
+<li><b>Assign it to the segment</b><p>On the challenge card, select <span class="b alt">Assign to segment</span>, choose the segment and select <span class="b">Assign</span>.<span class="done">"Assigned to 58 member(s); 0 already had it."</span></p></li>
+<li><b>Count progress automatically</b><p>On your "Order placed" event, add a rule with the effect <span class="f">Add challenge progress</span> for this challenge. See <a href="#rules">Rules</a>.</p></li>
+<li><b>Watch it</b><p>Each member's page shows their progress under <span class="f">Challenges</span>.</p></li>
+</ol>
+{{h:rules|Good to know}}
+<ul class="rules">
+<li>People who join the segment later get the challenge automatically, while it is active and not expired.</li>
+<li>If the segment is empty when you assign, nothing is recorded, so later joiners do not get it. Add members first.</li>
+<li>Reaching the target completes the challenge and pays out at once.</li>
+</ul>
+</section>

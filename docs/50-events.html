@@ -1,0 +1,244 @@
+<section class="page" id="events" data-group="Events and rules" data-title="Events">
+<header>
+<h1>Events</h1>
+<p class="lead">An event is something a member does that another system reports, such as placing an order. Define each event once, then add rules that decide what it earns.</p>
+<div class="where"><b>{{i:map-pin}} Where</b><span class="m">{{i:zap}} Events</span></div>
+</header>
+<!--SHOT:events-list-->
+<!--SHOT:dg-event-->
+
+{{h:steps|Define an event}}
+<div class="walkc"><div class="walk"><!--SHOT:event-dialog-->
+<ol class="steps">
+<li><b>Select New event</b><p>At the top right of the Events page.</p></li>
+<li data-n="1"><b>Enter a Name</b><p>For example "Order placed". The API key under it, such as <code>orderPlaced</code>, is what your systems send. It never changes.</p></li>
+<li data-n="3"><b>Select Add attribute for each piece of data your system sends</b><p>Each one adds an empty row.</p></li>
+<li data-n="2"><b>Give each row a label and a type</b><p>Text, Number, Yes / No, Date or Dropdown. A dropdown needs its options, separated by commas.</p></li>
+<li data-n="4"><b>Select Create event</b><span class="done">"Event created. Add a rule, then turn it on." The event's page opens.</span></li>
+</ol></div></div>
+
+{{h:opts|Event settings}}
+<div class="opts">
+{{o:Name|req;lim=1 to 100 characters}}Must contain letters, and its first letter or digit must be a letter. Unique in the program.{{/o}}
+{{o:Description|opt}}Who sends it, and when.{{/o}}
+{{o:Attributes|opt}}Data sent with each event. Rules can check these values or copy them onto the member. All are optional when sending.{{/o}}
+</div>
+
+{{h:steps|Turn an event on or off}}
+<ol class="steps">
+<li><b>Open the event</b><p>Select its row on the Events page.</p></li>
+<li><b>Use the switch next to Active or Inactive</b><p>At the top of the page. It saves at once.<span class="done">"Event turned on." or "Event turned off. Incoming events are rejected."</span></p></li>
+</ol>
+[[warn New events start off]]<p>An event created in the console is Inactive. Your systems' events are rejected until you turn it on.</p>[[/]]
+
+{{h:rules|Good to know}}
+<ul class="rules">
+<li>The API key {{n:4}} is made from the letters and digits of the name in camelCase, up to 63 characters. It never changes, even if you rename the event.</li>
+<li>While an event is off, its page says "This event is off, so incoming events are rejected and no rules run."</li>
+<li>Events created by your developers through the API start on. Only the console creates them off.</li>
+<li>An attribute's key and type never change. You can rename its label.</li>
+<li>You cannot remove an attribute that a rule uses. Change or delete the rule first.</li>
+<li>Events are listed oldest first.</li>
+</ul>
+
+{{h:risk|Delete an event}}
+<p>Deleting an event deletes its rules too. Events already received stay in each member's history and in the log, shown by their API key. It cannot be undone.</p>
+
+{{h:fix|Messages}}
+<div class="tbl"><table>
+<thead><tr><th>What you see</th><th>What to do</th></tr></thead>
+<tbody>
+<tr><td>"Give the event a name that starts with a letter."</td><td>Enter a name with letters in it.</td></tr>
+<tr><td>"Every attribute needs a label."</td><td>Fill in or remove the empty attribute.</td></tr>
+<tr><td>"An event named 'Order placed' already exists"</td><td>Pick another name.</td></tr>
+<tr><td>"An event with the key 'orderPlaced' already exists"</td><td>Two names make the same key, such as "Order placed" and "Order placed!". Pick a different name.</td></tr>
+<tr><td>"'Amount' is used by the rule 'Points per euro'. Change or delete that rule first."</td><td>Edit that rule, then remove the attribute.</td></tr>
+<tr><td>"Label must contain at least one letter and start with one, so a valid internal key can be derived from it."</td><td>Make the name start with a letter, for example "First order" instead of "1st order".</td></tr>
+<tr><td>"A dropdown attribute needs at least one option."</td><td>Add the options, separated by commas.</td></tr>
+<tr><td>"Two attributes share the key 'amount'. Rename one of them."</td><td>Give the two attributes clearly different labels.</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="page" id="rules" data-group="Events and rules" data-title="Rules">
+<header>
+<h1>Rules</h1>
+<p class="lead">A rule says what an event does for the member: when the event happens, if all conditions hold, then all effects run. Add as many rules to an event as you need.</p>
+<div class="where"><b>{{i:map-pin}} Where</b><span class="m">{{i:zap}} Events</span><span class="sep">›</span><span class="m">an event</span><span class="sep">›</span><span class="m">Rules</span></div>
+</header>
+<!--SHOT:event-detail-->
+
+{{h:steps|Create a rule}}
+<div class="walkc"><div class="walk"><!--SHOT:rule-editor-->
+<ol class="steps">
+<li><b>Select New rule</b><p>On the event's page, in the Rules card.</p></li>
+<li data-n="1"><b>Enter a Rule name</b></li>
+<li data-n="2"><b>Add conditions under IF</b><p>Optional. Pick a field, a comparison and a value. All of them must be true. With none, the rule runs on every event.</p></li>
+<li data-n="3"><b>Add effects under THEN</b><p>A new rule starts with Earn points, 10 points. All effects run, in the order listed.</p></li>
+<li data-n="4"><b>Choose the LIMIT</b><p><span class="f">Every time the event happens</span> or <span class="f">Only the first time per member</span>.</p></li>
+<li data-n="5"><b>Read the sentence In plain words</b><p>It describes the rule as you build it.</p></li>
+<li data-n="6"><b>Select Create rule</b><span class="done">"Rule created." New rules are on.</span></li>
+</ol></div></div>
+
+{{h:opts|Conditions: what IF can check}}
+<div class="tbl"><table>
+<thead><tr><th>Field</th><th>Comparisons</th></tr></thead>
+<tbody>
+<tr><td>The event's attributes</td><td>Number: is at least, is more than, is, is not, is at most, is less than. Text: is, is not, contains. Dropdown: is, is not. Yes / No: is. Date: is before, is after, is on.</td></tr>
+<tr><td><span class="f">Points balance</span></td><td>As for numbers.</td></tr>
+<tr><td><span class="f">Tier</span></td><td>is, is not</td></tr>
+<tr><td><span class="f">Segments</span></td><td>include</td></tr>
+<tr><td>Your custom member fields</td><td>As for their type.</td></tr>
+</tbody></table></div>
+
+{{h:opts|Effects: what THEN can do}}
+<div class="opts">
+{{o:Earn points}}A fixed amount, or the value of a number attribute such as the event's amount. The member's tier multiplier applies. Skipped if the event did not send the attribute.{{/o}}
+{{o:Burn points}}A fixed amount or a number attribute, without the multiplier. Skipped if the member does not have enough points.{{/o}}
+{{o:Give a reward}}A free prize. Uses one unit if the reward has limited stock. Skipped if the reward is inactive, out of stock or deleted.{{/o}}
+{{o:Assign challenge}}Skipped if the member already has it, or it is inactive or expired.{{/o}}
+{{o:Add challenge progress}}By a fixed amount (default 1) or a number attribute. Completing the challenge pays it out. Skipped if the member does not have the challenge, or it is completed or expired.{{/o}}
+{{o:Add to segment}}Also hands out the segment's challenges. Skipped if the member is already in it.{{/o}}
+{{o:Remove from segment}}Challenges the segment handed out stay. Skipped if the member is not in it.{{/o}}
+{{o:Update member}}Set Name, Phone or custom fields to a fixed value or to an attribute's value. A value can be copied only from an attribute of the same type, but anything can go into a text field. An empty value clears the field, except Name. Email cannot be set by a rule. Name and Phone changes show in every program.{{/o}}
+</div>
+
+{{h:steps|Pause, edit or delete a rule}}
+<ol class="steps">
+<li><b>Use the rule's switch {{n:4}}</b><p>Pauses or turns on the rule at once. A paused rule shows <span class="f">Paused</span> and is skipped.</p></li>
+<li><b>Select the pencil {{n:5}} to edit</b><p>Select <span class="b">Save changes</span>.<span class="done">"Rule saved."</span></p></li>
+<li><b>Select the bin to delete</b><p>New events stop triggering it. Events already received keep what they earned.<span class="done">"Rule deleted."</span></p></li>
+</ol>
+
+{{h:ex|Example: a bonus for big app orders}}
+<p>When "Order placed" happens, if amount is at least 50 and channel is App, then give reward "Free espresso" and add member to segment "Big spenders", only the first time per member.</p>
+
+{{h:rules|How several rules work together}}
+<ul class="rules">
+<li>Every active rule whose conditions all match runs. There is no "first match wins".</li>
+<li>Conditions look at the member as they were when the event arrived, so one rule never changes whether another rule matches.</li>
+<li>Effects that depend on the current state still see earlier effects. A Burn after an Earn sees the new balance, and Add challenge progress works right after Assign challenge.</li>
+<li>Rules run oldest first. There is no way to reorder them.</li>
+<li>The tier is checked after every points change, and again after all rules ran. Earned points use the multiplier the member had when the event arrived.</li>
+</ul>
+{{h:rules|Good to know}}
+<ul class="rules">
+<li>A skipped effect never stops the others. The log says why it was skipped.</li>
+<li>"Only the first time per member" counts a run even when every effect was skipped, for example because the reward was out of stock. Editing the rule keeps this history.</li>
+<li>Rule names can be up to 100 characters.</li>
+<li>"is not" also matches when the attribute was not sent, or the member has no tier.</li>
+<li>For text, "is" needs an exact match, including upper and lower case. "contains" ignores case.</li>
+<li>Points from a rule show in Points activity as "Effect of event Order placed".</li>
+</ul>
+
+{{h:fix|Messages}}
+<div class="tbl"><table>
+<thead><tr><th>What you see</th><th>What to do</th></tr></thead>
+<tbody>
+<tr><td>"Give the rule a name."</td><td>Fill in Rule name.</td></tr>
+<tr><td>"Fill in a value for every condition."</td><td>Complete or remove the empty condition.</td></tr>
+<tr><td>"Add at least one effect, otherwise the rule does nothing."</td><td>Add an effect under THEN.</td></tr>
+<tr><td>"Points must be a whole number above 0."</td><td>Fix the amount. The same goes for "Challenge progress must be a whole number above 0."</td></tr>
+<tr><td>"Choose at least one member field to set."</td><td>Add a field to Update member, or remove the effect.</td></tr>
+<tr><td>"Create a reward first, then pick it here."</td><td>Create a reward on the Rewards page. The same goes for challenges and segments.</td></tr>
+<tr><td>"A member's name can't be set to empty."</td><td>Give Name a value, or remove it from Update member.</td></tr>
+<tr><td>A chip shows "…" instead of a name</td><td>The reward, challenge or segment was deleted. Edit the rule and pick another.</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="page" id="test-events" data-group="Events and rules" data-title="Test an event">
+<header>
+<h1>Test an event</h1>
+<p class="lead">Send an event for a member from the console, the way your systems would, and see at once what the rules did.</p>
+<div class="where"><b>{{i:map-pin}} Where</b><span class="m">{{i:zap}} Events</span><span class="sep">›</span><span class="m">Test event</span></div>
+</header>
+<div class="walkc"><div class="walk"><!--SHOT:test-event-->
+<ol class="steps">
+<li><b>Select Test event</b><p>On the Events page, or on an event's page. The event must be on.</p></li>
+<li data-n="1"><b>Choose the Event</b><p>Only active events are listed. On an event's page, the event is already chosen.</p></li>
+<li data-n="2"><b>Choose the Member</b></li>
+<li data-n="3"><b>Fill in attributes</b><p>All optional. Empty ones are not sent.</p></li>
+<li data-n="4"><b>Select Send test event</b><span class="done">A message such as "Event recorded. Earned 40 points. Added to segment "Big spenders"." or "Event recorded. No rules matched."</span></li>
+</ol></div></div>
+<p>On a member's page, the <span class="f">Events</span> card has <span class="b alt">Send event</span>, which does the same for that member.</p>
+
+{{h:rules|Good to know}}
+<ul class="rules">
+<li>Test events are real. The member keeps everything the rules gave, and the event shows in the log.</li>
+<li>Each test is a new event, so it is never treated as a duplicate.</li>
+<li>The member list shows up to 1,000 members, with no search.</li>
+<li>"(2 skipped)" at the end means two effects did not apply. The log shows why. If every effect was skipped, the message is "Event recorded. Nothing applied (2 skipped)."</li>
+<li>"No rules matched" also appears when the matching rules already reached their per-member limit.</li>
+<li>Test events go to the program selected in the console.</li>
+</ul>
+</section>
+
+<section class="page" id="event-logs" data-group="Events and rules" data-title="Event logs">
+<header>
+<h1>Event logs</h1>
+<p class="lead">See every event the program received, for which member, and what its rules did.</p>
+<div class="where"><b>{{i:map-pin}} Where</b><span class="m">{{i:zap}} Events</span><span class="sep">›</span><span class="m">{{i:clock}} Logs</span></div>
+</header>
+<!--SHOT:event-logs-->
+
+{{h:steps|Read the log}}
+<ol class="steps">
+<li><b>Open Events and select Logs</b></li>
+<li><b>Pick an event in the filter {{n:1}}</b><p>Optional. <span class="f">All events</span> shows everything.</p></li>
+<li><b>Read What happened {{n:2}}</b><p>A green tick is an effect that applied. "Skipped:" gives the reason one did not. "No rules matched" means nothing ran. Hover a line to see the rule's name.</p></li>
+<li><b>Open the member</b><p>Select their name.</p></li>
+</ol>
+
+{{h:rules|Good to know}}
+<ul class="rules">
+<li>The log shows the newest 200 events, with no paging.</li>
+<li>The only filter is the event. There is no member, date or search filter. For one member's events, open <a href="#member-page">their page</a>.</li>
+<li>Events that were rejected, such as for an inactive event, are not in the log.</li>
+<li>Times are shown in your own time zone.</li>
+</ul>
+</section>
+
+<section class="page" id="send-events" data-group="Events and rules" data-title="Send events from your systems">
+<header>
+<h1>Send events from your systems</h1>
+<p class="lead">Give your developers what they need to report events, such as orders, from your till, shop or app to Loyalty Engine.</p>
+<div class="where"><b>{{i:map-pin}} Where</b><span class="m">{{i:zap}} Events</span><span class="sep">›</span><span class="m">an event</span><span class="sep">›</span><span class="m">Send this event</span></div>
+</header>
+{{h:steps|Hand over the request}}
+<ol class="steps">
+<li><b>Open the event</b></li>
+<li><b>Select the copy button on Send this event</b><p>On the right side of the event's page. It copies a ready request.</p></li>
+<li><b>Send it to your developers</b><p>With the values below.</p></li>
+</ol>
+
+{{h:opts|What a request contains}}
+<div class="opts">
+{{o:type|req}}The event's API key, such as <code>orderPlaced</code>. Not its name, and not the ID that <span class="m">Copy event ID</span> copies.{{/o}}
+{{o:memberId|req}}The member's ID in this program. <span class="b">Copy ID</span> on the member's page copies it.{{/o}}
+{{o:X-Program-Id|opt}}The program's ID or slug. If it is left out, the event goes to the default program.{{/o}}
+{{o:attributes|opt}}The attribute values, by key. Unknown keys are refused.{{/o}}
+{{o:eventId|opt;lim=1 to 200 characters}}Your own unique ID, such as the order number.{{/o}}
+</div>
+
+{{h:rules|Duplicates and errors}}
+<ul class="rules">
+<li>A repeat with the same eventId, type and member returns the first result and runs nothing, even if the event was turned off since. Use eventId so a retry never pays twice.</li>
+<li>Without an eventId, every request counts as a new event.</li>
+<li>Events for an unknown or inactive event type are refused and not recorded.</li>
+<li>The response lists every effect of the rules that ran, applied or skipped, with the rule's name. A new event answers with status 201, a repeat with 200.</li>
+<li>Every request needs the shared bearer token. Ask whoever runs the server for it.</li>
+<li>Attribute values are checked against their type, and text is limited to 500 characters.</li>
+</ul>
+
+{{h:fix|Messages your developers may see}}
+<div class="tbl"><table>
+<thead><tr><th>Message</th><th>What to do</th></tr></thead>
+<tbody>
+<tr><td>"Unknown event type 'orderPlaced'. Define it in the console first."</td><td>Check the key, or create the event in the selected program.</td></tr>
+<tr><td>"The event type 'orderPlaced' is inactive."</td><td>Turn the event on.</td></tr>
+<tr><td>"Member not found"</td><td>The member ID belongs to another program, or the member was deleted.</td></tr>
+<tr><td>"Unknown attribute(s) for 'orderPlaced': ..."</td><td>Send only the attributes listed on the event's page, by key.</td></tr>
+<tr><td>"'Amount' must be a number."</td><td>Send the value in the attribute's type. Dates use YYYY-MM-DD.</td></tr>
+<tr><td>"Program not found: ..."</td><td>Check the program ID or slug in X-Program-Id.</td></tr>
+<tr><td>"Invalid or missing bearer token"</td><td>Send the right token in the Authorization header.</td></tr>
+</tbody></table></div>
+</section>
