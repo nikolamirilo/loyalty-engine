@@ -41,77 +41,174 @@ SITE = {
     'assets_dir': None,                # folder of the product's own SVG icons, for {{s:name}}
     'extra_icons_dir': None,           # folder of extra line icons (24x24) to use with {{i:name}}
     'url': '',                         # the published link, so "copy link" buttons copy the real address
-    'storage_key': 'loyalty-engine-docs',        # prefix for what the page remembers in the reader's browser
-    'glossary_page': 'glossary',       # page id where glossary hover hints are not added
+    'storage_key': 'loyalty-engine-docs',
+    'glossary_page': 'glossary',
 
-    # sidebar icons per group (Lucide names: https://lucide.dev/icons)
-    'group_icons': {'Get started': 'rocket', 'Projects': 'folder-kanban', 'Reference': 'book-open'},
-    # pages listed when the search box is empty
-    'popular': ['quickstart', 'troubleshooting'],
-    # first mention of each term on a page gets a dotted underline with this definition
+    'group_icons': {'Get started': 'rocket', 'Admin console': 'layout-dashboard', 'Members': 'users',
+                    'Program setup': 'gift', 'Events and rules': 'zap', 'Member app': 'smartphone',
+                    'Reference': 'book-open'},
+    'popular': ['quickstart', 'members', 'points', 'rules', 'tiers', 'troubleshooting'],
     'glossary': {
-        'workspace': 'Your team\'s space in Acme. Projects and people belong to one workspace.',
+        'segment': 'A named group of members, such as VIP. Segments can hand out challenges and drive tiers.',
+        'tier': 'A level, such as Gold, with conditions and an earn rate multiplier. Members get one on their own.',
+        'multiplier': "A tier's earn rate. 1.5 means members in the tier earn 1.5 times the points.",
+        'slug': "A program's short web name, such as daybreak-coffee. Made from the name, it never changes.",
+        'default program': 'The program members sign in to, and the one the console opens first.',
+        'API key': 'The short name of an event, such as orderPlaced, that your systems send as "type".',
     },
-    # words readers type, mapped to the words the docs use (search shows both)
     'synonyms': {
-        'delete': ['remove'], 'invite': ['add people'], 'teammate': ['member'],
+        'delete': ['remove'], 'points': ['balance', 'credit'], 'burn': ['spend', 'deduct', 'subtract'],
+        'earn': ['add points', 'award', 'give points'], 'prize': ['gift', 'free reward'],
+        'program': ['brand', 'tenant', 'workspace'], 'segment': ['group', 'cohort', 'list'],
+        'tier': ['level', 'status'], 'event': ['webhook', 'integration', 'api'], 'rule': ['automation', 'trigger'],
+        'member': ['customer', 'user', 'person'], 'login': ['sign in', 'log in', 'code'],
+        'logo': ['branding', 'colour', 'color', 'theme'], 'challenge': ['goal', 'mission', 'quest'],
     },
 }
 
-# Sidebar order: (page id, group, sub-heading or None, title, merged-in page ids shown as parts or tabs)
+# Sidebar order: (page id, group, sub-heading or None, title, merged-in page ids)
 PAGES = [
     ('welcome', 'Get started', None, 'Welcome', []),
-    ('quickstart', 'Get started', None, 'Create your first project', []),
-    ('projects', 'Projects', None, 'Projects', []),
-    ('project-settings', 'Projects', None, 'Project settings', ['settings-general', 'settings-members']),
+    ('tour', 'Get started', None, 'Loyalty Engine at a glance', []),
+    ('quickstart', 'Get started', None, 'Set up your first program', []),
+    ('recipe-order-points', 'Get started', 'Recipes', 'Give points for every order', []),
+    ('recipe-vip-tier', 'Get started', 'Recipes', 'Create a VIP tier', []),
+    ('recipe-prize-email', 'Get started', 'Recipes', 'Email a member a prize', []),
+    ('recipe-challenge', 'Get started', 'Recipes', 'Run a challenge for a segment', []),
+    ('admin-sign-in', 'Admin console', None, 'Sign in to the console', []),
+    ('programs', 'Admin console', None, 'Programs and branding', []),
+    ('dashboard', 'Admin console', None, 'Dashboard', []),
+    ('members', 'Members', None, 'Find and add members', []),
+    ('member-page', 'Members', None, "A member's page", []),
+    ('points', 'Members', None, 'Earn, burn and adjust points', []),
+    ('member-rewards', 'Members', None, 'Rewards and prizes for a member', []),
+    ('member-challenges', 'Members', None, "A member's challenges", []),
+    ('member-fields', 'Members', None, 'Custom member fields', []),
+    ('segments', 'Program setup', None, 'Segments', []),
+    ('rewards', 'Program setup', None, 'Rewards', []),
+    ('products', 'Program setup', None, 'Products', []),
+    ('challenges', 'Program setup', None, 'Challenges', []),
+    ('tiers', 'Program setup', None, 'Tiers', []),
+    ('events', 'Events and rules', None, 'Events', []),
+    ('rules', 'Events and rules', None, 'Rules', []),
+    ('test-events', 'Events and rules', None, 'Test an event', []),
+    ('event-logs', 'Events and rules', None, 'Event logs', []),
+    ('send-events', 'Events and rules', None, 'Send events from your systems', []),
+    ('member-sign-in', 'Member app', None, 'Sign up and sign in', []),
+    ('member-home', 'Member app', None, 'Open a campaign', []),
+    ('member-products', 'Member app', None, 'Products and purchases', []),
+    ('member-wallet', 'Member app', None, 'Wallet and prizes', []),
+    ('member-account', 'Member app', None, 'Account and programs', []),
+    ('member-emails', 'Member app', None, 'Emails members get', []),
+    ('limits', 'Reference', None, 'Limits and rules', []),
     ('troubleshooting', 'Reference', None, 'Troubleshooting', []),
     ('glossary', 'Reference', None, 'Glossary', []),
 ]
 
-# Pages with no content section of their own (their parts fill them): {id: (lead, where-bar html)}
-NEW_PAGES = {
-    'project-settings': ('Change a project\'s name, members and access. Each tab below matches a tab in the settings window.',
-                         '<span class="m">Project</span><span class="sep">›</span><span class="m">{{i:settings}} Settings</span>'),
-}
+NEW_PAGES = {}
 
-# "Result" line under "In short": what the reader ends up with
 RESULT = {
     'welcome': 'You know where to start and how these pages work.',
-    'quickstart': 'A project with your first task, shared with a teammate.',
-    'projects': 'You can find, create and archive projects.',
-    'project-settings': 'A project set up the way your team works.',
+    'tour': 'You know the two apps and where everything is.',
+    'quickstart': 'A program with a reward, a tier and an event that earns points, tested on a member.',
+    'recipe-order-points': 'Orders from your systems earn points automatically.',
+    'recipe-vip-tier': 'VIP members earn at a higher rate.',
+    'recipe-prize-email': 'The member has a prize and an email to claim it.',
+    'recipe-challenge': 'A segment works toward a goal and gets paid when they reach it.',
+    'admin-sign-in': 'You are in the admin console, or safely signed out.',
+    'programs': 'Programs set up with their own branding, and the right one selected.',
+    'dashboard': 'You know how the program is doing.',
+    'members': 'You can find any member, add new ones and remove old ones.',
+    'member-page': "You know a member's full picture and can keep their profile up to date.",
+    'points': 'The member has the right balance, with a reason in their history.',
+    'member-rewards': 'The member has their reward, paid with points or for free.',
+    'member-challenges': "The member's challenges are where they should be.",
+    'member-fields': 'Every member carries the extra fields your program needs.',
+    'segments': 'Groups of members you can target with challenges and tiers.',
+    'rewards': 'A catalog of rewards with the right costs and stock.',
+    'products': 'A product catalog members can buy from.',
+    'challenges': 'Challenges handed out to the right members.',
+    'tiers': 'Members sorted into tiers with the right earn rates.',
+    'events': 'Events defined and switched on, ready for your systems.',
+    'rules': 'Events that award exactly what you intend.',
+    'test-events': 'Proof that your rules do what you expect.',
+    'event-logs': 'You know what each event did, and why.',
+    'send-events': 'Your developers know how to send events.',
+    'member-sign-in': 'Members can get into the member app.',
+    'member-home': 'A campaign open for the member.',
+    'member-products': 'You know how members buy and what it counts for.',
+    'member-wallet': 'Members see their points and claim their prizes.',
+    'member-account': 'Members keep their profile current and use the right program.',
+    'member-emails': 'You know what each email does and how long it works.',
+    'limits': 'Every limit in one place.',
     'troubleshooting': 'A fix for common problems.',
-    'glossary': 'Acme terms in plain language.',
+    'glossary': 'Loyalty Engine terms in plain language.',
 }
 
-# "Before you start" list
 BEFORE = {
-    'project-settings': ['<a href="#projects">A project</a> you own or manage'],
+    'quickstart': ['The admin username and password'],
+    'programs': ['<a href="#admin-sign-in">Signed in</a> to the admin console'],
+    'points': ['A member. See <a href="#members">Find and add members</a>'],
+    'member-rewards': ['An active reward in stock. See <a href="#rewards">Rewards</a>'],
+    'member-challenges': ['An active challenge. See <a href="#challenges">Challenges</a>'],
+    'recipe-vip-tier': ['Some members to put in the VIP segment'],
+    'recipe-challenge': ['A segment with members in it', 'A reward to use as the prize'],
+    'rules': ['An event. See <a href="#events">Events</a>'],
+    'test-events': ['An event that is turned on', 'A member'],
+    'send-events': ['An event with its attributes', 'A developer who can call the loyalty API'],
 }
 
-# small badges under the title: (kind, icon, text). kinds: role, avail
 BADGES = {
-    'project-settings': [('role', 'users', 'Owners and admins')],
+    'admin-sign-in': [('role', 'shield', 'Staff')],
+    'send-events': [('role', 'code', 'For developers')],
+    'member-sign-in': [('role', 'smartphone', 'Members')],
+    'member-home': [('role', 'smartphone', 'Members')],
+    'member-products': [('role', 'smartphone', 'Members')],
+    'member-wallet': [('role', 'smartphone', 'Members')],
+    'member-account': [('role', 'smartphone', 'Members')],
+    'member-emails': [('role', 'smartphone', 'Members')],
 }
 
-# Related pages, shown as cards at the end of a page (space-separated ids)
 RELATED = {
-    'welcome': 'quickstart projects',
-    'quickstart': 'projects project-settings',
-    'projects': 'project-settings quickstart',
-    'project-settings': 'projects',
-    'troubleshooting': 'glossary',
+    'welcome': 'tour quickstart',
+    'tour': 'quickstart programs',
+    'quickstart': 'events rules tiers',
+    'recipe-order-points': 'events rules send-events',
+    'recipe-vip-tier': 'segments tiers',
+    'recipe-prize-email': 'member-rewards member-emails',
+    'recipe-challenge': 'challenges segments rules',
+    'admin-sign-in': 'programs dashboard',
+    'programs': 'tour dashboard',
+    'dashboard': 'members tiers',
+    'members': 'member-page member-fields',
+    'member-page': 'points member-rewards member-challenges',
+    'points': 'tiers member-page',
+    'member-rewards': 'rewards member-wallet',
+    'member-challenges': 'challenges member-page',
+    'member-fields': 'tiers rules',
+    'segments': 'challenges tiers',
+    'rewards': 'member-rewards challenges',
+    'products': 'member-products tiers',
+    'challenges': 'member-challenges segments',
+    'tiers': 'points segments',
+    'events': 'rules test-events send-events',
+    'rules': 'test-events event-logs',
+    'test-events': 'event-logs rules',
+    'event-logs': 'rules troubleshooting',
+    'send-events': 'events event-logs',
+    'member-sign-in': 'member-account member-emails',
+    'member-home': 'member-wallet',
+    'member-products': 'products',
+    'member-wallet': 'member-rewards member-emails',
+    'member-account': 'programs member-sign-in',
+    'member-emails': 'member-wallet member-sign-in',
+    'limits': 'troubleshooting',
+    'troubleshooting': 'limits glossary',
     'glossary': 'troubleshooting',
 }
 
-# pages whose message tables stay open; everywhere else they collapse into a "Messages" box
 OPEN_MESSAGES = {'troubleshooting'}
 
-# pages shown as tabs, one tab per merged part: {page: {part id or 'main': tab label}}
-# Name the tabs exactly like the product's own tabs.
-TABS = {
-    'project-settings': {'settings-general': 'General', 'settings-members': 'Members'},
-}
+TABS = {}
 
-# tutorial pages whose steps readers can tick off; progress shows in the right column
-CHECKLIST = {'quickstart'}
+CHECKLIST = {'quickstart', 'recipe-order-points', 'recipe-vip-tier', 'recipe-prize-email', 'recipe-challenge'}
