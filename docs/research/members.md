@@ -423,7 +423,7 @@ All three are FormDialogs, size md (`components/members/PointsActions.tsx`). The
     - **"Unknown attribute(s) for '<key>': …"**
     - Value-coercion errors (`services/events.py:116,186,208,210`).
   - Each send gets a unique `eventId` (`console-<uuid>`), so retries are safe and rules don't run twice (`lib/events/actions.ts:151`, `routers/events.py:24-33`).
-  - Rules can move points and change prizes, challenges, segments and member fields. The tier is recalculated once afterwards (`services/events.py:155-163`). After sending, the page reloads member, segment and event data (`MemberEventsCard.tsx:118-123`).
+  - Rules can move points and change prizes, challenges, segments and member fields. The tier is recalculated once afterwards (`services/events.py:159-167`). After sending, the page reloads member, segment and event data (`MemberEventsCard.tsx:118-123`).
 - Shows up to 200 events (`lib/swr/keys.ts:53`).
 
 ---
