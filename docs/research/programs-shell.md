@@ -8,7 +8,7 @@ Source: `/home/user/loyalty-engine`. Paths: `client/...` is the Next.js 16 front
 
 - File: `client/app/page.tsx`. The tab title is **"Loyalty Engine"** (`client/app/page.tsx:7-9`).
 - Layout: a centred column (`max-w-sm`) on the `surface-2` background (`client/app/page.tsx:41-42`). It has the stock logo (`/logo.svg`, 48×48, `shadow-sm`) (`:44-51`), the heading **"Welcome to Loyalty Engine"** (`:53-55`) and the subtitle **"Choose how you'd like to continue"** (`:56`).
-- There are two entry tiles (`:59-72`). Each tile is a card link with an icon chip, a label, a one-line description and a chevron (`:11-37`):
+- There are three entry tiles: one per app, plus "Read the documentation" / "Learn how to use Loyalty Engine" linking to `/docs` with a book icon (added later, plain `<a>` because /docs is a static file). Each tile is a card link with an icon chip, a label, a one-line description and a chevron (`:11-37`):
   | Label | Description | Goes to | Icon |
   |---|---|---|---|
   | **Continue as admin** | Manage members, rewards, and tiers | `/admin/login` | DashboardIcon |
