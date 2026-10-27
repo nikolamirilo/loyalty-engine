@@ -340,8 +340,8 @@ in the default program, and the member switches program from there.
 |---|---|---|
 | `POST` | `/doi/trigger` | Send a verification email |
 | `POST` | `/doi/verify` | Confirm a verification code |
-| `POST` | `/auth/signup` | Create a member and mail a login code |
-| `POST` | `/auth/login` | Mail a login code to an existing member |
+| `POST` | `/auth/signup` | Create a member and mail a login code (an existing member just gets the code) |
+| `POST` | `/auth/login` | Mail a login code if the email has an account (same answer either way) |
 | `POST` | `/auth/verify` | Exchange the code for the member's record in the default program |
 
 ### Member object
@@ -386,8 +386,16 @@ re-sent: only its hash is stored. Triggers for the same person less than 60
 seconds apart answer `429` with a `Retry-After` header and send nothing, which
 keeps a looping caller from flooding the inbox. Nothing is written unless the
 email was accepted, so a failed send leaves the previous code working and starts
-no cooldown. `/auth/signup` and `/auth/login` behave the same way for login
-codes.
+no cooldown.
+
+`/auth/signup` and `/auth/login` resend the same way, with one difference: they
+never reveal whether an email has an account, because they serve the public
+sign-in page. Both answer the same `200` every time. Login for an unknown email
+sends nothing. Signup for a registered email mails that account a login code
+instead of creating a duplicate. A request within the 60-second cooldown sends
+nothing too; the code sent moments ago still works. `/auth/verify` gives one
+`400` message for every failure: unknown email, no code, expired code or wrong
+code.
 
 **Failures.** `EMAIL_FROM` must sit on a domain verified in Resend. Until it
 does, every send is rejected and `/doi/trigger` answers `500` quoting the

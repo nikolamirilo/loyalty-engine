@@ -16,6 +16,11 @@ from app.services.member_auth import trigger_login, trigger_signup, verify_login
 # header sent anyway is ignored.
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
+# One answer for signup and login, whether or not the email has an account (or
+# a code went out moments ago), so it never reveals which addresses are
+# registered. See app/services/member_auth.py.
+SENT = "If this email has an account, a login code is on its way."
+
 
 @router.post("/signup", response_model=AuthTriggerResponse)
 def signup(
@@ -23,7 +28,7 @@ def signup(
     db: Session = Depends(get_db),
 ):
     trigger_signup(db, body.email, body.name, body.phone)
-    return {"message": "Login code sent"}
+    return {"message": SENT}
 
 
 @router.post("/login", response_model=AuthTriggerResponse)
@@ -32,7 +37,7 @@ def login(
     db: Session = Depends(get_db),
 ):
     trigger_login(db, body.email)
-    return {"message": "Login code sent"}
+    return {"message": SENT}
 
 
 @router.post("/verify", response_model=AuthVerifyResponse)

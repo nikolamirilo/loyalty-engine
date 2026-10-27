@@ -89,9 +89,13 @@ export function AuthForm() {
     return (
       <form action={verifyAction} className="space-y-4">
         <input type="hidden" name="email" value={email} />
+        {/* The API answers the same whether or not the email has an account,
+            so in login mode the code may never come. Say so rather than
+            promise it. Signup always mails a code: new account or existing. */}
         <p className="text-center text-sm text-muted">
-          We sent a 6-digit code to{" "}
-          <span className="font-medium text-foreground">{email}</span>.
+          {mode === "login" ? "If " : "We sent a 6-digit code to "}
+          <span className="font-medium text-foreground">{email}</span>
+          {mode === "login" ? " has an account, we sent it a 6-digit code." : "."}
         </p>
         <Field label="Code" htmlFor="code">
           <Input

@@ -5,6 +5,12 @@ address once, permanently (``member.email_verified_at``). This flow proves it
 on every sign-in and never touches that field - a member can be logged out,
 come back next week, and request a fresh code without DOI's "already
 verified" 409 getting in the way.
+
+None of the three steps reveals whether an email has an account. Login,
+signup and a repeat request within the resend cooldown all answer the same
+200; verify answers one message for every failure. These endpoints sit
+behind the public sign-in page, where any difference in answer would let a
+visitor test addresses one by one.
 """
 
 import hashlib
@@ -18,7 +24,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.errors import InvalidInput, Misconfigured, NotFound, UpstreamError
+from app.core.errors import InvalidInput, Misconfigured, RateLimited, UpstreamError
 from app.core.program import default_program
 from app.models import Member, MemberIdentity, MemberLoginCode
 from app.integrations.email import EmailDeliveryError, send_email
@@ -29,6 +35,10 @@ logger = logging.getLogger("uvicorn.error")
 
 CODE_TTL = timedelta(minutes=10)
 MAX_ATTEMPTS = 5
+
+# Every verify failure, including an email with no account, so the answer
+# never tells an unknown address apart from a wrong code.
+INVALID_CODE = "That code is invalid or has expired. Request a new one."
 
 
 def _now() -> datetime:
@@ -100,15 +110,22 @@ def _issue_and_send_code(db: Session, identity: MemberIdentity) -> None:
     """Mail `identity` a fresh login code, retiring any previous one.
 
     Mirrors ``email_verification.trigger_verification``: every request sends a
-    new code (only hashes are stored, so the old one can't be re-sent), and
-    requests closer together than RESEND_COOLDOWN answer 429. There is no
-    email-verified gate - a login code can always be requested.
+    new code (only hashes are stored, so the old one can't be re-sent). There
+    is no email-verified gate - a login code can always be requested.
+
+    Unlike DOI, a request within RESEND_COOLDOWN sends nothing and still
+    answers 200, not 429: an email with no account can never be in cooldown,
+    so a 429 would mark the address as registered. The code sent moments ago
+    still works, so the member loses nothing.
 
     Keyed to the person, not to one of their memberships: the code proves who
     is signing in, and the program they land in comes from the request.
     """
     now = _now()
-    enforce_resend_cooldown(_last_sent_at(db, identity.id), now)
+    try:
+        enforce_resend_cooldown(_last_sent_at(db, identity.id), now)
+    except RateLimited:
+        return
 
     code = _generate_code()
 
@@ -146,12 +163,24 @@ def _issue_and_send_code(db: Session, identity: MemberIdentity) -> None:
     db.commit()
 
 
+def _send_to_existing(db: Session, identity: MemberIdentity) -> None:
+    # Everyone is enrolled everywhere already; this only repairs a person who
+    # predates a program, so they can sign into it like anyone else.
+    if enrol_everywhere(db, identity):
+        db.commit()
+
+    _issue_and_send_code(db, identity)
+
+
 def trigger_signup(db: Session, email: str, name: str, phone: Optional[str]) -> None:
     identity = find_identity_by_email(db, email)
     if identity is not None:
-        # Members are global, so an existing person already holds a membership
-        # in every program - including this one. There is nothing to sign up to.
-        raise InvalidInput("An account with this email already exists. Log in instead.")
+        # Already a member: mail them a login code instead, so signing up
+        # twice just signs them in. Refusing would tell anyone typing the
+        # address that it is registered. Name and phone are ignored - only the
+        # account owner, who reads the code, can change their details.
+        _send_to_existing(db, identity)
+        return
 
     identity = MemberIdentity(name=name, email=email, phone=phone)
     db.add(identity)
@@ -166,33 +195,27 @@ def trigger_signup(db: Session, email: str, name: str, phone: Optional[str]) -> 
 def trigger_login(db: Session, email: str) -> None:
     identity = find_identity_by_email(db, email)
     if identity is None:
-        raise NotFound("No account found for this email. Sign up instead.")
+        # Same 200 as a sent code, with nothing sent. See the module docstring.
+        return
 
-    # Everyone is enrolled everywhere already; this only repairs a person who
-    # predates a program, so they can sign into it like anyone else.
-    if enrol_everywhere(db, identity):
-        db.commit()
-
-    _issue_and_send_code(db, identity)
+    _send_to_existing(db, identity)
 
 
 def verify_login_code(db: Session, email: str, code: str) -> Member:
     identity = find_identity_by_email(db, email)
     if identity is None:
-        raise NotFound("No account found for this email.")
+        raise InvalidInput(INVALID_CODE)
 
     row = _latest_active_code(db, identity.id)
-    if row is None:
-        raise InvalidInput("No active login code for this member")
-    if _now() > _as_aware(row.expires_at):
-        raise InvalidInput("Login code has expired")
+    if row is None or _now() > _as_aware(row.expires_at):
+        raise InvalidInput(INVALID_CODE)
 
     if not secrets.compare_digest(row.code_hash, _hash_code(identity.id, code)):
         row.attempts += 1
         if row.attempts >= MAX_ATTEMPTS:
             row.consumed_at = _now()
         db.commit()
-        raise InvalidInput("Invalid login code")
+        raise InvalidInput(INVALID_CODE)
 
     row.consumed_at = _now()
     # The code proves who they are. Signing in always lands in the default

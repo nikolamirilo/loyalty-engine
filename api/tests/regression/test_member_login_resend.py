@@ -4,8 +4,11 @@ What this guards:
 
   * Requesting again resends: a member who lost the first email gets a new one
     with a fresh code, and only that newest code signs them in.
-  * Requesting again within RESEND_COOLDOWN answers 429 with Retry-After and
-    sends nothing, rather than a 200 that pretends an email went out.
+  * Requesting again within RESEND_COOLDOWN sends nothing but still answers
+    200, since an unknown email can never be in cooldown and a 429 would mark
+    the address as registered. The earlier code still signs in.
+  * Nothing tells a registered email from an unknown one: login, signup and
+    verify answer the same for both.
   * A code the member signed in with doesn't hold up the next request - logging
     in again right after (another device, after logging out) just works.
   * Signing in always lands in the default program, even when the request
@@ -65,6 +68,7 @@ OTHER_PROGRAM_ID = uuid.uuid4()
 IDENTITY_ID = uuid.uuid4()
 MEMBER_ID = uuid.uuid4()
 EMAIL = "login@example.com"
+UNKNOWN = "nobody@example.com"
 HEADERS = {"Authorization": "Bearer test-token"}
 client = TestClient(app, raise_server_exceptions=False)
 
@@ -123,14 +127,36 @@ def main() -> None:
         if len(sent) != 1:
             failures.append(f"first login sent {len(sent)} emails, expected 1")
 
-        # Straight away again: refused with 429, nothing sent.
+        # Straight away again: nothing sent, but the same 200 as a sent code.
         hurried = _login()
-        if hurried.status_code != 429:
-            failures.append(f"re-request within cooldown answered {hurried.status_code}, expected 429")
-        if not hurried.headers.get("Retry-After", "").isdigit():
-            failures.append(f"429 carried Retry-After {hurried.headers.get('Retry-After')!r}")
+        if hurried.status_code != 200 or hurried.json() != first.json():
+            failures.append(
+                f"re-request within cooldown answered {hurried.status_code} "
+                f"{hurried.text}, expected the same 200 as the first"
+            )
         if len(sent) != 1:
             failures.append(f"re-request within cooldown sent an email ({len(sent)} total)")
+
+        # An unknown email: the same 200, and no email to anyone.
+        unknown = client.post("/auth/login", json={"email": UNKNOWN}, headers=HEADERS)
+        if unknown.status_code != 200 or unknown.json() != first.json():
+            failures.append(
+                f"login for an unknown email answered {unknown.status_code} "
+                f"{unknown.text}, expected the same 200 as a registered one"
+            )
+        if len(sent) != 1:
+            failures.append(f"login for an unknown email sent an email ({len(sent)} total)")
+
+        # Verify: an unknown email and a wrong code read the same.
+        wrong = _verify("000000" if _sent_code(sent[0]) != "000000" else "111111")
+        stranger = client.post(
+            "/auth/verify", json={"email": UNKNOWN, "code": "123456"}, headers=HEADERS
+        )
+        if (wrong.status_code, wrong.json()) != (stranger.status_code, stranger.json()):
+            failures.append(
+                f"verify told an unknown email ({stranger.status_code} {stranger.text}) "
+                f"from a wrong code ({wrong.status_code} {wrong.text})"
+            )
 
         # Past the cooldown: a new email, and only its code signs in.
         _age_codes(61)
@@ -159,6 +185,28 @@ def main() -> None:
                 f"login right after signing in answered {again.status_code} with "
                 f"{len(sent)} emails sent in total, expected 200 and 3"
             )
+
+        # Signing up with a registered email: the same 200 as a new signup, a
+        # login code for the existing account, and no duplicate person.
+        _age_codes(61)
+        dupe = client.post(
+            "/auth/signup", json={"email": EMAIL, "name": "Someone Else"}, headers=HEADERS
+        )
+        if dupe.status_code != 200 or dupe.json() != first.json() or len(sent) != 4:
+            failures.append(
+                f"signup for a registered email answered {dupe.status_code} {dupe.text} "
+                f"with {len(sent)} emails sent in total, expected the usual 200 and 4"
+            )
+        elif _verify(_sent_code(sent[-1])).status_code != 200:
+            failures.append("the code mailed by a repeat signup did not sign in")
+        session = database.SessionLocal()
+        people = session.query(MemberIdentity).filter(MemberIdentity.email == EMAIL).all()
+        if len(people) != 1 or people[0].name != "Login Member":
+            failures.append(
+                f"repeat signup left {len(people)} people named "
+                f"{[p.name for p in people]}, expected the one original"
+            )
+        session.close()
     finally:
         resend.Emails.send = original_send
 
@@ -167,7 +215,10 @@ def main() -> None:
         for f in failures:
             print("  -", f)
         raise SystemExit(1)
-    print("OK: /auth/login resends a fresh code, rate-limits with 429, and lands in the default program")
+    print(
+        "OK: /auth/login resends a fresh code, holds back within the cooldown, "
+        "never reveals whether an email is registered, and lands in the default program"
+    )
 
 
 if __name__ == "__main__":
