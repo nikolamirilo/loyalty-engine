@@ -34,6 +34,7 @@ keeps one set of rules in one place.
 | [`client/`](client) | One Next.js project serving two apps: the staff admin console at `/admin`, and the member app at the root. | [client/README.md](client/README.md) |
 | [`mcp-server/`](mcp-server) | Exposes the API to AI agents as MCP tools. Calls the API over HTTP like any other client. | [mcp-server/README.md](mcp-server/README.md) |
 | [`supabase/`](supabase) | Hand written SQL migrations for changes `create_all` cannot make. | [supabase/README.md](supabase/README.md) |
+| [`architecture/`](architecture) | Technical architecture: diagram, error handling, monitoring, CI and runbook. | [architecture/README.md](architecture/README.md) |
 | [`docs/`](docs) | End-user documentation, written from the code. Built into one page that the client serves at `/docs`. | [docs/README.md](docs/README.md) |
 
 ## The domain in one table

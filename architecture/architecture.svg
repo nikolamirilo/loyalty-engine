@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1070" viewBox="0 0 1680 1070" font-family="Inter, 'DejaVu Sans', Arial, sans-serif">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker></defs>
+<rect x="0" y="0" width="1680" height="1070" rx="0" fill="#ffffff" stroke="#ffffff" stroke-width="1.5"/>
+<text x="30" y="46" font-size="26" font-weight="700" fill="#0f172a" text-anchor="start">Loyalty Engine — system architecture</text>
+<text x="30" y="72" font-size="14" font-weight="400" fill="#475569" text-anchor="start">Three services on Vercel share one Supabase Postgres. Only the Loyalty API opens a database connection; everything else calls it over HTTPS with a bearer token.</text>
+<rect x="30" y="150" width="160" height="64" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<rect x="30" y="150" width="6" height="64" rx="3" fill="#64748b" stroke="#64748b" stroke-width="0"/>
+<text x="48" y="176" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">Staff</text>
+<text x="48" y="196" font-size="12" font-weight="400" fill="#475569" text-anchor="start">admin console</text>
+<rect x="30" y="250" width="160" height="64" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<rect x="30" y="250" width="6" height="64" rx="3" fill="#64748b" stroke="#64748b" stroke-width="0"/>
+<text x="48" y="276" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">Members</text>
+<text x="48" y="296" font-size="12" font-weight="400" fill="#475569" text-anchor="start">member app</text>
+<rect x="30" y="440" width="160" height="64" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<rect x="30" y="440" width="6" height="64" rx="3" fill="#64748b" stroke="#64748b" stroke-width="0"/>
+<text x="48" y="466" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">AI agents</text>
+<text x="48" y="486" font-size="12" font-weight="400" fill="#475569" text-anchor="start">Claude, MCP clients</text>
+<rect x="30" y="690" width="160" height="64" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<rect x="30" y="690" width="6" height="64" rx="3" fill="#64748b" stroke="#64748b" stroke-width="0"/>
+<text x="48" y="716" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">External systems</text>
+<text x="48" y="736" font-size="12" font-weight="400" fill="#475569" text-anchor="start">e.g. shop, CRM</text>
+<rect x="218" y="96" width="982" height="664" rx="14" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 5"/>
+<text x="238" y="120" font-size="11.5" font-weight="700" fill="#475569" text-anchor="start">VERCEL · SERVERLESS FUNCTIONS · REGION dub1 (DUBLIN)</text>
+<rect x="330" y="136" width="380" height="270" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
+<rect x="330" y="136" width="6" height="270" rx="3" fill="#4f46e5" stroke="#4f46e5" stroke-width="0"/>
+<text x="348" y="162" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">Next.js 16 client</text>
+<text x="348" y="182" font-size="12" font-weight="400" fill="#475569" text-anchor="start">admin console /admin · member app / · docs /docs</text>
+<rect x="350" y="206" width="340" height="38" rx="7" fill="#ffffff" stroke="#4f46e5" stroke-width="1"/>
+<text x="362" y="229.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">proxy.ts — session gate (HMAC-signed cookies)</text>
+<rect x="350" y="254" width="340" height="38" rx="7" fill="#ffffff" stroke="#4f46e5" stroke-width="1"/>
+<text x="362" y="277.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">Server Components + Server Actions → lib/api.ts</text>
+<rect x="350" y="302" width="340" height="38" rx="7" fill="#ffffff" stroke="#4f46e5" stroke-width="1"/>
+<text x="362" y="325.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">/api/le/* route — same-origin proxy for SWR</text>
+<rect x="350" y="350" width="340" height="38" rx="7" fill="#ffffff" stroke="#4f46e5" stroke-width="1"/>
+<text x="362" y="373.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">API token server-only · no NEXT_PUBLIC_* vars</text>
+<rect x="330" y="450" width="380" height="250" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+<rect x="330" y="450" width="6" height="250" rx="3" fill="#7c3aed" stroke="#7c3aed" stroke-width="0"/>
+<text x="348" y="476" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">MCP server (FastMCP)</text>
+<text x="348" y="496" font-size="12" font-weight="400" fill="#475569" text-anchor="start">Streamable HTTP · stateless · /mcp</text>
+<rect x="350" y="520" width="340" height="38" rx="7" fill="#ffffff" stroke="#7c3aed" stroke-width="1"/>
+<text x="362" y="543.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">BearerAuthMiddleware — MCP_CLIENT_TOKENS</text>
+<rect x="350" y="568" width="340" height="38" rx="7" fill="#ffffff" stroke="#7c3aed" stroke-width="1"/>
+<text x="362" y="591.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">78 tools · require_scope(read | write | admin)</text>
+<rect x="350" y="616" width="340" height="38" rx="7" fill="#ffffff" stroke="#7c3aed" stroke-width="1"/>
+<text x="362" y="639.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">loyalty_api_client — httpx, 15 s timeout</text>
+<rect x="800" y="136" width="370" height="600" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="800" y="136" width="6" height="600" rx="3" fill="#2563eb" stroke="#2563eb" stroke-width="0"/>
+<text x="818" y="162" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">Loyalty API (FastAPI)</text>
+<text x="818" y="182" font-size="12" font-weight="400" fill="#475569" text-anchor="start">owns all business logic · camelCase JSON</text>
+<rect x="820" y="206" width="330" height="38" rx="7" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+<text x="832" y="229.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">verify_token — Bearer API_TOKEN</text>
+<rect x="820" y="254" width="330" height="38" rx="7" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+<text x="832" y="277.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">get_program — X-Program-Id (id or slug)</text>
+<rect x="820" y="302" width="330" height="38" rx="7" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+<text x="832" y="325.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">routers/ — validate and shape requests</text>
+<rect x="820" y="350" width="330" height="38" rx="7" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+<text x="832" y="373.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">services/ — rule engine, tiers, points ledger</text>
+<rect x="820" y="398" width="330" height="38" rx="7" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+<text x="832" y="421.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">models/ — SQLAlchemy ORM, NullPool</text>
+<rect x="820" y="446" width="330" height="38" rx="7" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+<text x="832" y="469.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">integrations/ — Resend, Supabase Storage</text>
+<rect x="820" y="502" width="330" height="96" rx="7" fill="#ffffff" stroke="#dc2626" stroke-width="1"/>
+<text x="832" y="522" font-size="12.5" font-weight="600" fill="#b91c1c" text-anchor="start">Exception handlers (app/main.py)</text>
+<text x="832" y="542" font-size="12" font-weight="400" fill="#0f172a" text-anchor="start">DomainError → 400/404/409/413/429/5xx</text>
+<text x="832" y="560" font-size="12" font-weight="400" fill="#0f172a" text-anchor="start">OperationalError → 503 · IntegrityError → 409</text>
+<text x="832" y="578" font-size="12" font-weight="400" fill="#0f172a" text-anchor="start">body always { &quot;detail&quot;: &quot;...&quot; }</text>
+<rect x="820" y="610" width="330" height="38" rx="7" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+<text x="832" y="633.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">monitoring.py — Sentry SDK, PII scrubbed</text>
+<rect x="820" y="658" width="330" height="38" rx="7" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+<text x="832" y="681.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">/health — open, for uptime checks</text>
+<rect x="1290" y="96" width="360" height="290" rx="14" fill="#f0fdf4" stroke="#059669" stroke-width="1.5" stroke-dasharray="6 5"/>
+<text x="1306" y="120" font-size="11.5" font-weight="700" fill="#047857" text-anchor="start">SUPABASE · eu-west-1 (IRELAND)</text>
+<rect x="1310" y="136" width="320" height="126" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+<rect x="1310" y="136" width="6" height="126" rx="3" fill="#059669" stroke="#059669" stroke-width="0"/>
+<text x="1328" y="162" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">Postgres</text>
+<text x="1328" y="182" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">21 tables, rows scoped by program</text>
+<text x="1328" y="201" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">Supavisor transaction pooler :6543</text>
+<text x="1328" y="220" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">TLS required · 10 s connect timeout</text>
+<rect x="1310" y="282" width="320" height="84" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+<rect x="1310" y="282" width="6" height="84" rx="3" fill="#059669" stroke="#059669" stroke-width="0"/>
+<text x="1328" y="308" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">Storage</text>
+<text x="1328" y="328" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">bucket program-assets (logos)</text>
+<rect x="1290" y="420" width="360" height="112" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+<rect x="1290" y="420" width="6" height="112" rx="3" fill="#ea580c" stroke="#ea580c" stroke-width="0"/>
+<text x="1308" y="446" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">Resend (email)</text>
+<text x="1308" y="466" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">DOI codes and links, login codes</text>
+<text x="1308" y="485" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">prize emails · CI test reports</text>
+<rect x="1290" y="572" width="360" height="128" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+<rect x="1290" y="572" width="6" height="128" rx="3" fill="#ea580c" stroke="#ea580c" stroke-width="0"/>
+<text x="1308" y="598" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">Sentry</text>
+<text x="1308" y="618" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">unhandled 5xx + reported errors</text>
+<text x="1308" y="637" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">performance traces · tag: program</text>
+<text x="1308" y="656" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">release = git SHA · env = VERCEL_ENV</text>
+<path d="M190,182 H328" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="272" y="165" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">session cookie</text>
+<text x="272" y="179" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">admin_session</text>
+<path d="M190,282 H328" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="272" y="265" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">session cookie</text>
+<text x="272" y="279" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">member_session</text>
+<path d="M190,472 H328" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="272" y="455" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">MCP over HTTPS</text>
+<text x="272" y="469" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">client token</text>
+<path d="M190,722 H770 V700 H798" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="480" y="740" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">HTTPS · Bearer API_TOKEN · POST /events</text>
+<path d="M710,300 H798" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="755" y="270" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">Bearer token</text>
+<text x="755" y="284" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">X-Program-Id</text>
+<path d="M710,616 H798" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="755" y="586" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">service token</text>
+<text x="755" y="600" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">X-Program-Id</text>
+<path d="M1170,416 H1230 V199 H1308" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="1270" y="191" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">SQL</text>
+<path d="M1170,456 H1250 V324 H1308" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="1280" y="316" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">logos</text>
+<path d="M1170,476 H1288" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="1229" y="468" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">email</text>
+<path d="M1170,629 H1288" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="1229" y="621" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">errors, traces</text>
+<rect x="30" y="796" width="1620" height="250" rx="14" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 5"/>
+<text x="50" y="820" font-size="11.5" font-weight="700" fill="#475569" text-anchor="start">DELIVERY AND QUALITY</text>
+<rect x="60" y="846" width="260" height="176" rx="10" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+<rect x="60" y="846" width="6" height="176" rx="3" fill="#334155" stroke="#334155" stroke-width="0"/>
+<text x="78" y="872" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">Developer</text>
+<text x="78" y="892" font-size="12" font-weight="400" fill="#475569" text-anchor="start">git commit</text>
+<text x="78" y="912" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">husky pre-commit:</text>
+<text x="78" y="931" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">• Python syntax (ast.parse)</text>
+<text x="78" y="950" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">• ESLint · tsc --noEmit</text>
+<text x="78" y="969" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">• next build</text>
+<rect x="380" y="846" width="230" height="176" rx="10" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+<rect x="380" y="846" width="6" height="176" rx="3" fill="#334155" stroke="#334155" stroke-width="0"/>
+<text x="398" y="872" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">GitHub</text>
+<text x="398" y="892" font-size="12" font-weight="400" fill="#475569" text-anchor="start">nikolamirilo/loyalty-engine</text>
+<text x="398" y="912" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">push / pull request</text>
+<text x="398" y="931" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">path-filtered workflows</text>
+<text x="398" y="950" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">one per service</text>
+<rect x="670" y="846" width="590" height="176" rx="10" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+<rect x="670" y="846" width="6" height="176" rx="3" fill="#334155" stroke="#334155" stroke-width="0"/>
+<text x="688" y="872" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">GitHub Actions</text>
+<rect x="688" y="884" width="554" height="28" rx="6" fill="#ffffff" stroke="#334155" stroke-width="1"/>
+<text x="700" y="902.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">API tests — pytest flow suite vs Postgres 16 service, latency table</text>
+<rect x="688" y="917" width="554" height="28" rx="6" fill="#ffffff" stroke="#334155" stroke-width="1"/>
+<text x="700" y="935.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">Client checks — ESLint + TypeScript typecheck</text>
+<rect x="688" y="950" width="554" height="28" rx="6" fill="#ffffff" stroke="#334155" stroke-width="1"/>
+<text x="700" y="968.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">MCP checks — compile, import, tool registry + program-arg asserts</text>
+<rect x="688" y="983" width="554" height="28" rx="6" fill="#ffffff" stroke="#334155" stroke-width="1"/>
+<text x="700" y="1001.5" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">Scheduled API tests — daily 07:00 and 13:00 UTC</text>
+<rect x="1320" y="846" width="300" height="176" rx="10" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+<rect x="1320" y="846" width="6" height="176" rx="3" fill="#334155" stroke="#334155" stroke-width="0"/>
+<text x="1338" y="872" font-size="16" font-weight="600" fill="#0f172a" text-anchor="start">Email report</text>
+<text x="1338" y="892" font-size="12" font-weight="400" fill="#475569" text-anchor="start">send_ci_report.py → Resend</text>
+<text x="1338" y="912" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">on push, manual and</text>
+<text x="1338" y="931" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">scheduled runs (not PRs)</text>
+<text x="1338" y="950" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">subject shows pass / FAILED</text>
+<text x="1338" y="969" font-size="12.5" font-weight="400" fill="#0f172a" text-anchor="start">latency table + failing log tail</text>
+<path d="M320,934 H378" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="349" y="926" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">push</text>
+<path d="M610,934 H668" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<path d="M1260,934 H1318" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<path d="M495,846 V762" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="505" y="790" font-size="11" font-weight="500" fill="#475569" text-anchor="start">Vercel Git deploy</text>
+</svg>
