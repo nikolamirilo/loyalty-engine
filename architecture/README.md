@@ -51,77 +51,108 @@ the API over HTTPS with a bearer token.
 | Email abuse | A person can request a new code once per 60 seconds. Earlier requests get `429` with `Retry-After`. |
 | MCP | Each agent has its own token and scopes (`read`, `write`, `admin`), separate from the API token. Host and origin checks guard against DNS rebinding. CORS allows only `claude.ai`. |
 
-## 4. Error handling
+## 4. Error Handling & Monitoring
 
-**API.** Services raise domain errors from `app/core/errors.py`. One handler in
-`app/main.py` turns each into an HTTP response with the body
-`{"detail": "..."}`.
+### 4.1 Principles
 
-| Error | Status |
+- **One error shape.** Every error response looks like
+  `{"detail": "<message>"}`, so the client, the MCP server and outside callers
+  can all read it the same way.
+- **The status code tells you what to do.**
+
+  | Status | Meaning | What the caller should do |
+  |---|---|---|
+  | 4xx | The caller made a mistake | Fix the request |
+  | 502, 503 | A temporary failure | Retry |
+  | 500 | A bug or a broken setup | Retrying won't help; someone has to fix it |
+
+- **Fail fast, within budget.** Every outbound call has a timeout shorter than
+  Vercel's 10-second function limit. Without that, a slow dependency shows up
+  as a Vercel timeout with no explanation.
+- **Nothing fails silently.** Errors the app deliberately handles or swallows
+  are still sent to Sentry.
+
+### 4.2 API error model
+
+Services raise domain errors from `app/core/errors.py` and never import
+FastAPI. Handlers in `app/main.py` turn each error into its status code.
+
+| Error | Status | Example |
+|---|---|---|
+| `InvalidInput` | 400 | A rule refers to a reward that doesn't exist |
+| `NotFound` | 404 | A member who isn't in this program |
+| `Conflict` | 409 | An email that is already verified |
+| `PayloadTooLarge` | 413 | A logo over 2 MB |
+| `RateLimited` | 429 + `Retry-After` | A second code request within 60 seconds |
+| `Misconfigured` | 500 | The sender domain isn't verified in Resend |
+| `UpstreamError` | 502 | Resend or Storage is down or rate-limiting |
+| `FeatureUnavailable` | 503 | Storage keys aren't set, so logo upload is off |
+| `OperationalError` (database) | 503 | The pooler is full, or the project is paused |
+| `IntegrityError` (database) | 409 | A unique constraint the route didn't check first |
+| Validation | 422 | A field is missing or has the wrong type in the request body |
+
+### 4.3 Failure handling by dependency
+
+| Dependency | Timeout | On failure |
+|---|---|---|
+| **Postgres** | 10 s connect | Returns `503`. Each request opens and closes its own connection (`NullPool`), so a failure doesn't leak connections. A session-pooler URL (port 5432) is rewritten to port 6543 and a warning is logged. |
+| **Resend** | 10 s | **Permanent** errors (Resend returns 400–422: bad key, unverified domain) become `500`, with the provider's reason in the message. **Transient** errors (429, 5xx, network failure) become `502`. The code is sent before anything is written to the database, so a failed send changes no data. |
+| **Prize email** | 10 s | Never fails the request. The prize is still assigned, the response contains `emailSent: false` and `emailError`, and the failure is sent to Sentry. |
+| **Supabase Storage** | — | Unreachable or rejected: `502`. Not configured: `503`. |
+| **Startup** | — | A missing required environment variable stops the service from starting. If the database is down while `create_all` runs, the error is logged and reported, and the app still boots. |
+
+### 4.4 Callers of the API
+
+| Caller | Behaviour |
 |---|---|
-| `InvalidInput` / `NotFound` / `Conflict` | 400 / 404 / 409 |
-| `PayloadTooLarge` / `RateLimited` | 413 / 429 (with `Retry-After`) |
-| `Misconfigured`: setup is wrong, retrying won't help | 500 |
-| `UpstreamError`: Resend or Storage failed, worth retrying | 502 |
-| `FeatureUnavailable`: optional settings are missing | 503 |
-| Database unreachable (`OperationalError`) | 503 |
-| Unchecked constraint (`IntegrityError`) | 409 |
+| **Client, server side** (`lib/api.ts`) | Up to 3 attempts, waiting 150 ms and then 300 ms between them. Retries only network errors and 502, 503 and 504, never a 500. Turns the `detail` into `ApiError(status, message)`. |
+| **Client proxy** (`/api/le`) | Same retry rules, but stops after 8 seconds and returns a JSON `504`. Returns JSON `502` if the API can't be reached, and `401` if there is no session. |
+| **Client UI** | Server Actions return `{ ok, error }`, and the UI shows the API's message in a banner or toast. Unexpected errors are logged and the user sees a generic message. `error.tsx` catches render errors and offers **Try again** and **Reload**. |
+| **MCP server** | Any non-2xx response becomes a tool error such as `404: Member not found`. A missing scope also becomes a tool error. A bad token is rejected with `401` before any tool runs. Calls to the API time out after 15 seconds. |
 
-- **Email:** Resend 4xx errors such as a bad key or an unverified domain become
-  500. A 429, a 5xx or a network error becomes 502. Codes are sent before
-  anything is written, so a failed send changes nothing. A failed prize email
-  doesn't fail the request: the response says `emailSent: false` and Sentry
-  gets a report.
-- **Startup:** missing required environment variables stop the service from
-  starting. A database error during `create_all` is logged, and the app still
-  boots.
+### 4.5 Error monitoring (Sentry)
 
-**Timeouts.** Every limit is set to fail cleanly before Vercel stops the
-function at 10 seconds:
+Sentry runs **in the API only**. All Sentry code is in `app/core/monitoring.py`.
+It is turned off when `SENTRY_DSN` is unset, which includes tests, CI and local
+runs.
 
-| Hop | Limit |
+| Captured | How |
 |---|---|
-| Database connect | 10 s |
-| Resend | 10 s |
-| Client proxy (`/api/le`) | 8 s, then `504` |
-| MCP server to API | 15 s |
+| Unhandled exceptions and every 5xx domain error | Captured automatically by Sentry's FastAPI integration, together with the error that caused it |
+| Handled failures: database down, unchecked constraint, `create_all` failure, failed prize email | Sent with `report(exc)` |
+| Log records | Attached to events as breadcrumbs, not sent as events of their own, so nothing is reported twice |
 
-**Client.**
-- `lib/api.ts` and `/api/le` make up to 3 attempts on network errors and on
-  502, 503 and 504. They never retry a 500.
-- Server Actions return `{ ok, error }` and show the API's message. Any other
-  error is logged and the user sees a generic message.
-- `error.tsx` is the error boundary, with **Try again** and **Reload**.
+- **Context:** `environment` is taken from `VERCEL_ENV`, and `release` is the
+  deployed git SHA. Each event is tagged with the `program` slug, so you can
+  filter by program.
+- **Tracing:** on, at `SENTRY_TRACES_SAMPLE_RATE`, which defaults to `1.0`.
+- **Privacy:**
+  - `send_default_pii=False`, so no IPs, cookies or query strings are sent.
+  - Local variables are not attached to events.
+  - `email`, `name`, `phone` and `code` are masked at any depth, on top of
+    Sentry's default masking of tokens and passwords.
 
-**MCP.** Any non-2xx response from the API becomes a tool error with the API's
-`detail`. A bad token gets `401`.
+### 4.6 Logs, health and synthetic checks
 
-## 5. Monitoring
+- **Logs** go to Vercel function logs. Look for these warnings:
+  - "fell back to the default program": a caller sent no `X-Program-Id`.
+  - "session pooler": `DATABASE_URL` uses the wrong port.
+  - The email-failure lines, which include Resend's own reason.
+- **Health endpoints:** `GET /health` (API) and `GET /healthz` (MCP). They need
+  no authentication. Neither checks the database.
+- **Scheduled tests** run against a test Postgres every day at 07:00 and 13:00
+  UTC. Each run emails a report, and the subject starts with `🔴 FAILED` when a
+  test fails. The report lists the latency of every route, so a slow route
+  shows up even on days with no pushes.
 
-**Sentry** runs in the API only, and only when `SENTRY_DSN` is set.
+### 4.7 Gaps
 
-- **What reaches it:**
-  - every unhandled 500
-  - 5xx domain errors
-  - handled failures sent with `report()`: database unavailable, unchecked
-    constraint, `create_all` failure, failed prize email
-- **Context:** `environment` comes from `VERCEL_ENV`, `release` from the git
-  SHA, and every event is tagged with its `program`. Traces are on, with the
-  rate set by `SENTRY_TRACES_SAMPLE_RATE` (default 1.0).
-- **Privacy:** no IPs, cookies or local variables are sent. `email`, `name`,
-  `phone` and `code` are masked at any depth.
-- **Logs:** logs become breadcrumbs only, so no error is reported twice.
+1. The client and the MCP server don't send errors to Sentry.
+2. Health checks don't touch the database, and no uptime alerting is set up.
+3. Trace sampling is at 100%, so it should be lowered in production as traffic
+   grows.
 
-**Logs and health checks**
-- **Logs:** Vercel function logs. They include warnings when a request falls
-  back to the default program or the pooler URL is rewritten, plus the
-  provider's own reason for each email failure.
-- **Health:** `GET /health` (API) and `GET /healthz` (MCP). Neither needs auth.
-
-**Scheduled test runs:** the API tests run daily at 07:00 and 13:00 UTC and
-email a report, so regressions and slow routes show up without a push.
-
-## 6. Testing and CI
+## 5. Testing and CI
 
 | Stage | Checks |
 |---|---|
@@ -143,7 +174,7 @@ email a report, so regressions and slow routes show up without a push.
   code resends, program isolation or tier sync. They run on SQLite and must be
   started by hand.
 
-## 7. Deployment
+## 6. Deployment
 
 - **Platform:** each service is its own Vercel project, deployed through the
   Git integration and pinned to `dub1`.
@@ -160,7 +191,7 @@ email a report, so regressions and slow routes show up without a push.
 | MCP | `LOYALTY_API_BASE_URL`, `LOYALTY_API_SERVICE_TOKEN`, `MCP_CLIENT_TOKENS` |
 | CI | secret `RESEND_API_KEY`; variables `CI_REPORT_FROM`, `CI_REPORT_TO` |
 
-## 8. Runbook
+## 7. Runbook
 
 | Symptom | Fix |
 |---|---|
@@ -171,7 +202,7 @@ email a report, so regressions and slow routes show up without a push.
 | MCP returns `421` | Add the host to `MCP_ALLOWED_HOSTS`. |
 | Data lands in the wrong program | The caller left out `X-Program-Id`. Search the logs for "fell back to the default program". |
 
-## 9. Known gaps
+## 8. Known gaps
 
 1. The regression scripts don't run in CI.
 2. The client and the MCP server have no Sentry.
