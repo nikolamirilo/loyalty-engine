@@ -85,7 +85,7 @@ Conventions used below:
 - Button **"Send login code"**, full width, primary. It shows a spinner while pending (`client/app/login/AuthForm.tsx:65-67`, `client/components/ui/SubmitButton.tsx:8-14`).
 - FE checks: the email is trimmed. If empty: "Enter your email address." (`client/lib/memberAuth/actions.ts:24-25`).
 - BE: `email` is a Pydantic `EmailStr` (`api/app/schemas/auth.py:15-16`). An invalid address fails with a message starting "value is not a valid email address: …". ? The exact text comes from the email-validator library.
-- BE: unknown email gives **"No account found for this email. Sign up instead."** (404) (`api/app/services/member_auth.py:166-169`).
+- BE: unknown email sends nothing and answers the same 200 as a sent code, "If this email has an account, a login code is on its way." (`api/app/routers/auth.py:19-22`, `api/app/services/member_auth.py:195-201`). A request inside the 60 s cooldown also sends nothing and answers 200 (`api/app/services/member_auth.py:122-128`).
 - The lookup is an exact string match on the identity email (`api/app/services/member_auth.py:42-43`). ? EmailStr probably lowercases only the domain, so `John@x.com` and `john@x.com` would be different accounts.
 - No program is sent. Signing in always lands in the default program (`client/lib/memberAuth/actions.ts:15-17`, `api/app/routers/auth.py:14-16`).
 
@@ -96,13 +96,13 @@ Conventions used below:
   - **"Phone"**: `type=tel`, shows the hint "Optional" at the right of the label, no validation.
 - Button **"Create account"** (`client/app/login/AuthForm.tsx:66`).
 - FE checks: if the name or email is empty: "Enter your name and email address." (`client/lib/memberAuth/actions.ts:45-50`). An empty phone is sent as undefined (`client/lib/memberAuth/actions.ts:55`).
-- BE: an existing email returns **"An account with this email already exists. Log in instead."** (400) (`api/app/services/member_auth.py:150-154`). The tab does not switch to "Log in" automatically.
+- BE: an existing email mails that account a login code and creates nothing. Name and phone are ignored (`api/app/services/member_auth.py:176-184`).
 - BE: the account is **created and committed before the code is emailed or verified**. The new person gets a membership in every program (`api/app/services/member_auth.py:156-163`).
 - No length limits on name or phone, FE or BE (`api/app/schemas/auth.py:9-12`).
 
 ### Step 2: Enter the code
 - After a successful send, the card switches to the code step (`client/app/login/AuthForm.tsx:31-34`, `client/app/login/AuthForm.tsx:149-152`).
-- Text: **"We sent a 6-digit code to <email>."** The email is shown in `font-medium text-foreground` (`client/app/login/AuthForm.tsx:92-95`).
+- Text: in Log in mode **"If <email> has an account, we sent it a 6-digit code."**; in Sign up mode "We sent a 6-digit code to <email>." (`client/app/login/AuthForm.tsx:92-98`). The email is shown in `font-medium text-foreground` (`client/app/login/AuthForm.tsx:92-95`).
 - Field **"Code"**: `inputMode=numeric`, `autocomplete=one-time-code`, `maxLength=6`, required, autofocus. There is no `pattern`, so letters are accepted (`client/app/login/AuthForm.tsx:96-106`).
 - Button **"Continue"**, full width (`client/app/login/AuthForm.tsx:108`).
 - Link-style button **"Use a different email"** (`text-[0.8125rem] text-muted`). It returns to step 1 with an **empty** form (`client/app/login/AuthForm.tsx:109-118`).
@@ -110,10 +110,9 @@ Conventions used below:
 - FE checks: an empty code gives "Enter the code from your email." (`client/lib/memberAuth/actions.ts:77-79`).
 - BE results (`api/app/services/member_auth.py:179-204`):
   - Correct code: the member is signed in to the default program and redirected to `/home` (`client/lib/memberAuth/actions.ts:97-98`).
-  - Wrong code: **"Invalid login code"** (400). Each wrong guess adds one attempt.
-  - After **5** wrong guesses the code is burned (`MAX_ATTEMPTS = 5`, `api/app/services/member_auth.py:31`, `api/app/services/member_auth.py:190-195`). The next try then gets **"No active login code for this member"** (`api/app/services/member_auth.py:184-186`).
-  - Expired code: **"Login code has expired"** (`api/app/services/member_auth.py:187-188`).
-  - Email no longer exists: "No account found for this email." (`api/app/services/member_auth.py:180-182`).
+  - Wrong code: **"That code is invalid or has expired. Request a new one."** (400, `INVALID_CODE`, `api/app/services/member_auth.py:41`). Each wrong guess adds one attempt.
+  - After **5** wrong guesses the code is burned (`MAX_ATTEMPTS = 5`, `api/app/services/member_auth.py:31`, `api/app/services/member_auth.py:190-195`). The next try gets the same message (`api/app/services/member_auth.py:209-211`).
+  - Expired code, or an email with no account: the same message (`api/app/services/member_auth.py:205-211`).
 
 ### Code email
 - Subject **"Your login code"**. Text version: "Your login code is NNNNNN. It expires in 10 minutes." (`api/app/services/member_auth.py:89-96`).
@@ -418,9 +417,9 @@ Conventions used below:
 ## For the product team: bugs and rough edges
 
 1. **No "Resend code" on the code step.** There is also no on-screen mention of the 10-minute expiry or the 60 s cooldown. To resend, the member must use "Use a different email" and retype the address (`client/app/login/AuthForm.tsx:88-120`).
-2. **A stale error banner survives "Use a different email".** `verifyState` lives in `AuthForm` and is never reset, so the next code step shows the previous "Invalid login code" error (`client/app/login/AuthForm.tsx:86`, `client/app/login/AuthForm.tsx:107-114`).
+2. **A stale error banner survives "Use a different email".** `verifyState` lives in `AuthForm` and is never reset, so the next code step shows the previous "That code is invalid or has expired. Request a new one." error (`client/app/login/AuthForm.tsx:86`, `client/app/login/AuthForm.tsx:107-114`).
 3. **Members see raw technical messages**:
-   - "No active login code for this member", shown after 5 wrong codes with no hint to request a new code.
+   - The same invalid-code message is shown after 5 wrong codes, with only a generic hint to request a new code.
    - Pydantic validation text.
    - "Cannot reach the API at <URL>…".
    - Provider reasons in the "email delivery is misconfigured" errors (`api/app/services/member_auth.py:131-133`).

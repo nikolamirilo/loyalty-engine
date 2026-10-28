@@ -1866,7 +1866,7 @@ figure.dgm{margin:1rem 0 1.6rem}
 <ol class="steps">
 <li><b>Open the member app</b><p>On the start page, select <span class="m">Continue as user</span>, or go to <code>/login</code>.</p></li>
 <li><b>Keep Log in selected <button type="button" class="nchip" data-n="1" aria-label="Show item 1 on the screen">1</button> and enter your Email <button type="button" class="nchip" data-n="2" aria-label="Show item 2 on the screen">2</button></b></li>
-<li><b>Select Send login code <button type="button" class="nchip" data-n="3" aria-label="Show item 3 on the screen">3</button></b><span class="done">"We sent a 6-digit code to ..."</span></li>
+<li><b>Select Send login code <button type="button" class="nchip" data-n="3" aria-label="Show item 3 on the screen">3</button></b><span class="done">"If ... has an account, we sent it a 6-digit code."</span></li>
 <li><b>Enter the Code from the email <button type="button" class="nchip" data-n="4" aria-label="Show item 4 on the screen">4</button></b><p>The email's subject is "Your login code".</p></li>
 <li><b>Select Continue <button type="button" class="nchip" data-n="5" aria-label="Show item 5 on the screen">5</button></b><span class="done">The Home tab opens.</span></li>
 </ol>
@@ -1881,13 +1881,14 @@ figure.dgm{margin:1rem 0 1.6rem}
 <h2><span class="k k-steps"><svg class="ico" aria-hidden="true"><use href="#i-list-ordered"/></svg></span><span>Get a new code</span></h2>
 <ol class="steps">
 <li><b>Select Use a different email <button type="button" class="nchip" data-n="6" aria-label="Show item 6 on the screen">6</button></b><p>There is no "resend" button. This takes you back to the first step with an empty form.</p></li>
-<li><b>Select Log in, enter the same email and select Send login code</b><p>The form keeps the tab you were on, so check that Log in is selected. Wait at least 60 seconds after the last code.</p></li>
+<li><b>Select Log in, enter the same email and select Send login code</b><p>The form keeps the tab you were on, so check that Log in is selected. Wait at least 60 seconds after the last code, or no new email is sent.</p></li>
 </ol>
 
 <h2><span class="k k-rules"><svg class="ico" aria-hidden="true"><use href="#i-shield-alert"/></svg></span><span>Good to know</span></h2>
 <ul class="rules">
 <li>A code works for 10 minutes and for 5 tries. Only the newest code works.</li>
-<li>A new code can be sent once every 60 seconds, unless the last code was used to sign in.</li>
+<li>A new code can be sent once every 60 seconds, unless the last code was used to sign in. A request inside that time sends nothing, and the app still moves to the code step. The code sent a moment ago still works.</li>
+<li>The app never says whether an email has an account. Log in with an unknown email sends nothing, and the code step looks the same. Sign up with an email that already has an account mails that account a login code and changes nothing else, so the name and phone you type are ignored.</li>
 <li>Signing in always opens the default program. Members switch program on the <a href="#member-account">Account</a> tab.</li>
 <li>A member session lasts 30 days from sign in, or from the last program switch. Sign out with <svg class="ico" aria-hidden="true"><use href="#i-log-out"/></svg> at the top right. It takes you to the start page.</li>
 <li>Sign up creates the account before the code is checked. If the email does not arrive, use <span class="t">Log in</span> next time, not Sign up.</li>
@@ -1897,13 +1898,8 @@ figure.dgm{margin:1rem 0 1.6rem}
 <details class="msgs"><summary><span class="k k-risk"><svg class="ico" aria-hidden="true"><use href="#i-life-buoy"/></svg></span>Messages<svg class="ico chev" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary><div class="tbl"><table>
 <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
 <tbody>
-<tr><td>"No account found for this email. Sign up instead."</td><td>Check the email, or select Sign up.</td></tr>
-<tr><td>"An account with this email already exists. Log in instead."</td><td>Select Log in.</td></tr>
-<tr><td>"Invalid login code"</td><td>Check the code in the newest email.</td></tr>
-<tr><td>"Login code has expired"</td><td>Get a new code.</td></tr>
-<tr><td>"No active login code for this member"</td><td>The code was used up by 5 wrong tries, or was already used to sign in. Get a new code.</td></tr>
+<tr><td>"That code is invalid or has expired. Request a new one."</td><td>Check the code in the newest email. If it still fails, the code expired, was used, was burned by 5 wrong tries, or the email has no account. Get a new code, and check the email spelling.</td></tr>
 <tr><td>"Login code could not be sent - email delivery is misconfigured. ..."</td><td>Trying again will not help. Tell whoever runs the server.</td></tr>
-<tr><td>"A code was just sent. Please wait 42 seconds before requesting another."</td><td>Wait, then try again.</td></tr>
 <tr><td>"Could not send the login code. Please try again shortly."</td><td>Try again in a minute.</td></tr>
 </tbody></table></div></details>
 </section>
@@ -2132,7 +2128,7 @@ figure.dgm{margin:1rem 0 1.6rem}
 <tbody>
 <tr><td>A member cannot find their points</td><td>They may be in another program. They can switch on the Account tab.</td></tr>
 <tr><td>The login code email never arrived</td><td>Check spam. Select Use a different email, make sure Log in is selected, and request a new code after 60 seconds.</td></tr>
-<tr><td>"No active login code for this member"</td><td>Request a new code.</td></tr>
+<tr><td>"That code is invalid or has expired. Request a new one."</td><td>Request a new code. Check the email spelling too, because the app does not say whether an email has an account.</td></tr>
 <tr><td>A member mistyped their new email and cannot sign in</td><td>Open the member in the console, select Edit and fix the email.</td></tr>
 </tbody></table></div>
 <div class="note info"><svg class="ico" aria-hidden="true"><use href="#i-info"/></svg><div><b>Still stuck?</b><p>Contact whoever runs your Loyalty Engine installation, and include the exact message you see.</p></div></div>
