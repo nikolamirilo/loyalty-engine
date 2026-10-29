@@ -10,7 +10,7 @@
 <ol class="steps">
 <li><b>Open the member app</b><p>On the start page, select <span class="m">Continue as user</span>, or go to <code>/login</code>.</p></li>
 <li><b>Keep Log in selected {{n:1}} and enter your Email {{n:2}}</b></li>
-<li><b>Select Send login code {{n:3}}</b><span class="done">"We sent a 6-digit code to ..."</span></li>
+<li><b>Select Send login code {{n:3}}</b><span class="done">"If ... has an account, we sent it a 6-digit code."</span></li>
 <li><b>Enter the Code from the email {{n:4}}</b><p>The email's subject is "Your login code".</p></li>
 <li><b>Select Continue {{n:5}}</b><span class="done">The Home tab opens.</span></li>
 </ol>
@@ -19,7 +19,7 @@
 <ol class="steps">
 <li><b>Select Sign up</b></li>
 <li><b>Enter Name and Email</b><p><span class="f">Phone</span> is optional.</p></li>
-<li><b>Select Create account</b><p>Then enter the code and select <span class="b">Continue</span>, as above.</p></li>
+<li><b>Select Create account</b><p>Then enter the code and select <span class="b">Continue</span>, as above. The screen then says "We sent a 6-digit code to ...".</p></li>
 </ol>
 
 {{h:steps|Get a new code}}
@@ -31,7 +31,9 @@
 {{h:rules|Good to know}}
 <ul class="rules">
 <li>A code works for 10 minutes and for 5 tries. Only the newest code works.</li>
-<li>A new code can be sent once every 60 seconds, unless the last code was used to sign in.</li>
+<li>A new code can be sent once every 60 seconds, unless the last code was used to sign in. If you ask sooner, nothing is sent and you see no error. The code from a moment ago still works.</li>
+<li>The app never tells you whether an email has an account. Log in with an unknown email sends nothing, and the screen looks the same. If no email arrives, check the address and try Sign up.</li>
+<li>Sign up with an email that already has an account does not create a second account. It emails a login code for the existing account, and the name and phone you typed are ignored.</li>
 <li>Signing in always opens the default program. Members switch program on the <a href="#member-account">Account</a> tab.</li>
 <li>A member session lasts 30 days from sign in, or from the last program switch. Sign out with {{i:log-out}} at the top right. It takes you to the start page.</li>
 <li>Sign up creates the account before the code is checked. If the email does not arrive, use <span class="t">Log in</span> next time, not Sign up.</li>
@@ -42,13 +44,8 @@
 <div class="tbl"><table>
 <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
 <tbody>
-<tr><td>"No account found for this email. Sign up instead."</td><td>Check the email, or select Sign up.</td></tr>
-<tr><td>"An account with this email already exists. Log in instead."</td><td>Select Log in.</td></tr>
-<tr><td>"Invalid login code"</td><td>Check the code in the newest email.</td></tr>
-<tr><td>"Login code has expired"</td><td>Get a new code.</td></tr>
-<tr><td>"No active login code for this member"</td><td>The code was used up by 5 wrong tries, or was already used to sign in. Get a new code.</td></tr>
+<tr><td>"That code is invalid or has expired. Request a new one."</td><td>Check the code in the newest email. If it still fails, the code may be wrong, expired, used up by 5 wrong tries, or already used. The same message also shows for an email with no account. Get a new code.</td></tr>
 <tr><td>"Login code could not be sent - email delivery is misconfigured. ..."</td><td>Trying again will not help. Tell whoever runs the server.</td></tr>
-<tr><td>"A code was just sent. Please wait 42 seconds before requesting another."</td><td>Wait, then try again.</td></tr>
 <tr><td>"Could not send the login code. Please try again shortly."</td><td>Try again in a minute.</td></tr>
 </tbody></table></div>
 </section>

@@ -85,7 +85,7 @@ Conventions used below:
 - Button **"Send login code"**, full width, primary. It shows a spinner while pending (`client/app/login/AuthForm.tsx:65-67`, `client/components/ui/SubmitButton.tsx:8-14`).
 - FE checks: the email is trimmed. If empty: "Enter your email address." (`client/lib/memberAuth/actions.ts:24-25`).
 - BE: `email` is a Pydantic `EmailStr` (`api/app/schemas/auth.py:15-16`). An invalid address fails with a message starting "value is not a valid email address: …". ? The exact text comes from the email-validator library.
-- BE: unknown email gives **"No account found for this email. Sign up instead."** (404) (`api/app/services/member_auth.py:166-169`).
+- BE: an unknown email gets the same 200 as a known one and nothing is sent (`api/app/services/member_auth.py:195-200`). The answer is always "If this email has an account, a login code is on its way." (`api/app/routers/auth.py:22`). The old 404 "No account found..." is gone.
 - The lookup is an exact string match on the identity email (`api/app/services/member_auth.py:42-43`). ? EmailStr probably lowercases only the domain, so `John@x.com` and `john@x.com` would be different accounts.
 - No program is sent. Signing in always lands in the default program (`client/lib/memberAuth/actions.ts:15-17`, `api/app/routers/auth.py:14-16`).
 
@@ -96,13 +96,13 @@ Conventions used below:
   - **"Phone"**: `type=tel`, shows the hint "Optional" at the right of the label, no validation.
 - Button **"Create account"** (`client/app/login/AuthForm.tsx:66`).
 - FE checks: if the name or email is empty: "Enter your name and email address." (`client/lib/memberAuth/actions.ts:45-50`). An empty phone is sent as undefined (`client/lib/memberAuth/actions.ts:55`).
-- BE: an existing email returns **"An account with this email already exists. Log in instead."** (400) (`api/app/services/member_auth.py:150-154`). The tab does not switch to "Log in" automatically.
+- BE: an existing email is not refused. A login code is mailed for that account, no second account is made, and name and phone are ignored (`api/app/services/member_auth.py:175-185`). The answer is the same 200 as a new signup.
 - BE: the account is **created and committed before the code is emailed or verified**. The new person gets a membership in every program (`api/app/services/member_auth.py:156-163`).
 - No length limits on name or phone, FE or BE (`api/app/schemas/auth.py:9-12`).
 
 ### Step 2: Enter the code
 - After a successful send, the card switches to the code step (`client/app/login/AuthForm.tsx:31-34`, `client/app/login/AuthForm.tsx:149-152`).
-- Text: **"We sent a 6-digit code to <email>."** The email is shown in `font-medium text-foreground` (`client/app/login/AuthForm.tsx:92-95`).
+- Text after Log in: **"If <email> has an account, we sent it a 6-digit code."** After Sign up: **"We sent a 6-digit code to <email>."** The email is shown in `font-medium text-foreground` (`client/app/login/AuthForm.tsx:92-99`).
 - Field **"Code"**: `inputMode=numeric`, `autocomplete=one-time-code`, `maxLength=6`, required, autofocus. There is no `pattern`, so letters are accepted (`client/app/login/AuthForm.tsx:96-106`).
 - Button **"Continue"**, full width (`client/app/login/AuthForm.tsx:108`).
 - Link-style button **"Use a different email"** (`text-[0.8125rem] text-muted`). It returns to step 1 with an **empty** form (`client/app/login/AuthForm.tsx:109-118`).
@@ -110,10 +110,8 @@ Conventions used below:
 - FE checks: an empty code gives "Enter the code from your email." (`client/lib/memberAuth/actions.ts:77-79`).
 - BE results (`api/app/services/member_auth.py:179-204`):
   - Correct code: the member is signed in to the default program and redirected to `/home` (`client/lib/memberAuth/actions.ts:97-98`).
-  - Wrong code: **"Invalid login code"** (400). Each wrong guess adds one attempt.
-  - After **5** wrong guesses the code is burned (`MAX_ATTEMPTS = 5`, `api/app/services/member_auth.py:31`, `api/app/services/member_auth.py:190-195`). The next try then gets **"No active login code for this member"** (`api/app/services/member_auth.py:184-186`).
-  - Expired code: **"Login code has expired"** (`api/app/services/member_auth.py:187-188`).
-  - Email no longer exists: "No account found for this email." (`api/app/services/member_auth.py:180-182`).
+  - Every failure (unknown email, no active code, expired, wrong code) gives one 400 message: **"That code is invalid or has expired. Request a new one."** (`api/app/services/member_auth.py:41,204-218`). Each wrong guess adds one attempt.
+  - After **5** wrong guesses the code is burned (`MAX_ATTEMPTS = 5`); the next try gets the same message.
 
 ### Code email
 - Subject **"Your login code"**. Text version: "Your login code is NNNNNN. It expires in 10 minutes." (`api/app/services/member_auth.py:89-96`).
@@ -123,7 +121,7 @@ Conventions used below:
 ### Limits and timeouts
 - Code lifetime: **10 minutes** (`api/app/services/member_auth.py:30`).
 - Attempts: **5 per code** (`api/app/services/member_auth.py:31`).
-- Resend cooldown: **60 s** between code emails to the same person (`api/app/services/code_emails.py:19`). Inside the cooldown the API returns 429 **"A code was just sent. Please wait N seconds before requesting another."** with a `Retry-After` header (`api/app/services/code_emails.py:96-112`). The member sees it as a red banner on step 1.
+- Resend cooldown: **60 s** between code emails to the same person (`api/app/services/code_emails.py:19`). Inside the cooldown login and signup send nothing and still answer 200, so there is no error (`api/app/services/member_auth.py:109-128`). The earlier code still works. (The 429 remains for email verification only.)
 - A code that was used to sign in does not count toward the cooldown. A code burned by 5 wrong guesses does count (`api/app/services/member_auth.py:70-86`). Signing in again right after signing out works immediately (`api/tests/regression/test_member_login_resend.py:155-161`).
 - Each new code replaces the previous unused one, and only the newest code works (`api/app/services/member_auth.py:135-146`, `api/tests/regression/test_member_login_resend.py:135-146`).
 - Email failures:

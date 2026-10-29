@@ -645,7 +645,7 @@ def public(body, title, sub):
 log = public('<div class="le-tabs" style="display:grid;grid-template-columns:1fr 1fr;margin-bottom:20px" data-k="mode"><span class="on">Log in</span><span>Sign up</span></div>'
              '<div class="le-stack">' + field('Email', inp('maya.torres@example.com', cls='focus'), key='email') + b('Send login code', 'p', size='full', key='send') + '</div>',
              'Daybreak Coffee', 'Log in or create an account to continue')
-code = public('<div class="le-stack"><div class="le-muted" style="font-size:14px">We sent a 6-digit code to <b style="color:#0f172a" class="w5">maya.torres@example.com</b>.</div>' +
+code = public('<div class="le-stack"><div class="le-muted" style="font-size:14px">If <b style="color:#0f172a" class="w5">maya.torres@example.com</b> has an account, we sent it a 6-digit code.</div>' +
               field('Code', inp('482913', cls='focus', style='letter-spacing:.2em'), key='code') + b('Continue', 'p', size='full', key='cont') +
               '<div style="text-align:center;font-size:13px" class="le-muted" data-k="other">Use a different email</div></div>',
               'Daybreak Coffee', 'Log in or create an account to continue').replace('<div class="ma-center">', '<div class="ma-center" style="left:420px">', 1)
