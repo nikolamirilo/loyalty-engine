@@ -16,13 +16,19 @@ passed straight through by the calling tool.
 from typing import Any, Dict, Optional, Tuple
 
 import httpx
+from mcp.server.mcpserver.exceptions import ToolError
 
 from app.core.config import settings
 
 
-class LoyaltyAPIError(Exception):
+class LoyaltyAPIError(ToolError):
     """A non-2xx response from the loyalty API, carrying the `detail` message
-    the API returned so it can be surfaced back to the calling agent."""
+    the API returned so it can be surfaced back to the calling agent.
+
+    A ``ToolError`` so MCPServer hands that message to the agent as the tool's
+    result. Any other exception counts as a crash, and the agent would see only
+    "Error executing tool <name>".
+    """
 
     def __init__(self, status_code: int, detail: str):
         self.status_code = status_code

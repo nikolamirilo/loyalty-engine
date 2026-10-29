@@ -99,9 +99,50 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  regression:
+    name: Incident regression scripts
+    runs-on: ubuntu-latest
+
+    # No Postgres here: every script swaps in its own in-memory SQLite database
+    # and sets placeholder values for the env vars the app needs at import.
+    defaults:
+      run:
+        working-directory: api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            api/requirements.txt
+            api/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run regression scripts
+        # Each script runs in its own process, see tests/regression/run_all.py.
+        # pipefail for the same reason as in the flow job above.
+        run: |
+          mkdir -p "${{ github.workspace }}/reports"
+          set -o pipefail
+          python -m tests.regression.run_all | tee "${{ github.workspace }}/reports/regression.txt"
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-regression-report
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 14
+
   report:
     name: Email report
-    needs: flow-tests
+    needs: [flow-tests, regression]
     # always(): the whole point is to mail the report when the tests just failed.
     #
     # Pull requests are left out on purpose. Their result is already visible as
@@ -114,13 +155,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download report
-        # The artifact is missing if the test job died before pytest ran, which
-        # the email should still report rather than failing here.
+      - name: Download reports
+        # An artifact is missing if its job died before the tests ran, which
+        # the email should still report rather than failing here. Both jobs
+        # write different file names, so they merge into one reports/ folder.
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: api-test-report
+          pattern: api-*-report
+          merge-multiple: true
           path: reports
 
       - name: Describe this run
@@ -134,7 +177,7 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
         run: |
           # A caller-supplied label wins - the scheduled workflow already knows
-          # which of its three daily slots this is.
+          # which of its two daily slots this is.
           # The branch is not in the label because the context line below
           # already names it; the label only has to keep subjects apart.
           label="$LABEL"
@@ -159,6 +202,7 @@ jobs:
           REPORT_FROM: ${{ vars.CI_REPORT_FROM }}
           REPORT_TO: ${{ vars.CI_REPORT_TO }}
           TEST_RESULT: ${{ needs.flow-tests.result }}
+          REGRESSION_RESULT: ${{ needs.regression.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           REPO: ${{ github.repository }}
           SLOT: ${{ steps.describe.outputs.label }}

@@ -16,6 +16,8 @@ API's own credential.
 import contextvars
 from typing import Optional
 
+from mcp.server.mcpserver.exceptions import ToolError
+
 from app.core.config import ClientPrincipal, settings
 
 # Set by BearerAuthMiddleware for the duration of one HTTP request, read by
@@ -25,9 +27,10 @@ _current_principal: contextvars.ContextVar[Optional[ClientPrincipal]] = contextv
 )
 
 
-class NotAuthorized(Exception):
+class NotAuthorized(ToolError):
     """Raised when the caller authenticated for this request lacks the scope
-    a tool requires. FastMCP turns this into a normal tool error result."""
+    a tool requires. As a ``ToolError``, MCPServer returns its message to the
+    agent as a normal tool error result rather than treating it as a crash."""
 
 
 def authenticate(token: Optional[str]) -> Optional[ClientPrincipal]:

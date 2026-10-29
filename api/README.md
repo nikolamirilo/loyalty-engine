@@ -574,8 +574,14 @@ SQLite database. They are not pytest tests, which is why `pytest.ini` points
 ./venv/bin/python -m tests.regression.test_tier_conditions        # tier conditions combine and stay in sync
 ```
 
-Or all of them at once:
+Or all of them at once, each in its own process, with one line per script and
+the output of any that fail:
 
 ```bash
-for f in tests/regression/test_*.py; do ./venv/bin/python -m tests.regression.$(basename "$f" .py) || break; done
+./venv/bin/python -m tests.regression.run_all
 ```
+
+CI runs that same command in a `regression` job of
+[`.github/workflows/api-tests.yml`](../.github/workflows/api-tests.yml), next
+to the flow suite. It needs no Postgres. The report email covers both jobs: it
+names the part that failed and includes the failing scripts' output.

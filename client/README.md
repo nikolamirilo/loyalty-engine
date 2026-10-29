@@ -157,17 +157,43 @@ deliberate: nothing about the API should reach the browser bundle.
 | Styling | Tailwind CSS v4, configured in `app/globals.css` rather than a config file |
 | Language | TypeScript 5 |
 | Linting | ESLint 9 flat config, `next/core-web-vitals` plus TypeScript rules |
+| Tests | Vitest 4, see Testing |
 
 ```bash
 npm run dev     # development server
 npm run build   # production build
 npm run start   # serve the build
 npm run lint    # eslint
+npm test        # vitest, once
 ```
+
+## Testing
+
+Unit tests sit next to the code they cover, as `*.test.ts`, and run with
+[Vitest](https://vitest.dev) in Node. They cover the pure logic where a bug
+would be quiet:
+
+| File | What it guards |
+|---|---|
+| `lib/auth/token.test.ts` | Admin session tokens: expiry, tampering, malformed input. |
+| `lib/memberAuth/token.test.ts` | Member tokens carry member and program together, reject the old format, and never pass as admin tokens. |
+| `lib/auth/attempts.test.ts` | Three failed logins lock an IP for ten minutes. |
+| `lib/theme.test.ts` | Only hex colours reach the `<style>` tag, and brand colours stay readable. |
+| `lib/format.test.ts` | API timestamps without a zone read as UTC, plus number and text formatting. |
+| `lib/custom-attributes.test.ts` | The key preview matches the API's `slugify()`. |
+
+`vitest.config.mts` maps `@/` like `tsconfig.json`, pins `TZ=UTC`, and sets
+dummy `ADMIN_*` and `AUTH_SECRET` values, so no `.env` is needed. Import
+`describe`, `it` and `expect` from `vitest` explicitly: `tsc` checks the test
+files too, and there are no globals.
+
+CI runs `npm test` in
+[`.github/workflows/client-checks.yml`](../.github/workflows/client-checks.yml),
+and so does the pre-commit hook when client files are staged.
 
 ## Known rough edges
 
-- **No tests.** No runner, no config, no test files.
+- **Tests cover `lib/` only.** Components and pages have none yet.
 - `/admin/test-btn` is a leftover scratch page and can go.
 - `public/` still carries create-next-app artwork (`next.svg`, `vercel.svg`,
   `window.svg`, `file.svg`, `globe.svg`) next to the real `logo.svg`.

@@ -290,7 +290,9 @@ No `delete_program`, by design. See [Status](#status).
 
 A non 2xx answer from the loyalty API raises `LoyaltyAPIError` inside the tool.
 MCP turns that into a tool error carrying the API's own `detail` message, for
-example `404: Member not found`.
+example `404: Member not found`. A caller missing a scope gets `NotAuthorized`
+the same way. Both subclass the SDK's `ToolError`: any other exception counts
+as a crash, and the agent sees only `Error executing tool <name>`.
 
 ## How tools are grouped
 

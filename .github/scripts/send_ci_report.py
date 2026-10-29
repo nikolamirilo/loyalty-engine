@@ -5,8 +5,9 @@ reports need no second email vendor and no SMTP secrets - only a sender
 on the domain that is already verified in Resend.
 
 Called by the report job in .github/workflows/api-tests.yml - for pushes,
-manual runs and the scheduled runs alike - with the test job's outcome in the
-environment, and reads whatever the test job left in reports/.
+manual runs and the scheduled runs alike - with the outcomes of the flow suite
+and the regression scripts in the environment, and reads whatever those two
+jobs left in reports/.
 """
 
 import html
@@ -47,6 +48,26 @@ def tail(path: str, limit: int = MAX_LOG_LINES) -> str:
     if len(lines) <= limit:
         return "\n".join(lines)
     return f"[... {len(lines) - limit} earlier lines omitted ...]\n" + "\n".join(lines[-limit:])
+
+
+def last_line(path: str) -> str:
+    """The final non-empty line of a file - run_all.py ends with its summary."""
+    lines = [line for line in tail(path).splitlines() if line.strip()]
+    return lines[-1] if lines else ""
+
+
+def overall_result(results: dict) -> str:
+    """One GitHub job result standing for all of them.
+
+    Any failure makes the run a failure. Otherwise anything short of success
+    (cancelled, skipped, missing) is reported as the run not completing.
+    """
+    values = list(results.values())
+    if all(value == "success" for value in values):
+        return "success"
+    if "failure" in values:
+        return "failure"
+    return next(value for value in values if value != "success")
 
 
 def require(name: str) -> str:
@@ -179,7 +200,15 @@ def main() -> None:
     # Comma-separated, so one variable can fan out to the whole team.
     recipients = [addr.strip() for addr in require("REPORT_TO").split(",") if addr.strip()]
 
-    result = os.environ.get("TEST_RESULT", "unknown")
+    # Each job's outcome as GitHub reports it: success, failure, cancelled or
+    # skipped. Keyed by how the email names that part.
+    results = {
+        "flow suite": os.environ.get("TEST_RESULT", "unknown"),
+        "regression scripts": os.environ.get("REGRESSION_RESULT", "unknown"),
+    }
+    result = overall_result(results)
+    flow_passed = results["flow suite"] == "success"
+    regression_passed = results["regression scripts"] == "success"
     # Local time of this run. Several runs land on the same day, so without it
     # their subjects would be identical and thread together in most clients.
     slot = os.environ.get("SLOT", "").strip()
@@ -199,19 +228,21 @@ def main() -> None:
         subject = f"✅ API tests passed - {repo} - {stamp}"
         headline = "All API tests passed"
     elif result == "failure":
-        subject = f"🔴 FAILED - API tests - {repo} - {stamp}"
-        headline = "API tests FAILED"
+        # Name the part that failed, so the subject alone says where to look.
+        broken = " and ".join(name for name, value in results.items() if value == "failure")
+        subject = f"🔴 FAILED - API tests ({broken}) - {repo} - {stamp}"
+        headline = f"API tests FAILED: {broken}"
     else:
-        # cancelled, skipped, or the job never produced a result.
+        # cancelled, skipped, or a job never produced a result.
         subject = f"⚠️ API tests did not run ({result}) - {repo} - {stamp}"
         headline = f"API tests did not complete: {result}"
 
     report = load_report("reports/latency.json")
 
-    # The raw pytest output is only worth carrying when something went wrong:
-    # on a green run it repeats the table above and adds a screenful of
+    # The raw pytest output is only worth carrying when the flow suite went
+    # wrong: on a green run it repeats the table above and adds a screenful of
     # collection lines. On a red one it holds the tracebacks.
-    log = "" if passed and report else tail("reports/pytest.txt")
+    log = "" if flow_passed and report else tail("reports/pytest.txt")
 
     if report:
         table_html = latency_table(report)
@@ -226,11 +257,27 @@ def main() -> None:
         table_text = markdown
 
     if not table_html and not log:
-        log = "No report was produced - the test job failed before pytest ran."
+        log = "No flow suite report was produced - its job failed before pytest ran."
+
+    # The regression scripts get one line when green - run_all.py's summary -
+    # and the tail of their output when not, which lists every failed check.
+    if regression_passed:
+        regression = last_line("reports/regression.txt")
+    else:
+        regression = tail("reports/regression.txt") or (
+            "No regression output was produced - its job failed before the scripts ran."
+        )
 
     text = "\n\n".join(
         part
-        for part in [headline, context, f"Run: {run_url}", table_text, log]
+        for part in [
+            headline,
+            context,
+            f"Run: {run_url}",
+            table_text,
+            log,
+            f"Regression scripts:\n{regression}" if regression else "",
+        ]
         if part
     )
 
@@ -238,7 +285,17 @@ def main() -> None:
     meta_context = f" &middot; {html.escape(context)}" if context else ""
 
     accent = "#16a34a" if passed else "#dc2626"
-    blocks = table_html + (pre(log) if log else "")
+    regression_html = ""
+    if regression:
+        regression_html = (
+            '<h2 style="margin:24px 0 8px;font-size:15px;">Regression scripts</h2>'
+            + (
+                f'<p style="margin:0;font-size:13px;color:#64748b;">{html.escape(regression)}</p>'
+                if regression_passed
+                else pre(regression)
+            )
+        )
+    blocks = table_html + (pre(log) if log else "") + regression_html
     body = f"""<!DOCTYPE html>
 <html>
   <body style="margin:0;padding:24px;background:#f8fafc;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
@@ -290,7 +347,7 @@ def main() -> None:
     except urllib.error.URLError as exc:
         sys.exit(f"Could not reach Resend: {exc.reason}")
 
-    # Exit red when the tests were red. The test job already fails the run on
+    # Exit red when the tests were red. The test jobs already fail the run on
     # its own; this keeps the report job's own status honest about what it just
     # mailed, rather than showing green next to a failure.
     if not passed:

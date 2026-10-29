@@ -38,6 +38,10 @@ if [ -n "$client_staged" ]; then
   echo "pre-commit: typecheck"
   (cd client && ./node_modules/.bin/tsc --noEmit)
 
+  # ~1s: the unit tests in client/**/*.test.ts.
+  echo "pre-commit: client tests"
+  (cd client && npm test)
+
   # ~15s on this project. Last, so the quicker checks have already had their
   # say, and only when something under client/ is actually staged.
   echo "pre-commit: next build"
