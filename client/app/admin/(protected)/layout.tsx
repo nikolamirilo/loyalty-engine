@@ -11,9 +11,9 @@ import { Providers } from "./providers";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Loyalty Engine - Admin",
+  title: "Loyalty Simulator - Admin",
   description:
-    "Admin console for the Loyalty Engine: members, points, rewards, challenges, and tiers.",
+    "Admin console for the Loyalty Simulator: members, points, rewards, challenges, and tiers.",
 };
 
 export default async function ProtectedLayout({

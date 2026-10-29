@@ -15,7 +15,7 @@ import { StatTile } from "@/components/ui/StatTile";
 import { BalanceAutoRefresh } from "@/components/wallet/BalanceAutoRefresh";
 import { CoinsIcon, GiftIcon, WalletIcon } from "@/components/ui/icons";
 
-export const metadata: Metadata = { title: "Wallet - Loyalty App" };
+export const metadata: Metadata = { title: "Wallet - Loyalty App Simulator" };
 export const dynamic = "force-dynamic";
 
 export default async function WalletPage() {

@@ -168,7 +168,7 @@ export function MemberShell({
                   <BrandLogo src={program?.logoUrl} alt="" className="h-8 max-w-20" />
                 </div>
                 <span className="truncate text-lg font-semibold tracking-tight text-primary">
-                  {program?.name ?? "Loyalty App"}
+                  {program?.name ?? "Loyalty App Simulator"}
                 </span>
                 <div className="flex flex-1 justify-end">
                   <form action={memberLogout}>

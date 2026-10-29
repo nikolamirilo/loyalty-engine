@@ -131,7 +131,7 @@ export default function ConfigureMembersPage() {
       <Card>
         <CardHeader
           title="Built-in fields"
-          description="Part of the loyalty engine itself - these can't be changed or removed."
+          description="Part of the Loyalty Simulator itself - these can't be changed or removed."
         />
         <Table>
           <THead>

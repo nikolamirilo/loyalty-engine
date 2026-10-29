@@ -59,11 +59,11 @@ function Brand({ program }: { program: ShellProgram }) {
     <Link href="/admin/dashboard" className="flex min-w-0 items-center gap-2.5">
       <BrandLogo
         src={logoUrl}
-        alt={logoUrl && program ? program.name : "Loyalty Engine"}
+        alt={logoUrl && program ? program.name : "Loyalty Simulator"}
         className={cn("h-9 max-w-28", !logoUrl && "shadow-sm")}
       />
       <span className="text-[0.9375rem] font-semibold tracking-tight text-foreground">
-        Loyalty Engine
+        Loyalty Simulator
       </span>
     </Link>
   );

@@ -8,7 +8,7 @@ import { LoginForm } from "./LoginForm";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Sign in - Loyalty Engine",
+  title: "Sign in - Loyalty Simulator",
 };
 
 export default async function LoginPage() {
@@ -21,7 +21,7 @@ export default async function LoginPage() {
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <Image
             src="/logo.svg"
-            alt="Loyalty Engine"
+            alt="Loyalty Simulator"
             width={48}
             height={48}
             className="h-12 w-12 shadow-sm"
@@ -29,7 +29,7 @@ export default async function LoginPage() {
           />
           <div>
             <h1 className="text-lg font-semibold tracking-tight text-foreground">
-              Loyalty Engine
+              Loyalty Simulator
             </h1>
             <p className="mt-0.5 text-sm text-muted">
               Sign in to the admin console

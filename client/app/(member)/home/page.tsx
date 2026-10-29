@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { CampaignLauncher } from "@/components/campaigns/CampaignLauncher";
 
-export const metadata: Metadata = { title: "Home - Loyalty App" };
+export const metadata: Metadata = { title: "Home - Loyalty App Simulator" };
 export const dynamic = "force-dynamic";
 
 export default function HomePage() {

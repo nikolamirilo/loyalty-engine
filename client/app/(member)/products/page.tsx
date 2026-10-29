@@ -12,7 +12,7 @@ import { StatTile } from "@/components/ui/StatTile";
 import { Tabs } from "@/components/ui/Tabs";
 import { CoinsIcon, ShoppingBagIcon } from "@/components/ui/icons";
 
-export const metadata: Metadata = { title: "Products - Loyalty App" };
+export const metadata: Metadata = { title: "Products - Loyalty App Simulator" };
 export const dynamic = "force-dynamic";
 
 /** Window the "spend" stat tile reports over - matches the campaign-facing

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { BookIcon, DashboardIcon, HomeIcon, ChevronRightIcon } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
-  title: "Loyalty Engine",
+  title: "Loyalty Simulator",
 };
 
 function EntryTile({
@@ -48,7 +48,7 @@ export default function EntryPage() {
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <Image
             src="/logo.svg"
-            alt="Loyalty Engine"
+            alt="Loyalty Simulator"
             width={48}
             height={48}
             className="h-12 w-12 shadow-sm"
@@ -56,7 +56,7 @@ export default function EntryPage() {
           />
           <div>
             <h1 className="text-lg font-semibold tracking-tight text-foreground">
-              Welcome to Loyalty Engine
+              Welcome to Loyalty Simulator
             </h1>
             <p className="mt-0.5 text-sm text-muted">Choose how you&apos;d like to continue</p>
           </div>
@@ -77,7 +77,7 @@ export default function EntryPage() {
           <EntryTile
             href="/docs"
             label="Read the documentation"
-            description="Learn how to use Loyalty Engine"
+            description="Learn how to use Loyalty Simulator"
             icon={<BookIcon />}
             staticPage
           />

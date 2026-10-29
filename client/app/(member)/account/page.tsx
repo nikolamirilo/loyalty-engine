@@ -14,7 +14,7 @@ import { ProgramSwitcher } from "@/components/account/ProgramSwitcher";
 import { TierBadge } from "@/components/account/TierBadge";
 import { CheckCircleIcon, InfoIcon } from "@/components/ui/icons";
 
-export const metadata: Metadata = { title: "Account - Loyalty App" };
+export const metadata: Metadata = { title: "Account - Loyalty App Simulator" };
 export const dynamic = "force-dynamic";
 
 /** One labelled line in the details list. */

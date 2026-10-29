@@ -81,7 +81,7 @@ class Settings:
     # another one. Empty means the loyalty API picks its default program.
     default_program: str = ""
 
-    project_name: str = "Loyalty Engine MCP Server"
+    project_name: str = "Loyalty Simulator MCP Server"
     version: str = "0.1.0"
 
 

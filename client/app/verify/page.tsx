@@ -10,7 +10,7 @@ import { VerifyForm } from "./VerifyForm";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Verify your email - Loyalty App",
+  title: "Verify your email - Loyalty App Simulator",
   // A verification link is single-use and member-specific; keep it out of search.
   robots: { index: false, follow: false },
 };
@@ -50,7 +50,7 @@ export default async function VerifyPage({
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <BrandLogo
             src={program?.logoUrl}
-            alt={program?.name ?? "Loyalty App"}
+            alt={program?.name ?? "Loyalty App Simulator"}
             className={cn("h-12 max-w-40", !program?.logoUrl && "shadow-sm")}
           />
           <div>

@@ -15,7 +15,7 @@ import { ClaimForm } from "./ClaimForm";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Claim your prize - Loyalty App",
+  title: "Claim your prize - Loyalty App Simulator",
   // A claim link is member-specific; keep it out of search.
   robots: { index: false, follow: false },
 };
@@ -74,7 +74,7 @@ export default async function ClaimPrizePage({
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <BrandLogo
             src={program?.logoUrl}
-            alt={program?.name ?? "Loyalty App"}
+            alt={program?.name ?? "Loyalty App Simulator"}
             className={cn("h-12 max-w-40", !program?.logoUrl && "shadow-sm")}
           />
           <div>

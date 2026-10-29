@@ -11,7 +11,7 @@ import { AuthForm } from "./AuthForm";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Sign in - Loyalty App",
+  title: "Sign in - Loyalty App Simulator",
 };
 
 export default async function LoginPage() {
@@ -29,12 +29,12 @@ export default async function LoginPage() {
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <BrandLogo
             src={program?.logoUrl}
-            alt={program?.name ?? "Loyalty App"}
+            alt={program?.name ?? "Loyalty App Simulator"}
             className={cn("h-12 max-w-40", !program?.logoUrl && "shadow-sm")}
           />
           <div>
             <h1 className="text-lg font-semibold tracking-tight text-foreground">
-              {program?.name ?? "Loyalty App"}
+              {program?.name ?? "Loyalty App Simulator"}
             </h1>
             <p className="mt-0.5 text-sm text-muted">
               Log in or create an account to continue
