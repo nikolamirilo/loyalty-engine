@@ -76,7 +76,14 @@ jobs:
           # to the default program once already. The `/programs` tools are the
           # exception: that router isn't program-scoped (it is how a caller
           # picks one), so a `program` argument there would do nothing.
-          unscoped = {"list_programs", "get_program", "create_program", "update_program"}
+          unscoped = {
+              "list_programs",
+              "get_program",
+              "create_program",
+              "update_program",
+              "set_program_logo",
+              "remove_program_logo",
+          }
           missing = sorted(
               tool.name
               for tool in tools
