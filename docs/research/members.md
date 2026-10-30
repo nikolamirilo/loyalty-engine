@@ -10,10 +10,10 @@ Evidence: `path:line`. Client paths are relative to `client/`, API paths to `api
 ### Shell and navigation
 - The protected layout redirects to `/admin/login` if there is no admin session (`app/admin/(protected)/layout.tsx:26`). `proxy.ts:31-37` also does this for every `/admin/*` path. The session lasts 7 days (`lib/auth/config.ts:28`).
 - `/admin` redirects to `/admin/dashboard` (`app/admin/(protected)/page.tsx:4`).
-- The browser tab title is "Loyalty Engine - Admin" (`layout.tsx:14`).
+- The browser tab title is "Loyalty Simulator - Admin" (`layout.tsx:14`).
 - Sidebar order is **Dashboard, Members, Segments, Rewards, Products, Challenges, Events, Tiers** (`components/layout/AppShell.tsx:37-44`). Dashboard is only active on the exact path. "Members" stays active on `/admin/members/*` (`AppShell.tsx:47-50`).
 - Above the nav is the **"Program"** label, a "Manage" link to `/admin/programs`, and a dropdown that shows the current program name or "Choose a program" (`components/layout/ProgramSwitcher.tsx:53-61,80`). Below the nav is "Sign out" (`AppShell.tsx:72-84`).
-- The brand link reads "Loyalty Engine" and uses the program's logo if it has one (`AppShell.tsx:56-69`).
+- The brand link reads "Loyalty Simulator" and uses the program's logo if it has one (`AppShell.tsx:56-69`).
 - Layout:
   - Desktop sidebar: `fixed w-72` with a `h-16` brand row (`AppShell.tsx:135-144`).
   - Below `lg`: a `h-14` sticky header with a hamburger button that opens a drawer `w-72 max-w-[85%]` (`AppShell.tsx:147-185`).
@@ -435,7 +435,7 @@ All three are FormDialogs, size md (`components/members/PointsActions.tsx`). The
 ### Labels
 - The **"‹ All members"** back link (`configure/page.tsx:118-124`).
 - Page title **"Member fields"**, description **"Every field on a member. Built-in fields are fixed; custom attributes are yours to add, rename, and remove."** (`:126-129`).
-- Card **"Built-in fields"**, description **"Part of the loyalty engine itself - these can't be changed or removed."** (`:131-135`).
+- Card **"Built-in fields"**, description **"Part of the Loyalty Simulator itself - these can't be changed or removed."** (`:131-135`).
   - Columns **Field | Type | Notes**. Each field name carries a neutral **"Built-in"** badge.
   - Rows (`:38-45`):
 

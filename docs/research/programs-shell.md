@@ -6,9 +6,9 @@ Source: `/home/user/loyalty-engine`. Paths: `client/...` is the Next.js 16 front
 
 ## 1. Landing page (`/`)
 
-- File: `client/app/page.tsx`. The tab title is **"Loyalty Engine"** (`client/app/page.tsx:7-9`).
-- Layout: a centred column (`max-w-sm`) on the `surface-2` background (`client/app/page.tsx:41-42`). It has the stock logo (`/logo.svg`, 48×48, `shadow-sm`) (`:44-51`), the heading **"Welcome to Loyalty Engine"** (`:53-55`) and the subtitle **"Choose how you'd like to continue"** (`:56`).
-- There are three entry tiles: one per app, plus "Read the documentation" / "Learn how to use Loyalty Engine" linking to `/docs` with a book icon (added later, plain `<a>` because /docs is a static file). Each tile is a card link with an icon chip, a label, a one-line description and a chevron (`:11-37`):
+- File: `client/app/page.tsx`. The tab title is **"Loyalty Simulator"** (`client/app/page.tsx:7-9`).
+- Layout: a centred column (`max-w-sm`) on the `surface-2` background (`client/app/page.tsx:41-42`). It has the stock logo (`/logo.svg`, 48×48, `shadow-sm`) (`:44-51`), the heading **"Welcome to Loyalty Simulator"** (`:53-55`) and the subtitle **"Choose how you'd like to continue"** (`:56`).
+- There are three entry tiles: one per app, plus "Read the documentation" / "Learn how to use Loyalty Simulator" linking to `/docs` with a book icon (added later, plain `<a>` because /docs is a static file). Each tile is a card link with an icon chip, a label, a one-line description and a chevron (`:11-37`):
   | Label | Description | Goes to | Icon |
   |---|---|---|---|
   | **Continue as admin** | Manage members, rewards, and tiers | `/admin/login` | DashboardIcon |
@@ -18,8 +18,8 @@ Source: `/home/user/loyalty-engine`. Paths: `client/...` is the Next.js 16 front
 ## 2. Admin sign in (`/admin/login`)
 
 ### Screen
-- Files: `client/app/admin/login/page.tsx` and `LoginForm.tsx`. The tab title is **"Sign in - Loyalty Engine"** (`page.tsx:10-12`).
-- A centred card on `surface-2`. It has the stock logo, the heading **"Loyalty Engine"** and the subtitle **"Sign in to the admin console"** (`page.tsx:19-38`). The form card is `rounded-xl border border-line bg-surface p-6 shadow-sm` (`page.tsx:39`).
+- Files: `client/app/admin/login/page.tsx` and `LoginForm.tsx`. The tab title is **"Sign in - Loyalty Simulator"** (`page.tsx:10-12`).
+- A centred card on `surface-2`. It has the stock logo, the heading **"Loyalty Simulator"** and the subtitle **"Sign in to the admin console"** (`page.tsx:19-38`). The form card is `rounded-xl border border-line bg-surface p-6 shadow-sm` (`page.tsx:39`).
 - The sign-in page always shows the stock logo and colours. `ProgramTheme` is only rendered in the protected layout (`client/app/admin/(protected)/layout.tsx:37`), so a program's branding never reaches this page.
 
 ### Fields (`LoginForm.tsx`)
@@ -62,11 +62,11 @@ Source: `/home/user/loyalty-engine`. Paths: `client/...` is the Next.js 16 front
 
 ## 3. Admin navigation shell
 
-File: `client/components/layout/AppShell.tsx`. The protected layout wraps every console page in it (`client/app/admin/(protected)/layout.tsx:38-45`). The tab title for console pages is **"Loyalty Engine - Admin"** (`layout.tsx:13-17`). The Programs page sets no title of its own.
+File: `client/components/layout/AppShell.tsx`. The protected layout wraps every console page in it (`client/app/admin/(protected)/layout.tsx:38-45`). The tab title for console pages is **"Loyalty Simulator - Admin"** (`layout.tsx:13-17`). The Programs page sets no title of its own.
 
 ### Desktop sidebar (≥ `lg`, 1024px)
 - A fixed left column, `w-72` (18rem), with `bg-surface` and a right border (`AppShell.tsx:135`).
-- Top bar, `h-16`: the brand block. It shows the selected program's logo if it has one, otherwise the stock logo, followed by the text **"Loyalty Engine"**. It links to `/admin/dashboard` (`AppShell.tsx:56-69`, `:136-138`). The product name always says "Loyalty Engine", even with a brand logo.
+- Top bar, `h-16`: the brand block. It shows the selected program's logo if it has one, otherwise the stock logo, followed by the text **"Loyalty Simulator"**. It links to `/admin/dashboard` (`AppShell.tsx:56-69`, `:136-138`). The product name always says "Loyalty Simulator", even with a brand logo.
 - Below that, the **program switcher** (section 4), then the nav list (`:139-142`).
 - **Sidebar items, in order** (`AppShell.tsx:36-45`):
   1. **Dashboard**: `/admin/dashboard`, DashboardIcon. Highlighted only on an exact path match.
@@ -277,6 +277,6 @@ File: `client/app/admin/(protected)/programs/page.tsx`. To reach it, click **"Ma
 15. **The 404 page nests a `<button>` inside a link** (`client/app/not-found.tsx:17-19`). This is invalid HTML; `buttonClass` exists for exactly this case (`client/components/ui/Button.tsx:29-31`). The 404 page also has no console chrome and no path back to the console other than `/`.
 16. **The error page shows the raw `error.message`**, which can be technical, such as "Cannot reach the API at http://127.0.0.1:8000…" (`client/app/error.tsx:23-25`, `client/lib/api.ts:132-135`).
 17. **A leftover debug route `/admin/test-btn`** shows a raw "N / M" count and a test dialog (`client/app/admin/(protected)/test-btn/page.tsx:11-21`).
-18. **Inconsistent product name.** The root layout's title and description say **"Loyalty App"** (`client/app/layout.tsx:19-22`). Everywhere else says "Loyalty Engine".
+18. **Inconsistent product name.** The root layout's title and description say **"Loyalty App Simulator"** (`client/app/layout.tsx:19-22`). Everywhere else says "Loyalty Simulator".
 19. **The program cookie is unsigned.** The code says this is acceptable only while there is no per-program access control (`client/lib/server/program.ts:21-23`).
 20. **Possible form reset after an error (to verify).** Under React 19, uncontrolled inputs (Name, Description, the picked logo file) may be reset after a form action returns an error. The colour fields are controlled state and would keep their values (`client/components/ui/FormDialog.tsx:101`, `BrandingFields.tsx:136`).
