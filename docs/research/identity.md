@@ -1,4 +1,4 @@
-# Loyalty Engine visual identity (for HTML mocks)
+# Loyalty Simulator visual identity (for HTML mocks)
 
 Read from code only. The stack is Tailwind CSS v4 (`client/package.json:19`, `:25`), Next 16.2.10 and React 19.2.4 (`client/package.json:12-13`). All tokens are plain **hex**. There are no oklch values in `globals.css`.
 
@@ -109,7 +109,7 @@ Tokens are CSS variables on `:root` (`globals.css:11-49`). They are mapped to Ta
 
 - Sizes in use:
   - Login and landing: 48px (`h-12 w-12 shadow-sm`) (`client/app/admin/login/page.tsx:22-29`).
-  - Sidebar brand: `h-9` (36px) followed by the text "Loyalty Engine" (`client/components/layout/AppShell.tsx:60-67`).
+  - Sidebar brand: `h-9` (36px) followed by the text "Loyalty Simulator" (`client/components/layout/AppShell.tsx:60-67`).
   - Loader: `h-16` (`LogoLoader.tsx:41`).
 - **Unused second logo**: `client/components/ui/Logo.tsx` draws a different, *blue* mark (gradient `#3987e5`→`#1c5cab`, an infinity loop with a sparkle) (`Logo.tsx:13-32`). No file imports it. Do not use it in mocks.
 
@@ -296,5 +296,5 @@ Tokens are CSS variables on `:root` (`globals.css:11-49`). They are mapped to Ta
 ## Identity rough edges (for the product team)
 
 - `components/ui/Logo.tsx` is an unused, off-brand *blue* logo (`Logo.tsx:13-16`). It could confuse anyone who picks it up.
-- The root metadata says **"Loyalty App"** (`client/app/layout.tsx:20-21`) while the product is called "Loyalty Engine" everywhere else.
+- The root metadata says **"Loyalty App Simulator"** (`client/app/layout.tsx:20-21`) while the product is called "Loyalty Simulator" everywhere else.
 - A stock program saved with the stock primary `#5b4bd6` entered explicitly would derive slightly different tints from the hand-tuned defaults. For example, the derived subtle colour is 12% brand on white, while the stock `--primary-subtle` is the hand-picked `#efecfd` (`client/lib/theme.ts:78`, `globals.css:24`).
