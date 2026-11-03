@@ -9,8 +9,8 @@ tokens from the component styles, and its words (labels, menu names) from the UI
 # the commits since then that touch code in `watch` (minus `ignore`); the update routine in
 # UPDATE_ROUTINE.md updates the pages for them and then moves `commit` forward with --mark.
 SOURCE = {
-    'commit': 'b2710c6a4d7196161f8b935da5ed5890a33e7967',   # the start page tile, which the docs already cover
-    'checked': '2026-10-27',
+    'commit': '8ec1dfb55eda7166f02a86c8770775bdcd7fbbe2',   # the start page tile, which the docs already cover
+    'checked': '2026-10-29',
     # code that can change what users see or what happens when they act
     'watch': [
         'client/app/', 'client/components/', 'client/lib/', 'client/proxy.ts', 'client/next.config.ts',
@@ -24,8 +24,8 @@ SOURCE = {
 }
 
 SITE = {
-    'title': 'Loyalty Engine Docs',              # browser tab and gallery name: a short name, no explanation
-    'product': 'Loyalty Engine',                 # used in the logo's accessible name and the word mark fallback
+    'title': 'Loyalty Simulator Docs',              # browser tab and gallery name: a short name, no explanation
+    'product': 'Loyalty Simulator',                 # used in the logo's accessible name and the word mark fallback
     'docs_label': 'Docs',              # the small tag next to the logo in the sidebar
     'logo': 'logo.svg',                      # path to the product's logo SVG (relative to this folder), or None
     'logo_mono': False,                 # True paints the logo in the brand mark color; False keeps its own colors
@@ -87,7 +87,7 @@ SITE = {
 # Sidebar order: (page id, group, sub-heading or None, title, merged-in page ids)
 PAGES = [
     ('welcome', 'Get started', None, 'Welcome', []),
-    ('tour', 'Get started', None, 'Loyalty Engine at a glance', []),
+    ('tour', 'Get started', None, 'Loyalty Simulator at a glance', []),
     ('quickstart', 'Get started', None, 'Set up your first program', []),
     ('recipe-order-points', 'Get started', 'Recipes', 'Give points for every order', []),
     ('recipe-vip-tier', 'Get started', 'Recipes', 'Create a VIP tier', []),
@@ -160,7 +160,7 @@ RESULT = {
     'member-emails': 'You know what each email does and how long it works.',
     'limits': 'Every limit in one place.',
     'troubleshooting': 'A fix for common problems.',
-    'glossary': 'Loyalty Engine terms in plain language.',
+    'glossary': 'Loyalty Simulator terms in plain language.',
 }
 
 BEFORE = {
