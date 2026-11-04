@@ -88,6 +88,11 @@ class Member(Base):
         """Segments this member currently belongs to."""
         return [sa.segment for sa in self.segment_assignments]
 
+    @property
+    def challenge_ids(self) -> List[uuid.UUID]:
+        """Every challenge assigned to this member, completed ones included."""
+        return [ca.challenge_id for ca in self.challenge_assignments]
+
 
 class MemberSegment(Base):
     """A member's membership in a segment."""
