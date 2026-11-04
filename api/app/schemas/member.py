@@ -57,6 +57,8 @@ class MemberOut(CamelModel):
     points_balance: int = Field(validation_alias="total_points")
     custom_attributes: Dict[str, Any] = Field(default_factory=dict)
     email_verified_at: Optional[datetime] = None
+    # Every challenge assigned to the member, whatever its status.
+    challenge_ids: List[UUID] = Field(default_factory=list)
 
     @computed_field  # type: ignore[prop-decorator]
     @property
