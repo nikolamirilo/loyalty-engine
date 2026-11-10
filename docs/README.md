@@ -1,6 +1,6 @@
 # User docs
 
-End-user documentation for Loyalty Engine: how staff run a program in the admin console, and
+End-user documentation for Loyalty Simulator: how staff run a program in the admin console, and
 what members see in the member app. It is one self-contained HTML page, served by the client app
 at **`/docs`** (public, no session needed).
 
