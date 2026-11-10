@@ -2,7 +2,7 @@
 
 Agreed with the product owner on 2026-10-23.
 
-- **Product name**: Loyalty Engine (the name shown in the admin sidebar and on the landing page).
+- **Product name**: Loyalty Simulator (the name shown in the admin sidebar and on the landing page).
 - **Audience**: staff who run a program in the admin console (main focus), plus a shorter module
   for members using the member app (sign in, home, products, wallet, account, email verification,
   prize claim).

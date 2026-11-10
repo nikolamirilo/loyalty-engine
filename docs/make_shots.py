@@ -1,4 +1,4 @@
-"""Screens and diagrams for the Loyalty Engine docs. Run it, then build:
+"""Screens and diagrams for the Loyalty Simulator docs. Run it, then build:
 
     python3 make_shots.py && python3 tooling/scripts/build.py .
 
@@ -95,7 +95,7 @@ def admin(main, active='Dashboard', program='Daybreak Coffee'):
     items = ''.join(f'<div class="le-ni{" on" if n == active else ""}"{k("nav-" + n.lower())}>{ic(i)}<span>{n}</span></div>' for n, i in NAV)
     switcher = (f'<div class="le-sw"{k("switcher")}><div class="le-swl"><span>Program</span><a{k("manage")}>Manage</a></div>'
                 f'<div class="le-swt"{k("switch-trigger")}>{mark()}<b>{program}</b>{ic("chevron-down")}</div></div>')
-    return (f'<div class="le-aside"><div class="le-brand">{logo()}<b>Loyalty Engine</b></div>'
+    return (f'<div class="le-aside"><div class="le-brand">{logo()}<b>Loyalty Simulator</b></div>'
             f'<div class="le-nav"{k("nav")}>{switcher}{items}</div>'
             f'<div class="le-signout"><div class="le-ni"{k("signout")}>{ic("log-out")}<span>Sign out</span></div></div></div>'
             f'<div class="le-main">{main}</div>')
@@ -166,7 +166,7 @@ MEMBERS = [
 # =====================================================================================
 
 login = (f'<div class="ma-center" style="padding-top:56px"><div style="width:384px;display:flex;flex-direction:column;align-items:center;gap:12px">'
-         f'{logo(48)}<div style="text-align:center"><div style="font-size:18px;font-weight:600">Loyalty Engine</div>'
+         f'{logo(48)}<div style="text-align:center"><div style="font-size:18px;font-weight:600">Loyalty Simulator</div>'
          f'<div class="le-muted" style="font-size:14px;margin-top:2px">Sign in to the admin console</div></div>'
          f'<div class="le-card" style="width:100%;padding:24px;margin-top:12px"><div class="le-stack">'
          + field('Username', inp('admin', cls='focus'), key='user') + field('Password', inp('&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;'), key='pass') +
@@ -191,7 +191,7 @@ for n, needle in enumerate(['<div class="le-sw"', '<a data-k="manage"', '<div cl
     inner = tag(inner, needle, n)
 shot('tour-console', 1280, 720, inner, 'The admin console on the Dashboard page.',
      ['Program switcher: the program everything below belongs to', 'Manage opens the Programs page', 'Main menu',
-      'Program totals', 'The newest members', 'How many members are in each tier', 'Sign out'], title='Loyalty Engine - Admin')
+      'Program totals', 'The newest members', 'How many members are in each tier', 'Sign out'], title='Loyalty Simulator - Admin')
 
 prog_rows = [
     ('DC', 'orange', 'Daybreak Coffee', True, True, 'Coffee shop loyalty, earn on every order'),

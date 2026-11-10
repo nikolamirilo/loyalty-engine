@@ -17,25 +17,25 @@ Conventions used below:
 - Member routes that need a session: `/home`, `/products`, `/wallet`, `/account` (`client/proxy.ts:10`). Without a valid `member_session` cookie, the proxy redirects these to `/login` (`client/proxy.ts:58-60`). The member layout checks again and redirects to `/login` (`client/app/(member)/layout.tsx:17-18`).
 - `/login` with a valid session redirects to `/home` (`client/proxy.ts:51-55`, `client/app/login/page.tsx:19`).
 - `/verify` is always public (`client/proxy.ts:43-45`). `/p/<slug>/claim` is public because it is not in the protected set (`client/proxy.ts:22-23`).
-- `/` is the "Welcome to Loyalty Engine" chooser with three tiles (the third, "Read the documentation", opens `/docs`). "Continue as admin" / "Manage members, rewards, and tiers" goes to `/admin/login`. "Continue as user" / "Track your points and rewards" goes to `/login`. Subtitle: "Choose how you'd like to continue" (`client/app/page.tsx:53-71`). Browser title: "Loyalty Engine" (`client/app/page.tsx:7-9`).
+- `/` is the "Welcome to Loyalty Simulator" chooser with three tiles (the third, "Read the documentation", opens `/docs`). "Continue as admin" / "Manage members, rewards, and tiers" goes to `/admin/login`. "Continue as user" / "Track your points and rewards" goes to `/login`. Subtitle: "Choose how you'd like to continue" (`client/app/page.tsx:53-71`). Browser title: "Loyalty Simulator" (`client/app/page.tsx:7-9`).
 - Signing out redirects to `/`, the admin/user chooser, not to `/login` (`client/lib/memberAuth/actions.ts:101-104`).
 - Root 404 page: "404", "We couldn't find the page you're looking for.", and a "Go home" button that goes to `/` (`client/app/not-found.tsx:9-22`).
 - Root error page: "Something went wrong", then the error message or "An unexpected error occurred.", with buttons "Reload" and "Try again" (`client/app/error.tsx:20-30`). No `(member)/error.tsx` exists, so `client/app/error.tsx` is the nearest boundary. ? Probably a failing API call on a tab replaces the whole shell (header and tab bar included), which would leave no visible sign-out button. Not run.
 
 ### Browser tab titles
-- Login: "Sign in - Loyalty App" (`client/app/login/page.tsx:13-15`)
-- Home: "Home - Loyalty App" (`client/app/(member)/home/page.tsx:5`)
-- Products: "Products - Loyalty App" (`client/app/(member)/products/page.tsx:15`)
-- Wallet: "Wallet - Loyalty App" (`client/app/(member)/wallet/page.tsx:18`)
-- Account: "Account - Loyalty App" (`client/app/(member)/account/page.tsx:17`)
-- Verify: "Verify your email - Loyalty App", with noindex (`client/app/verify/page.tsx:12-16`)
-- Claim: "Claim your prize - Loyalty App", with noindex (`client/app/p/[slug]/claim/page.tsx:17-21`)
-- Default: "Loyalty App" (`client/app/layout.tsx:17-20`)
+- Login: "Sign in - Loyalty App Simulator" (`client/app/login/page.tsx:13-15`)
+- Home: "Home - Loyalty App Simulator" (`client/app/(member)/home/page.tsx:5`)
+- Products: "Products - Loyalty App Simulator" (`client/app/(member)/products/page.tsx:15`)
+- Wallet: "Wallet - Loyalty App Simulator" (`client/app/(member)/wallet/page.tsx:18`)
+- Account: "Account - Loyalty App Simulator" (`client/app/(member)/account/page.tsx:17`)
+- Verify: "Verify your email - Loyalty App Simulator", with noindex (`client/app/verify/page.tsx:12-16`)
+- Claim: "Claim your prize - Loyalty App Simulator", with noindex (`client/app/p/[slug]/claim/page.tsx:17-21`)
+- Default: "Loyalty App Simulator" (`client/app/layout.tsx:17-20`)
 
 ### Branding (applies to every member screen)
 - The app takes the logo, name and colours of the member's current program. With no session, it uses the default program (`client/lib/server/branding.ts:40-45`, `client/app/(member)/layout.tsx:20-28`).
 - The colours override the CSS tokens on `:root`, so dialogs and toasts are themed as well (`client/components/branding/ProgramTheme.tsx:4-21`).
-- Without a logo, the app shows the stock `/logo.svg` (`client/components/branding/BrandLogo.tsx:25`). Without a reachable program list, the name falls back to "Loyalty App" (`client/components/layout/MemberShell.tsx:171`).
+- Without a logo, the app shows the stock `/logo.svg` (`client/components/branding/BrandLogo.tsx:25`). Without a reachable program list, the name falls back to "Loyalty App Simulator" (`client/components/layout/MemberShell.tsx:171`).
 - Stock light tokens: background `#f8fafc`, surface `#fff`, foreground `#0f172a`, muted `#475569`, faint `#64748b`, line `#e2e8f0`, primary `#5b4bd6`, primary-subtle `#efecfd`, primary-subtle-fg `#4338ca`, secondary `#eb6834`. Success, warning, danger and accent colours are in the file. A dark scheme applies through `prefers-color-scheme` (`client/app/globals.css:11-88`). Font: Geist (`client/app/layout.tsx:5-13`).
 - Root font size: inside the member shell (`data-app="member"`) it is fixed at 16px. On the public pages (login, verify, claim) it scales with `clamp(16px, 0.75vw + 6px, 24px)` (`client/app/globals.css:159-171`).
 
